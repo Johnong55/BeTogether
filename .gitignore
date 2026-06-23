@@ -1,0 +1,12 @@
+# Công cụ/biên tập cục bộ
+.claude/
+
+# Phụ thuộc & môi trường (phòng khi sau này thêm)
+node_modules/
+.env
+.env.local
+
+# Hệ điều hành
+.DS_Store
+Thumbs.db
+desktop.ini
