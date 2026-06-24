@@ -199,8 +199,8 @@
    CẤU HÌNH — dán thông tin Supabase để BẬT đồng bộ qua mạng.
    Để trống = chế độ thử (chỉ lưu trên máy này). Xem README.md.
    ================================================================= */
-const SUPABASE_URL = "";
-const SUPABASE_ANON_KEY = "";
+const SUPABASE_URL = "https://vklsqexomaconbzoufmu.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_YDj6liDtYbMFq38GhwCwIQ_KlS-lNwI";
 
 /* ===================== ICON (SVG nét, thanh lịch) ===================== */
 const ICONS = {
@@ -695,7 +695,7 @@ function viewSettings(){
 
 /* ===================== MODALS ===================== */
 function modal(html){ const ov=document.createElement('div'); ov.className='overlay'; ov.dataset.act='close-modal';
-  ov.innerHTML=`<div class="sheet" onclick="event.stopPropagation()">${html}</div>`; document.body.appendChild(ov); return ov; }
+  ov.innerHTML=`<div class="sheet" data-act="stop">${html}</div>`; document.body.appendChild(ov); return ov; }
 function closeModal(){ $('.overlay')?.remove(); }
 
 function openDeckModal(){ S.tmp.tint=DECK_TINT[S.decks.length%DECK_TINT.length];
@@ -735,7 +735,7 @@ function openNoteModal(){ S.tmp.noteTint=NOTE_TINT[0];
 /* ===================== EVENTS ===================== */
 document.addEventListener('click', async (e)=>{ const t=e.target.closest('[data-act]'); if(!t) return;
   try{ await handle(t.dataset.act, t.dataset.v, t.dataset.id, t, e); }
-  catch(err){ console.error(err); toast('Có lỗi rồi, thử lại nha'); } });
+  catch(err){ console.error(err); toast(err && err.message ? ('Lỗi: '+err.message) : 'Có lỗi rồi, thử lại nha'); } });
 
 document.addEventListener('input',(e)=>{ const f=e.target.dataset.filter; if(!f) return;
   const q=(e.target.value||'').trim().toLowerCase();
@@ -771,6 +771,7 @@ async function handle(act,v,id,t,e){
     case 'save-card': await saveCard(t.dataset.deck,t.dataset.id); break;
     case 'del-card': await Store.deleteCard(S.space.id,id); await loadAll(); render(); break;
     case 'close-modal': closeModal(); break;
+    case 'stop': break;
 
     case 'compose-deck': S.view='compose'; S.compose={deckId:id, sel:S.cards.filter(c=>c.deck_id===id).map(c=>c.id), msg:''}; render(); scrollTo(0,0); break;
     case 'compose-back': S.compose=null; render(); break;
