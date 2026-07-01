@@ -88,6 +88,8 @@ create table if not exists notes (
   author_name text,
   text        text,
   color       text,
+  remind_at   date,                         -- ngày nhắc (lời nhắc); null = ghi chú thường
+  done        boolean default false,        -- đã xong chưa
   created_at  timestamptz default now()
 );
 
@@ -106,6 +108,8 @@ create table if not exists daily (
 alter table spaces add column if not exists person_a_username text;
 alter table spaces add column if not exists person_b_username text;
 alter table spaces add column if not exists start_date date;
+alter table notes  add column if not exists remind_at date;
+alter table notes  add column if not exists done boolean default false;
 
 -- ============================================================
 --  QUYỀN TRUY CẬP (RLS)
