@@ -3,11 +3,12 @@
 Một web nhỏ cho hai người **học từ vựng & dò bài cho nhau**, **giữ chuỗi** mỗi ngày, **đếm ngày bên nhau** và **cùng ghi chú**.
 
 - **Nhà** — đếm ngày bên nhau, chuỗi ngày liên tiếp, nhiệm vụ hôm nay
-- **Thẻ** — tạo thẻ từ vựng (Anh / ngoại ngữ / chủ đề tự do); thêm nhanh bằng Enter hoặc dán cả danh sách
-- **Dò bài** — chọn thẻ + lời nhắn rồi gửi cho người ấy
-- **Hộp thư** — người kia **"Nhận bài"** → làm bài → giữ chuỗi
+- **Học** — bộ **từ vựng B2 có sẵn** (14 chủ đề, ~780 từ, lấy từ file PDF), học bằng **trắc nghiệm** + **trộn chữ cái** (không phải flashcard). Cả hai đứa đều học được cùng một chủ đề.
+- **Hộp thư** — gửi một chủ đề cho người ấy; **cả người gửi lẫn người nhận** đều học được → giữ chuỗi
 - **Ghi chú** — khu ghi chú chung hai đứa cùng viết và lưu giữ
 - **Câu hỏi mỗi ngày** — một câu hỏi, cả hai trả lời rồi mới lộ đáp án của nhau
+
+> Bộ từ vựng được **nhúng sẵn** trong file `library.js` — dùng ngay, không cần tự tạo. Muốn thêm/sửa chủ đề thì sửa `library.js`.
 
 Mỗi người có **tài khoản riêng** (tên đăng nhập + mã PIN). Ghép đôi bằng cách **gửi lời mời theo tên** hoặc **chia sẻ mã phòng**.
 

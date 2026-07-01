@@ -194,6 +194,7 @@
 <canvas id="confetti"></canvas>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="library.js"></script>
 <script>
 /* =================================================================
    CẤU HÌNH — dán thông tin Supabase để BẬT đồng bộ qua mạng.
@@ -236,6 +237,22 @@ const THEMES = { blush:'Đào trầm', sage:'Xanh lá', dusk:'Tím khói', sky:'
 const THEME_DOT = { blush:'#d97a92', sage:'#7fa68c', dusk:'#9384c0', sky:'#6f9dc4', sand:'#c89a6f' };
 const DECK_TINT = ['#f3dbe1','#e3ecdf','#e2dcf0','#dde8f1','#efe2cf','#f0e3d9'];
 const NOTE_TINT = ['#fdeef0','#eef6ef','#efeafa','#e9f1f8','#f9f0e3','#f4eee9'];
+const LIBRARY = (window.LIBRARY||[]);
+const ALL_VI = LIBRARY.flatMap(t=>t.words.map(w=>w.vi));
+const topicByNo = (no)=> LIBRARY.find(t=>String(t.no)===String(no));
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function scrambleWord(w){ const ls=w.split(''); let s=w,t=0; while(s===w && t<25){ s=shuffle(ls).join(''); t++; } return s; }
+function buildQuestions(words, cap){
+  const norm = words.map(w=>({ en:(w.en||w.front||'').trim(), vi:(w.vi||w.back||'').trim() })).filter(w=>w.en&&w.vi);
+  const pool = shuffle(norm).slice(0, cap||12);
+  return pool.map(w=>{
+    const single = /^[a-zA-Z]+$/.test(w.en);
+    if(single && Math.random()<0.5) return { kind:'scramble', en:w.en, vi:w.vi, scrambled:scrambleWord(w.en) };
+    const src = norm.length>=4 ? norm.map(x=>x.vi) : ALL_VI;
+    const dis = shuffle(Array.from(new Set(src.filter(v=>v && v!==w.vi)))).slice(0,3);
+    return { kind:'mc', en:w.en, vi:w.vi, options:shuffle([w.vi, ...dis]) };
+  });
+}
 const DAILY_QUESTIONS = [
   "Khoảnh khắc nào hôm nay khiến bạn nghĩ đến người ấy?",
   "Điều nhỏ xíu nào ở đối phương khiến bạn yêu nhất?",
@@ -382,8 +399,8 @@ async function boot(){
 function applyTheme(){ document.documentElement.setAttribute('data-theme',(S.space&&S.space.theme)||'blush'); }
 
 async function loadAll(){ if(!S.space) return; const sid=S.space.id;
-  const [d,c,q,n]=await Promise.all([Store.listDecks(sid),Store.listCards(sid),Store.listQuizzes(sid),Store.listNotes(sid)]);
-  S.decks=d; S.cards=c; S.quizzes=q; S.notes=n; S.dailyToday=await ensureDaily(sid,todayStr()); }
+  const [q,n]=await Promise.all([Store.listQuizzes(sid),Store.listNotes(sid)]);
+  S.quizzes=q; S.notes=n; S.dailyToday=await ensureDaily(sid,todayStr()); }
 
 let pollT;
 function startPolling(){ if(Store.mode!=='cloud') return; clearInterval(pollT);
@@ -407,12 +424,11 @@ async function bumpStreak(){ const sp=S.space, today=todayStr(); if(sp.last_acti
 function render(){ const app=$('#app');
   if(S.view==='auth'){ app.innerHTML=viewAuth(); return; }
   if(S.view==='pair'){ app.innerHTML=viewPair(); return; }
-  if(S.play){ app.innerHTML=header()+viewPlayer(); return; }
+  if(S.play){ app.innerHTML=header()+viewStudy(); return; }
   let b='';
   switch(S.view){
     case 'home': b=viewHome(); break;
-    case 'decks': b=S.sub?viewDeckDetail():viewDecks(); break;
-    case 'compose': b=viewCompose(); break;
+    case 'library': b=S.sub?viewTopic():viewLibrary(); break;
     case 'inbox': b=viewInbox(); break;
     case 'notes': b=viewNotes(); break;
     case 'daily': b=viewDaily(); break;
@@ -432,7 +448,7 @@ function header(){ if(!S.space) return '';
   </div>`; }
 
 function nav(){ const pend=S.quizzes.filter(q=>q.to_person===S.me&&(q.status==='pending'||q.status==='picked')).length;
-  const items=[['home','home','Nhà'],['decks','cards','Thẻ'],['compose','send','Dò bài'],['inbox','inbox','Hộp thư'],['notes','note','Ghi chú']];
+  const items=[['home','home','Nhà'],['library','cards','Học'],['inbox','inbox','Hộp thư'],['notes','note','Ghi chú'],['daily','spark','Mỗi ngày']];
   return `<div class="nav">`+items.map(([v,i,l])=>`<button class="${S.view===v?'on':''}" data-act="go" data-v="${v}">${ic(i)}${l}${v==='inbox'&&pend?`<span class="dot">${pend}</span>`:''}</button>`).join('')+`</div>`; }
 
 /* ---------- AUTH ---------- */
@@ -504,7 +520,7 @@ function viewHome(){ const today=todayStr();
     <div class="stat">
       <div class="card"><div class="ic" style="margin-bottom:4px">${ic('flame')}</div><div class="big">${S.space.streak||0}</div><div class="ttl">ngày chuỗi</div></div>
       <div class="card"><div class="ic" style="margin-bottom:4px">${ic('trophy')}</div><div class="big">${S.space.longest||0}</div><div class="ttl">kỷ lục</div></div>
-      <div class="card"><div class="ic" style="margin-bottom:4px">${ic('cards')}</div><div class="big">${S.cards.length}</div><div class="ttl">thẻ</div></div>
+      <div class="card"><div class="ic" style="margin-bottom:4px">${ic('cards')}</div><div class="big">${LIBRARY.length}</div><div class="ttl">chủ đề</div></div>
     </div>
 
     <div class="card">
@@ -521,86 +537,39 @@ function viewHome(){ const today=todayStr();
     </div>
 
     <div class="row" style="gap:11px">
-      <button class="btn block" data-act="go" data-v="compose">${ic('send','sm')} Gửi bài dò</button>
+      <button class="btn block" data-act="go" data-v="library">${ic('spark','sm')} Học từ vựng</button>
       <button class="btn ghost block" data-act="go" data-v="notes">${ic('note','sm')} Ghi chú</button>
     </div>`; }
 
-/* ---------- DECKS ---------- */
-function viewDecks(){
-  const list=S.decks.map(d=>{ const n=S.cards.filter(c=>c.deck_id===d.id).length;
-    return `<div class="card listitem" data-act="open-deck" data-id="${d.id}">
-      <div class="thumb" style="background:${d.color||'var(--chip)'}">${ic('cards')}</div>
-      <div class="grow"><b>${esc(d.name)}</b><div class="muted">${d.lang?esc(d.lang)+' · ':''}${n} thẻ</div></div>
-      <span class="muted">›</span></div>`; }).join('');
-  return `<div class="row" style="margin-bottom:4px"><h2 class="title grow" style="margin:0">Bộ thẻ</h2>
-      <button class="btn sm" data-act="new-deck">${ic('plus','sm')} Bộ mới</button></div>
-    <p class="sub-h">Tạo bộ từ vựng, câu hỏi hay bất cứ gì hai đứa muốn nhớ.</p>
-    ${ S.decks.length?list:`<div class="empty">${ic('cards','lg')}<div>Chưa có bộ thẻ nào.<br>Tạo bộ đầu tiên nhé!</div></div>` }`; }
+/* ---------- LIBRARY (bộ từ vựng có sẵn) ---------- */
+function viewLibrary(){
+  return `<h2 class="title">Học từ vựng</h2>
+    <p class="sub-h">Chọn một chủ đề B2 (có sẵn) để học — trắc nghiệm & trộn chữ. Cả hai đứa đều học được.</p>
+    ${LIBRARY.map((t,i)=>`<div class="card listitem" data-act="open-topic" data-id="${t.no}">
+      <div class="thumb" style="background:${DECK_TINT[i%DECK_TINT.length]};font-family:'Fraunces';font-weight:600;color:var(--p1)">${t.no}</div>
+      <div class="grow"><b>${esc(t.name)}</b><div class="muted">${esc(t.vi||'')} · ${t.words.length} từ</div></div>
+      <span class="muted">›</span></div>`).join('')}`; }
 
-function viewDeckDetail(){ const d=S.decks.find(x=>x.id===S.sub); if(!d){ S.sub=null; return viewDecks(); }
-  const cards=S.cards.filter(c=>c.deck_id===d.id);
+function viewTopic(){ const t=topicByNo(S.sub); if(!t){ S.sub=null; return viewLibrary(); }
   return `
-    <div class="row" style="margin-bottom:12px"><button class="iconbtn" data-act="go" data-v="decks">${ic('back','sm')}</button>
-      <div class="thumb" style="background:${d.color}">${ic('cards')}</div>
-      <div class="grow"><b style="font-size:17px">${esc(d.name)}</b><div class="muted">${cards.length} thẻ</div></div>
-      <button class="iconbtn" data-act="del-deck" data-id="${d.id}">${ic('trash','sm')}</button></div>
-
-    <div class="card">
-      <div class="label" style="margin-top:0">Thêm nhanh — gõ rồi nhấn Enter</div>
-      <div class="row" style="gap:8px">
-        <input id="qa_front" placeholder="Từ / câu hỏi" data-deck="${d.id}" style="flex:1"/>
-        <input id="qa_back" placeholder="Nghĩa / đáp án" data-deck="${d.id}" style="flex:1"/>
-      </div>
-      <input id="qa_ex" placeholder="Ví dụ / ghi chú (không bắt buộc)" style="margin-top:8px"/>
-      <div class="row" style="gap:8px;margin-top:10px">
-        <button class="btn block" data-act="quick-add" data-id="${d.id}">${ic('plus','sm')} Thêm thẻ</button>
-        <button class="btn ghost sm" data-act="bulk-open" data-id="${d.id}">${ic('list','sm')} Thêm nhiều</button>
-      </div>
-    </div>
-
-    ${ cards.length?`
-      <div class="card" style="padding-top:10px">
-        <div class="row" style="border:none;padding:4px 0 8px"><span class="ic" style="color:var(--soft)">${ic('search','sm')}</span>
-          <input data-filter="dcards" placeholder="Tìm thẻ..." style="border:none;padding:6px 4px;box-shadow:none"/>
-          ${cards.length?`<button class="btn ghost sm" data-act="compose-deck" data-id="${d.id}">${ic('send','sm')} Dò</button>`:''}</div>
-        ${cards.map(c=>`<div class="cardrow" data-flt="dcards" data-name="${esc((c.front+' '+c.back).toLowerCase())}">
-          <div class="grow" data-act="edit-card" data-id="${c.id}" style="cursor:pointer">
-            <b>${esc(c.front)}</b><div class="muted">${esc(c.back)}${c.example?` · <span style="font-style:italic">${esc(c.example)}</span>`:''}</div></div>
-          <button class="iconbtn" data-act="del-card" data-id="${c.id}">${ic('trash','sm')}</button></div>`).join('')}
-      </div>`
-    : `<div class="empty">${ic('edit','lg')}<div>Thêm thẻ đầu tiên ở trên nha!</div></div>` }`; }
-
-/* ---------- COMPOSE ---------- */
-function viewCompose(){
-  if(!S.compose){
-    if(!S.decks.length) return `<div class="empty">${ic('cards','lg')}<div>Bạn cần tạo bộ thẻ trước đã.</div>
-      <button class="btn" style="margin-top:14px" data-act="go" data-v="decks">Tạo bộ thẻ</button></div>`;
-    return `<h2 class="title">Gửi bài dò</h2><p class="sub-h">Chọn một bộ để dò cho ${esc(partner())}.</p>
-      ${S.decks.map(d=>{ const n=S.cards.filter(c=>c.deck_id===d.id).length; if(!n) return '';
-        return `<div class="card listitem" data-act="compose-deck" data-id="${d.id}">
-          <div class="thumb" style="background:${d.color}">${ic('cards')}</div>
-          <div class="grow"><b>${esc(d.name)}</b><div class="muted">${n} thẻ</div></div><span class="muted">›</span></div>`;}).join('')}`;
-  }
-  const d=S.decks.find(x=>x.id===S.compose.deckId), cards=S.cards.filter(c=>c.deck_id===S.compose.deckId), sel=S.compose.sel;
-  return `<div class="row" style="margin-bottom:6px"><button class="iconbtn" data-act="compose-back">${ic('back','sm')}</button>
-      <h2 class="title grow" style="margin:0">${esc(d.name)}</h2>
-      <button class="btn soft sm" data-act="compose-all">${sel.length===cards.length?'Bỏ hết':'Chọn hết'}</button></div>
-    <p class="sub-h">Đã chọn ${sel.length}/${cards.length} thẻ để dò.</p>
+    <div class="row" style="margin-bottom:12px"><button class="iconbtn" data-act="go" data-v="library">${ic('back','sm')}</button>
+      <div class="thumb" style="background:${DECK_TINT[(t.no-1)%DECK_TINT.length]};font-family:'Fraunces';color:var(--p1)">${t.no}</div>
+      <div class="grow"><b style="font-size:17px">${esc(t.name)}</b><div class="muted">${esc(t.vi||'')} · ${t.words.length} từ</div></div></div>
+    <div class="row" style="gap:10px;margin-bottom:8px">
+      <button class="btn block" data-act="study-topic" data-id="${t.no}">${ic('spark','sm')} Học ngay</button>
+      <button class="btn ghost block" data-act="send-topic" data-id="${t.no}">${ic('send','sm')} Gửi ${esc(partner()||'người ấy')}</button></div>
+    <p class="sub-h">Mỗi lượt ~12 câu ngẫu nhiên (trắc nghiệm + trộn chữ).</p>
     <div class="card" style="padding-top:10px">
-      <div class="row" style="border:none;padding:4px 0 8px"><span style="color:var(--soft)">${ic('search','sm')}</span>
-        <input data-filter="ccards" placeholder="Tìm thẻ..." style="border:none;padding:6px 4px;box-shadow:none"/></div>
-      ${cards.map(c=>`<div class="cardrow" data-flt="ccards" data-name="${esc((c.front+' '+c.back).toLowerCase())}" data-act="toggle-card" data-id="${c.id}" style="cursor:pointer">
-        <div class="check ${sel.includes(c.id)?'on':''}">${ic('check')}</div>
-        <div class="grow"><b>${esc(c.front)}</b><div class="muted">${esc(c.back)}</div></div></div>`).join('')}
-    </div>
-    <label class="fld"><span class="lab">Lời nhắn cho ${esc(partner())} (không bắt buộc)</span>
-      <textarea id="c_msg" placeholder="Cố lên nha, làm xong là giỏi lắm đó">${esc(S.compose.msg||'')}</textarea></label>
-    <button class="btn block" data-act="send-quiz" ${sel.length?'':'disabled'}>${ic('send','sm')} Gửi ${sel.length} thẻ cho ${esc(partner())}</button>`; }
+      <div class="row" style="border:none;padding:4px 0 8px"><span class="ic" style="color:var(--soft)">${ic('search','sm')}</span>
+        <input data-filter="tw" placeholder="Xem trước từ vựng..." style="border:none;padding:6px 4px;box-shadow:none"/></div>
+      ${t.words.map(w=>`<div class="cardrow" data-flt="tw" data-name="${esc((w.en+' '+w.vi).toLowerCase())}">
+        <div class="grow"><b>${esc(w.en)}</b><div class="muted">${esc(w.vi)}</div></div></div>`).join('')}
+    </div>`; }
 
 /* ---------- INBOX ---------- */
 function viewInbox(){ const tab=S.inboxTab;
   const incoming=S.quizzes.filter(q=>q.to_person===S.me), outgoing=S.quizzes.filter(q=>q.from_person===S.me);
-  const list=tab==='in'?incoming:outgoing, lbl={pending:'Đang chờ',picked:'Đã nhận',answered:'Đã xong'};
+  const list=tab==='in'?incoming:outgoing, lbl={pending:'Đang chờ',picked:'Đang học',answered:'Đã xong'};
   return `<h2 class="title">Hộp thư</h2>
     <div class="seg">
       <button class="${tab==='in'?'on':''}" data-act="inbox-tab" data-v="in">Nhận được${incoming.filter(q=>q.status!=='answered').length?` (${incoming.filter(q=>q.status!=='answered').length})`:''}</button>
@@ -610,33 +579,58 @@ function viewInbox(){ const tab=S.inboxTab;
         <div class="row" style="margin-bottom:8px"><div class="grow"><div class="muted" style="font-weight:700">${who} · ${(q.created_at||'').slice(5,10).replace('-','/')}</div>
           <b>${esc(q.title)}</b></div><span class="status ${q.status}">${lbl[q.status]||q.status}</span></div>
         ${q.message?`<p class="muted" style="margin:0 0 10px;font-style:italic">“${esc(q.message)}”</p>`:''}
-        <div class="muted" style="margin-bottom:10px">${(q.items||[]).length} thẻ${q.status==='answered'?` · ${q.score}/${q.total} đúng`:''}</div>
-        ${ tab==='in'&&q.status!=='answered'?`<button class="btn block" data-act="pickup" data-id="${q.id}">${q.status==='pending'?'Nhận &amp; làm bài':'Tiếp tục làm'}</button>`:'' }
-        ${ tab==='in'&&q.status==='answered'?`<button class="btn ghost block sm" data-act="replay" data-id="${q.id}">Ôn lại</button>`:'' }
-        ${ tab==='out'&&q.status==='answered'?`<div class="center" style="font-weight:800;color:var(--ok)">${esc(partner())} đã làm: ${q.score}/${q.total}</div>`:'' }
-        ${ tab==='out'&&q.status!=='answered'?`<div class="muted center">Đang chờ ${esc(partner())} nhận…</div>`:'' }
-      </div>`;}).join('') : `<div class="empty">${ic('inbox','lg')}<div>${tab==='in'?'Chưa có bài nào gửi cho bạn.':'Bạn chưa gửi bài dò nào.'}</div></div>` }`; }
+        <div class="muted" style="margin-bottom:10px">${(q.items||[]).length} từ${q.status==='answered'?` · ${q.score}/${q.total} đúng`:''}</div>
+        ${ tab==='in'&&q.status!=='answered'?`<button class="btn block" data-act="pickup" data-id="${q.id}">${ic('spark','sm')} ${q.status==='pending'?'Nhận &amp; học':'Học tiếp'}</button>`:'' }
+        ${ tab==='in'&&q.status==='answered'?`<button class="btn ghost block sm" data-act="replay" data-id="${q.id}">Học lại</button>`:'' }
+        ${ tab==='out'?`<button class="btn ${q.status==='answered'?'ghost ':''}block sm" data-act="study-sent" data-id="${q.id}">${ic('spark','sm')} Học chủ đề này</button>`:'' }
+        ${ tab==='out'&&q.status==='answered'?`<div class="center" style="font-weight:800;color:var(--ok);margin-top:8px">${esc(partner())} đã học: ${q.score}/${q.total}</div>`:'' }
+        ${ tab==='out'&&q.status!=='answered'?`<div class="muted center" style="margin-top:8px">Đang chờ ${esc(partner()||'người ấy')} học…</div>`:'' }
+      </div>`;}).join('') : `<div class="empty">${ic('inbox','lg')}<div>${tab==='in'?'Chưa có bài nào gửi cho bạn.':'Bạn chưa gửi chủ đề nào.<br>Vào Học → chọn chủ đề → Gửi.'}</div></div>` }`; }
 
-/* ---------- PLAYER ---------- */
-function viewPlayer(){ const p=S.play, it=p.items[p.idx], total=p.items.length;
-  if(p.done){ const pct=Math.round(p.score/total*100), msg=pct>=80?'Giỏi quá đi':pct>=50?'Cố thêm chút nha':'Không sao, ôn lại lần nữa nhé';
+/* ---------- STUDY (trắc nghiệm + trộn chữ) ---------- */
+function viewStudy(){ const p=S.play, total=p.questions.length;
+  if(p.done){ const pct=total?Math.round(p.score/total*100):0, msg=pct>=80?'Giỏi quá đi':pct>=50?'Cố thêm chút nha':'Không sao, học lại lần nữa nhé';
     return `<div class="screen center">
       <div class="brand-mark" style="margin:18px auto 0">${ic(pct>=80?'trophy':'heart')}</div>
       <h1 style="margin:14px 0 4px">${p.score}/${total} đúng</h1><p style="font-weight:700">${msg}</p>
       ${p.streakUp?`<div class="card" style="background:linear-gradient(150deg,var(--p1),var(--p2));color:#fff;margin-top:12px">
-        <b style="font-size:19px">Chuỗi ${S.space.streak} ngày</b><div style="opacity:.9">Hai đứa giữ được chuỗi hôm nay rồi</div></div>`:''}
-      <button class="btn block" style="margin-top:16px" data-act="finish-play">Xong</button></div>`; }
+        <b style="font-size:19px">Chuỗi ${S.space.streak} ngày</b><div style="opacity:.9">Giữ được chuỗi hôm nay rồi</div></div>`:''}
+      <div class="row" style="gap:10px;margin-top:16px">
+        <button class="btn ghost block" data-act="restudy">Học lại</button>
+        <button class="btn block" data-act="finish-play">Xong</button></div></div>`; }
+  const q=p.questions[p.idx], fb=(p.phase==='feedback');
   return `<div class="screen">
     <div class="row" style="margin-bottom:8px"><button class="iconbtn" data-act="quit-play">${ic('x','sm')}</button>
-      <div class="grow center" style="font-weight:800">Thẻ ${p.idx+1}/${total}</div><div style="width:38px"></div></div>
+      <div class="grow center" style="font-weight:800">Câu ${p.idx+1}/${total}</div><div style="width:38px"></div></div>
     <div class="progress"><i style="width:${p.idx/total*100}%"></i></div>
-    <div class="flash ${p.flip?'flip':''}" data-act="flip"><div class="inner">
-      <div class="face front"><div class="term">${esc(it.front)}</div><div class="hint">Chạm để xem đáp án</div></div>
-      <div class="face back"><div class="term">${esc(it.back)}</div>${it.example?`<div class="ex">“${esc(it.example)}”</div>`:''}</div></div></div>
-    ${ p.flip?`<div class="row" style="gap:11px;margin-top:18px">
-        <button class="btn danger block" data-act="grade" data-v="0">${ic('x','sm')} Chưa nhớ</button>
-        <button class="btn block" style="background:linear-gradient(135deg,var(--ok),#8fc4ac)" data-act="grade" data-v="1">${ic('check','sm')} Nhớ rồi</button></div>`
-      :`<button class="btn block" style="margin-top:18px" data-act="flip">Xem đáp án</button>` }`; }
+    ${ q.kind==='mc' ? mcBody(q,p,fb) : scrambleBody(q,p,fb) }`; }
+
+function mcBody(q,p,fb){
+  return `<div class="card center" style="padding:24px 16px">
+      <div class="muted" style="font-weight:700">Nghĩa của từ này là gì?</div>
+      <div style="font-family:'Fraunces';font-size:30px;margin-top:6px">${esc(q.en)}</div></div>
+    ${q.options.map((opt,i)=>{ let cls='btn ghost block', style='justify-content:flex-start;text-align:left;margin-bottom:10px';
+        if(fb){ if(opt===q.vi){ cls='btn block'; style+=';background:linear-gradient(135deg,var(--ok),#8fc4ac);border:none;color:#fff'; }
+                else if(i===p.chosen){ cls='btn block'; style+=';background:#f1c7ce;border:none;color:var(--no)'; }
+                else style+=';opacity:.45'; }
+        return `<button class="${cls}" style="${style}" ${fb?'disabled':''} data-act="answer-mc" data-v="${i}">${esc(opt)}</button>`;
+      }).join('')}
+    ${ fb?feedbackBar(p,null):'' }`; }
+
+function scrambleBody(q,p,fb){
+  const letters=q.scrambled.toUpperCase().split('').join(' ');
+  return `<div class="card center" style="padding:22px 16px">
+      <div class="muted" style="font-weight:700">Sắp xếp chữ cái thành từ tiếng Anh</div>
+      <div style="margin:8px 0 6px;font-weight:800;color:var(--p1)">${esc(q.vi)}</div>
+      <div style="font-family:'Fraunces';font-size:26px;letter-spacing:4px">${esc(letters)}</div></div>
+    <input id="sc_input" placeholder="Gõ từ..." autocapitalize="none" autocomplete="off" autocorrect="off" spellcheck="false" ${fb?'disabled':''} value="${esc(p.answerGiven||'')}" style="text-align:center;font-size:18px"/>
+    ${ fb ? feedbackBar(p,q) : `<button class="btn block" style="margin-top:12px" data-act="check-scramble">Kiểm tra</button>` }`; }
+
+function feedbackBar(p,q){ const ok=p.lastCorrect;
+  return `<div class="card center" style="background:${ok?'var(--chip)':'#fdeef0'};margin-top:12px">
+      <b style="color:${ok?'var(--ok)':'var(--no)'}">${ok?'Chính xác!':'Chưa đúng'}</b>
+      ${ (!ok&&q)?`<div class="muted" style="margin-top:4px">Đáp án: <b>${esc(q.en)}</b></div>`:'' }</div>
+    <button class="btn block" data-act="next-q">${p.idx+1<p.questions.length?'Câu tiếp':'Xem kết quả'}</button>`; }
 
 /* ---------- NOTES ---------- */
 function viewNotes(){
@@ -742,8 +736,7 @@ document.addEventListener('input',(e)=>{ const f=e.target.dataset.filter; if(!f)
   document.querySelectorAll(`[data-flt="${f}"]`).forEach(el=>{ el.style.display=el.dataset.name.includes(q)?'':'none'; }); });
 
 document.addEventListener('keydown',(e)=>{ if(e.key!=='Enter') return;
-  if(e.target.id==='qa_front'){ e.preventDefault(); $('#qa_back')?.focus(); }
-  else if(e.target.id==='qa_back'){ e.preventDefault(); handle('quick-add',null,e.target.dataset.deck); }
+  if(e.target.id==='sc_input'){ e.preventDefault(); handle('check-scramble'); }
   else if(e.target.id==='a_pin'){ e.preventDefault(); handle(S.authTab==='register'?'do-register':'do-login'); } });
 
 async function handle(act,v,id,t,e){
@@ -760,32 +753,22 @@ async function handle(act,v,id,t,e){
     case 'decline-invite': await Store.updateInvite(id,{status:'declined'}); S.invites=S.invites.filter(x=>x.id!==id); render(); break;
     case 'send-invite': await sendInvite(); break;
 
-    case 'open-deck': S.sub=id; S.view='decks'; render(); scrollTo(0,0); break;
-    case 'new-deck': openDeckModal(); break;
-    case 'save-deck-modal': await saveDeckModal(); break;
-    case 'del-deck': if(confirm('Xoá bộ thẻ này và toàn bộ thẻ bên trong?')){ await Store.deleteDeck(S.space.id,id); await loadAll(); S.sub=null; render(); toast('Đã xoá bộ'); } break;
-    case 'quick-add': await quickAdd(id); break;
-    case 'bulk-open': openBulkModal(id); break;
-    case 'bulk-save': await bulkSave(id); break;
-    case 'edit-card': { const c=S.cards.find(x=>x.id===id); openCardModal(c.deck_id,c); } break;
-    case 'save-card': await saveCard(t.dataset.deck,t.dataset.id); break;
-    case 'del-card': await Store.deleteCard(S.space.id,id); await loadAll(); render(); break;
     case 'close-modal': closeModal(); break;
     case 'stop': break;
 
-    case 'compose-deck': S.view='compose'; S.compose={deckId:id, sel:S.cards.filter(c=>c.deck_id===id).map(c=>c.id), msg:''}; render(); scrollTo(0,0); break;
-    case 'compose-back': S.compose=null; render(); break;
-    case 'compose-all': { const cs=S.cards.filter(c=>c.deck_id===S.compose.deckId).map(c=>c.id); S.compose.msg=$('#c_msg')?.value||S.compose.msg;
-        S.compose.sel=S.compose.sel.length===cs.length?[]:cs.slice(); render(); } break;
-    case 'toggle-card': { const s=S.compose.sel,i=s.indexOf(id); if(i>=0)s.splice(i,1); else s.push(id); S.compose.msg=$('#c_msg')?.value||S.compose.msg; render(); } break;
-    case 'send-quiz': await sendQuiz(); break;
+    case 'open-topic': S.sub=id; S.view='library'; render(); scrollTo(0,0); break;
+    case 'study-topic': studyTopic(id); break;
+    case 'send-topic': await sendTopic(id); break;
+    case 'study-sent': { const q=S.quizzes.find(x=>x.id===id); if(q) startStudy(q.items,{src:'lesson',quiz:q,title:q.title,back:'inbox'}); } break;
 
     case 'inbox-tab': S.inboxTab=v; render(); break;
     case 'pickup': await pickup(id); break;
-    case 'replay': { const q=S.quizzes.find(x=>x.id===id); startPlay(q,true); } break;
-    case 'flip': if(S.play){ S.play.flip=true; render(); } break;
-    case 'grade': gradeCard(parseInt(v,10)); break;
-    case 'quit-play': S.play=null; S.view='inbox'; render(); break;
+    case 'replay': { const q=S.quizzes.find(x=>x.id===id); startStudy(q.items,{src:'lesson',quiz:q,title:q.title,replay:true,back:'inbox'}); } break;
+    case 'answer-mc': answerMc(parseInt(v,10)); break;
+    case 'check-scramble': checkScramble(); break;
+    case 'next-q': await nextQ(); break;
+    case 'restudy': { const p=S.play; startStudy(p.words,{src:p.src,quiz:p.quiz,title:p.title,replay:true,back:p.back}); } break;
+    case 'quit-play': { const back=(S.play&&S.play.back)||'home'; S.play=null; S.view=back; render(); } break;
     case 'finish-play': S.play=null; S.view='home'; await loadAll(); render(); break;
 
     case 'note-new': openNoteModal(); break;
@@ -870,20 +853,36 @@ async function saveCard(deckId,cardId){ const f=($('#m_front')?.value||'').trim(
   const existing=cardId?S.cards.find(c=>c.id===cardId):null;
   await Store.saveCard({ id:cardId||uid(), space_id:S.space.id, deck_id:deckId, front:f, back:b, example:ex, created_by:S.me, created_at:existing?.created_at||new Date().toISOString() });
   closeModal(); await loadAll(); render(); toast(cardId?'Đã lưu':'Đã thêm thẻ'); }
-async function sendQuiz(){ const sel=S.compose.sel; if(!sel.length) return;
-  const items=sel.map(cid=>{ const c=S.cards.find(x=>x.id===cid); return { front:c.front, back:c.back, example:c.example||'', correct:null }; });
-  const deck=S.decks.find(d=>d.id===S.compose.deckId);
-  await Store.saveQuiz({ id:uid(), space_id:S.space.id, from_person:S.me, to_person:other(S.me), title:'Dò bài: '+deck.name, message:($('#c_msg')?.value||'').trim(),
+async function sendTopic(topicNo){ const t=topicByNo(topicNo); if(!t) return;
+  const items=t.words.map(w=>({en:w.en, vi:w.vi}));
+  await Store.saveQuiz({ id:uid(), space_id:S.space.id, from_person:S.me, to_person:other(S.me), title:t.name, message:'',
     status:'pending', items, score:0, total:items.length, created_at:new Date().toISOString(), picked_at:null, answered_at:null });
-  S.compose=null; await loadAll(); S.view='inbox'; S.inboxTab='out'; render(); toast('Đã gửi cho '+partner()); }
-async function pickup(qid){ const q=S.quizzes.find(x=>x.id===qid);
-  if(q.status==='pending'){ q.status='picked'; q.picked_at=new Date().toISOString(); await Store.saveQuiz(q); } startPlay(q,false); }
-function startPlay(q,replay){ S.play={ quiz:q, items:q.items.map(it=>Object.assign({},it)), idx:0, flip:false, score:0, done:false, replay, streakUp:false }; render(); scrollTo(0,0); }
-function gradeCard(ok){ const p=S.play; p.items[p.idx].correct=!!ok; if(ok)p.score++;
-  if(p.idx+1<p.items.length){ p.idx++; p.flip=false; render(); } else finishPlay(); }
-async function finishPlay(){ const p=S.play; p.done=true;
-  if(!p.replay){ const q=p.quiz; q.status='answered'; q.score=p.score; q.total=p.items.length; q.items=p.items; q.answered_at=new Date().toISOString();
-    await Store.saveQuiz(q); p.streakUp=await bumpStreak(); } render(); celebrate(); }
+  await loadAll(); S.view='inbox'; S.inboxTab='out'; render(); toast('Đã gửi cho '+(partner()||'người ấy')); }
+function studyTopic(topicNo){ const t=topicByNo(topicNo); if(!t) return; startStudy(t.words,{src:'lib',title:t.name,back:'library'}); }
+async function pickup(qid){ const q=S.quizzes.find(x=>x.id===qid); if(!q) return;
+  if(q.status==='pending' && q.to_person===S.me){ q.status='picked'; q.picked_at=new Date().toISOString(); await Store.saveQuiz(q); }
+  startStudy(q.items,{src:'lesson',quiz:q,title:q.title,back:'inbox'}); }
+function startStudy(words,opts){ opts=opts||{};
+  const qs=buildQuestions(words||[],12);
+  if(!qs.length){ toast('Chủ đề này chưa có từ để học'); return; }
+  S.play={ src:opts.src||'lib', quiz:opts.quiz||null, title:opts.title||'Học', back:opts.back||'library',
+    words:words, questions:qs, idx:0, score:0, done:false, replay:!!opts.replay,
+    phase:'ask', chosen:null, answerGiven:'', lastCorrect:null, streakUp:false };
+  render(); scrollTo(0,0); }
+function answerMc(i){ const p=S.play; if(!p||p.phase!=='ask') return; const q=p.questions[p.idx];
+  p.chosen=i; p.lastCorrect=(q.options[i]===q.vi); if(p.lastCorrect)p.score++; p.phase='feedback'; render(); }
+function checkScramble(){ const p=S.play; if(!p||p.phase!=='ask') return; const q=p.questions[p.idx];
+  const val=($('#sc_input')?.value||'').trim(); if(!val){ toast('Gõ từ đã nha'); return; }
+  p.answerGiven=val; p.lastCorrect=(val.toLowerCase()===q.en.toLowerCase()); if(p.lastCorrect)p.score++; p.phase='feedback'; render(); }
+async function nextQ(){ const p=S.play; if(!p) return;
+  if(p.idx+1<p.questions.length){ p.idx++; p.phase='ask'; p.chosen=null; p.answerGiven=''; render(); }
+  else await finishStudy(); }
+async function finishStudy(){ const p=S.play; p.done=true;
+  if(!p.replay){ p.streakUp=await bumpStreak();
+    if(p.src==='lesson' && p.quiz && p.quiz.to_person===S.me && p.quiz.status!=='answered'){
+      const q=p.quiz; q.status='answered'; q.score=p.score; q.total=p.questions.length; q.answered_at=new Date().toISOString();
+      await Store.saveQuiz(q); } }
+  render(); celebrate(); }
 async function noteSave(){ const text=($('#m_note')?.value||'').trim(); if(!text){ toast('Viết gì đó đã nha'); return; }
   await Store.saveNote({ id:uid(), space_id:S.space.id, author:S.me, author_name:meName(), text, color:S.tmp.noteTint||NOTE_TINT[0], created_at:new Date().toISOString() });
   closeModal(); await loadAll(); render(); toast('Đã lưu ghi chú'); }
