@@ -244,7 +244,7 @@ function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.fl
 function scrambleWord(w){ const ls=w.split(''); let s=w,t=0; while(s===w && t<25){ s=shuffle(ls).join(''); t++; } return s; }
 function buildQuestions(words, cap){
   const norm = words.map(w=>({ en:(w.en||w.front||'').trim(), vi:(w.vi||w.back||'').trim() })).filter(w=>w.en&&w.vi);
-  const pool = shuffle(norm).slice(0, cap||12);
+  const pool = shuffle(norm).slice(0, cap||norm.length);
   return pool.map(w=>{
     const single = /^[a-zA-Z]+$/.test(w.en);
     if(single && Math.random()<0.5) return { kind:'scramble', en:w.en, vi:w.vi, scrambled:scrambleWord(w.en) };
@@ -556,9 +556,10 @@ function viewTopic(){ const t=topicByNo(S.sub); if(!t){ S.sub=null; return viewL
       <div class="thumb" style="background:${DECK_TINT[(t.no-1)%DECK_TINT.length]};font-family:'Fraunces';color:var(--p1)">${t.no}</div>
       <div class="grow"><b style="font-size:17px">${esc(t.name)}</b><div class="muted">${esc(t.vi||'')} · ${t.words.length} từ</div></div></div>
     <div class="row" style="gap:10px;margin-bottom:8px">
-      <button class="btn block" data-act="study-topic" data-id="${t.no}">${ic('spark','sm')} Học ngay</button>
-      <button class="btn ghost block" data-act="send-topic" data-id="${t.no}">${ic('send','sm')} Gửi ${esc(partner()||'người ấy')}</button></div>
-    <p class="sub-h">Mỗi lượt ~12 câu ngẫu nhiên (trắc nghiệm + trộn chữ).</p>
+      <button class="btn soft block" data-act="study-topic" data-id="${t.no}" data-mode="flash">${ic('cards','sm')} Thẻ lật</button>
+      <button class="btn block" data-act="study-topic" data-id="${t.no}" data-mode="quiz">${ic('spark','sm')} Trắc nghiệm</button></div>
+    <button class="btn ghost block" data-act="send-topic" data-id="${t.no}">${ic('send','sm')} Gửi ${esc(partner()||'người ấy')}</button>
+    <p class="sub-h" style="margin-top:12px">Học <b>thẻ lật</b> để nhớ trước, rồi <b>trắc nghiệm</b> để kiểm tra — đủ cả ${t.words.length} từ.</p>
     <div class="card" style="padding-top:10px">
       <div class="row" style="border:none;padding:4px 0 8px"><span class="ic" style="color:var(--soft)">${ic('search','sm')}</span>
         <input data-filter="tw" placeholder="Xem trước từ vựng..." style="border:none;padding:6px 4px;box-shadow:none"/></div>
@@ -580,15 +581,40 @@ function viewInbox(){ const tab=S.inboxTab;
           <b>${esc(q.title)}</b></div><span class="status ${q.status}">${lbl[q.status]||q.status}</span></div>
         ${q.message?`<p class="muted" style="margin:0 0 10px;font-style:italic">“${esc(q.message)}”</p>`:''}
         <div class="muted" style="margin-bottom:10px">${(q.items||[]).length} từ${q.status==='answered'?` · ${q.score}/${q.total} đúng`:''}</div>
-        ${ tab==='in'&&q.status!=='answered'?`<button class="btn block" data-act="pickup" data-id="${q.id}">${ic('spark','sm')} ${q.status==='pending'?'Nhận &amp; học':'Học tiếp'}</button>`:'' }
-        ${ tab==='in'&&q.status==='answered'?`<button class="btn ghost block sm" data-act="replay" data-id="${q.id}">Học lại</button>`:'' }
-        ${ tab==='out'?`<button class="btn ${q.status==='answered'?'ghost ':''}block sm" data-act="study-sent" data-id="${q.id}">${ic('spark','sm')} Học chủ đề này</button>`:'' }
+        <div class="row" style="gap:10px">
+          <button class="btn soft block sm" data-act="study-lesson" data-id="${q.id}" data-mode="flash">${ic('cards','sm')} Thẻ lật</button>
+          <button class="btn block sm" data-act="study-lesson" data-id="${q.id}" data-mode="quiz">${ic('spark','sm')} ${q.status==='answered'?'Thi lại':(tab==='in'&&q.status==='picked'?'Thi tiếp':'Trắc nghiệm')}</button></div>
         ${ tab==='out'&&q.status==='answered'?`<div class="center" style="font-weight:800;color:var(--ok);margin-top:8px">${esc(partner())} đã học: ${q.score}/${q.total}</div>`:'' }
         ${ tab==='out'&&q.status!=='answered'?`<div class="muted center" style="margin-top:8px">Đang chờ ${esc(partner()||'người ấy')} học…</div>`:'' }
       </div>`;}).join('') : `<div class="empty">${ic('inbox','lg')}<div>${tab==='in'?'Chưa có bài nào gửi cho bạn.':'Bạn chưa gửi chủ đề nào.<br>Vào Học → chọn chủ đề → Gửi.'}</div></div>` }`; }
 
-/* ---------- STUDY (trắc nghiệm + trộn chữ) ---------- */
-function viewStudy(){ const p=S.play, total=p.questions.length;
+/* ---------- STUDY (thẻ lật + trắc nghiệm) ---------- */
+function viewStudy(){ return S.play.mode==='flash' ? flashView(S.play) : quizView(S.play); }
+
+function flashView(p){ const total=p.cards.length;
+  if(p.done){
+    return `<div class="screen center">
+      <div class="brand-mark" style="margin:18px auto 0">${ic('spark')}</div>
+      <h1 style="margin:14px 0 4px">Đã xem hết ${total} thẻ</h1><p style="font-weight:700">Giỏi lắm! Giờ thử kiểm tra nha.</p>
+      ${p.streakUp?`<div class="card" style="background:linear-gradient(150deg,var(--p1),var(--p2));color:#fff;margin-top:12px">
+        <b style="font-size:19px">Chuỗi ${S.space.streak} ngày</b><div style="opacity:.9">Giữ được chuỗi hôm nay rồi</div></div>`:''}
+      <div class="row" style="gap:10px;margin-top:16px">
+        <button class="btn ghost block" data-act="restudy">Xem lại</button>
+        <button class="btn block" data-act="to-quiz">${ic('spark','sm')} Làm trắc nghiệm</button></div>
+      <button class="btn soft block" style="margin-top:10px" data-act="finish-play">Xong</button></div>`; }
+  const c=p.cards[p.idx];
+  return `<div class="screen">
+    <div class="row" style="margin-bottom:8px"><button class="iconbtn" data-act="quit-play">${ic('x','sm')}</button>
+      <div class="grow center" style="font-weight:800">Thẻ ${p.idx+1}/${total}</div><div style="width:38px"></div></div>
+    <div class="progress"><i style="width:${p.idx/total*100}%"></i></div>
+    <div class="flash ${p.flip?'flip':''}" data-act="flip" style="margin-top:6px"><div class="inner">
+      <div class="face front"><div class="term">${esc(c.en)}</div><div class="hint">Chạm để xem nghĩa</div></div>
+      <div class="face back"><div class="term" style="font-size:24px">${esc(c.vi)}</div></div></div></div>
+    <div class="row" style="gap:11px;margin-top:18px">
+      <button class="btn soft block" data-act="flip">Lật thẻ</button>
+      <button class="btn block" data-act="next-card">${p.idx+1<total?'Thẻ tiếp →':'Xong'}</button></div>`; }
+
+function quizView(p){ const total=p.questions.length;
   if(p.done){ const pct=total?Math.round(p.score/total*100):0, msg=pct>=80?'Giỏi quá đi':pct>=50?'Cố thêm chút nha':'Không sao, học lại lần nữa nhé';
     return `<div class="screen center">
       <div class="brand-mark" style="margin:18px auto 0">${ic(pct>=80?'trophy':'heart')}</div>
@@ -757,17 +783,20 @@ async function handle(act,v,id,t,e){
     case 'stop': break;
 
     case 'open-topic': S.sub=id; S.view='library'; render(); scrollTo(0,0); break;
-    case 'study-topic': studyTopic(id); break;
+    case 'study-topic': { const tt=topicByNo(id); if(tt) startStudy(tt.words,{mode:t.dataset.mode||'quiz',src:'lib',title:tt.name,back:'library'}); } break;
     case 'send-topic': await sendTopic(id); break;
-    case 'study-sent': { const q=S.quizzes.find(x=>x.id===id); if(q) startStudy(q.items,{src:'lesson',quiz:q,title:q.title,back:'inbox'}); } break;
+    case 'study-lesson': { const q=S.quizzes.find(x=>x.id===id); if(q){
+        if(q.status==='pending' && q.to_person===S.me){ q.status='picked'; q.picked_at=new Date().toISOString(); await Store.saveQuiz(q); }
+        startStudy(q.items,{mode:t.dataset.mode||'quiz',src:'lesson',quiz:q,title:q.title,back:'inbox'}); } } break;
 
     case 'inbox-tab': S.inboxTab=v; render(); break;
-    case 'pickup': await pickup(id); break;
-    case 'replay': { const q=S.quizzes.find(x=>x.id===id); startStudy(q.items,{src:'lesson',quiz:q,title:q.title,replay:true,back:'inbox'}); } break;
+    case 'flip': if(S.play){ S.play.flip=!S.play.flip; render(); } break;
+    case 'next-card': await nextCard(); break;
     case 'answer-mc': answerMc(parseInt(v,10)); break;
     case 'check-scramble': checkScramble(); break;
     case 'next-q': await nextQ(); break;
-    case 'restudy': { const p=S.play; startStudy(p.words,{src:p.src,quiz:p.quiz,title:p.title,replay:true,back:p.back}); } break;
+    case 'to-quiz': { const p=S.play; startStudy(p.words,{mode:'quiz',src:p.src,quiz:p.quiz,title:p.title,back:p.back}); } break;
+    case 'restudy': { const p=S.play; startStudy(p.words,{mode:p.mode,src:p.src,quiz:p.quiz,title:p.title,back:p.back}); } break;
     case 'quit-play': { const back=(S.play&&S.play.back)||'home'; S.play=null; S.view=back; render(); } break;
     case 'finish-play': S.play=null; S.view='home'; await loadAll(); render(); break;
 
@@ -862,12 +891,14 @@ function studyTopic(topicNo){ const t=topicByNo(topicNo); if(!t) return; startSt
 async function pickup(qid){ const q=S.quizzes.find(x=>x.id===qid); if(!q) return;
   if(q.status==='pending' && q.to_person===S.me){ q.status='picked'; q.picked_at=new Date().toISOString(); await Store.saveQuiz(q); }
   startStudy(q.items,{src:'lesson',quiz:q,title:q.title,back:'inbox'}); }
-function startStudy(words,opts){ opts=opts||{};
-  const qs=buildQuestions(words||[],12);
-  if(!qs.length){ toast('Chủ đề này chưa có từ để học'); return; }
-  S.play={ src:opts.src||'lib', quiz:opts.quiz||null, title:opts.title||'Học', back:opts.back||'library',
-    words:words, questions:qs, idx:0, score:0, done:false, replay:!!opts.replay,
-    phase:'ask', chosen:null, answerGiven:'', lastCorrect:null, streakUp:false };
+function startStudy(words,opts){ opts=opts||{}; const mode=opts.mode||'quiz';
+  const norm=(words||[]).map(w=>({ en:(w.en||w.front||'').trim(), vi:(w.vi||w.back||'').trim() })).filter(w=>w.en&&w.vi);
+  if(!norm.length){ toast('Chủ đề này chưa có từ để học'); return; }
+  S.play={ mode, src:opts.src||'lib', quiz:opts.quiz||null, title:opts.title||'Học', back:opts.back||'library',
+    words:norm, idx:0, score:0, done:false, streakUp:false, flip:false,
+    cards: mode==='flash'? shuffle(norm) : [],
+    questions: mode==='quiz'? buildQuestions(norm) : [],
+    phase:'ask', chosen:null, answerGiven:'', lastCorrect:null };
   render(); scrollTo(0,0); }
 function answerMc(i){ const p=S.play; if(!p||p.phase!=='ask') return; const q=p.questions[p.idx];
   p.chosen=i; p.lastCorrect=(q.options[i]===q.vi); if(p.lastCorrect)p.score++; p.phase='feedback'; render(); }
@@ -877,11 +908,13 @@ function checkScramble(){ const p=S.play; if(!p||p.phase!=='ask') return; const 
 async function nextQ(){ const p=S.play; if(!p) return;
   if(p.idx+1<p.questions.length){ p.idx++; p.phase='ask'; p.chosen=null; p.answerGiven=''; render(); }
   else await finishStudy(); }
+async function nextCard(){ const p=S.play; if(!p) return;
+  if(p.idx+1<p.cards.length){ p.idx++; p.flip=false; render(); } else await finishStudy(); }
 async function finishStudy(){ const p=S.play; p.done=true;
-  if(!p.replay){ p.streakUp=await bumpStreak();
-    if(p.src==='lesson' && p.quiz && p.quiz.to_person===S.me && p.quiz.status!=='answered'){
-      const q=p.quiz; q.status='answered'; q.score=p.score; q.total=p.questions.length; q.answered_at=new Date().toISOString();
-      await Store.saveQuiz(q); } }
+  p.streakUp=await bumpStreak();
+  if(p.mode==='quiz' && p.src==='lesson' && p.quiz && p.quiz.to_person===S.me && p.quiz.status!=='answered'){
+    const q=p.quiz; q.status='answered'; q.score=p.score; q.total=p.questions.length; q.answered_at=new Date().toISOString();
+    await Store.saveQuiz(q); }
   render(); celebrate(); }
 async function noteSave(){ const text=($('#m_note')?.value||'').trim(); if(!text){ toast('Viết gì đó đã nha'); return; }
   await Store.saveNote({ id:uid(), space_id:S.space.id, author:S.me, author_name:meName(), text, color:S.tmp.noteTint||NOTE_TINT[0], created_at:new Date().toISOString() });
