@@ -93,6 +93,26 @@ create table if not exists notes (
   created_at  timestamptz default now()
 );
 
+-- Trận thách đấu (hai người làm cùng một bộ câu hỏi)
+create table if not exists duels (
+  id          text primary key,
+  space_id    text references spaces(id) on delete cascade,
+  challenger  text,                        -- 'a' | 'b' (người thách)
+  status      text default 'waiting',      -- waiting | active | done | cancelled
+  stake       text,                        -- lời cược
+  title       text,
+  questions   jsonb,                       -- bộ câu hỏi chung (y chang cho cả hai)
+  score_a     int default 0,
+  score_b     int default 0,
+  progress_a  int default 0,
+  progress_b  int default 0,
+  done_a      boolean default false,
+  done_b      boolean default false,
+  created_at  timestamptz default now(),
+  joined_at   timestamptz,
+  finished_at timestamptz
+);
+
 -- Câu hỏi mỗi ngày
 create table if not exists daily (
   id          text primary key,
@@ -119,7 +139,7 @@ alter table notes  add column if not exists done boolean default false;
 do $$
 declare t text;
 begin
-  foreach t in array array['users','spaces','invites','decks','cards','quizzes','notes','daily'] loop
+  foreach t in array array['users','spaces','invites','decks','cards','quizzes','notes','daily','duels'] loop
     execute format('alter table %I enable row level security;', t);
     execute format('drop policy if exists "allow all" on %I;', t);
     execute format('create policy "allow all" on %I for all using (true) with check (true);', t);
