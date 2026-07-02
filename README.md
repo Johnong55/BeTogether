@@ -54,12 +54,19 @@ const SUPABASE_ANON_KEY = "";  // dán anon public key vào đây
 
 ## 3. Đưa web lên mạng để hai người cùng vào (miễn phí)
 
-Cách dễ nhất — **Netlify Drop**:
+🌐 **Đang chạy tại: https://cungnhau.pages.dev** (Cloudflare Pages)
+
+Cập nhật sau này bằng lệnh (từ thư mục dự án):
+```
+npx wrangler pages deploy . --project-name=cungnhau --branch=main --commit-dirty=true
+```
+
+Cách khác nếu cần — **Netlify Drop**:
 1. Vào https://app.netlify.com/drop
 2. Kéo–thả **cả thư mục `love`** vào trang đó.
 3. Netlify cho bạn một link (vd: `https://ten-gi-do.netlify.app`). Gửi link này cho người yêu.
 
-> Cũng có thể dùng **Vercel**, **GitHub Pages**, hoặc **Cloudflare Pages** — đều miễn phí cho web tĩnh như thế này.
+> Cũng có thể dùng **Vercel** hoặc **GitHub Pages** — đều miễn phí cho web tĩnh như thế này.
 
 ---
 
