@@ -615,7 +615,7 @@ function viewHome(){ const today=todayStr();
       <button class="btn sm" data-act="copy-code">${ic('copy','sm')}</button></div></div>`:'' }
 
     ${ S.duel && S.duel.status==='waiting' && S.duel.challenger!==S.me ? `<div class="card" data-act="go" data-v="arena" style="cursor:pointer;border:1.5px solid var(--p1)"><div class="row">${ic('swords','lg')}
-      <div class="grow"><b>${esc(partner()||'Người ấy')} thách đấu bạn! ⚔️</b><div class="muted">${S.duel.stake?'Cược: '+esc(S.duel.stake):'Vào nhận lời ngay nè'}</div></div><span class="muted">›</span></div></div>`:'' }
+      <div class="grow"><b>${esc(partner()||'Người ấy')} rủ bạn đấu nè! ⚔️</b><div class="muted">${S.duel.stake?'Cược: '+esc(S.duel.stake):'Vào nhận lời ngay nè'}</div></div><span class="muted">›</span></div></div>`:'' }
     ${ S.duel && S.duel.status==='active' ? `<div class="card" data-act="go" data-v="arena" style="cursor:pointer;border:1.5px solid var(--p1)"><div class="row">${ic('swords','lg')}
       <div class="grow"><b>Trận đấu đang diễn ra</b><div class="muted">Vào làm tiếp phần của bạn nào!</div></div><span class="muted">›</span></div></div>`:'' }
     ${ dueCount()?`<div class="card" data-act="go" data-v="notes" style="cursor:pointer;border:1.5px solid var(--p2)"><div class="row">${ic('bell','lg')}
@@ -681,7 +681,7 @@ function viewTopic(){ const t=topicByNo(S.sub);
       <button class="btn block" data-act="study-topic" data-id="${t.no}" data-mode="quiz">${ic('spark','sm')} Trắc nghiệm</button></div>
     <div class="row" style="gap:10px;margin-bottom:8px">
       <button class="btn ghost block" data-act="send-topic" data-id="${t.no}">${ic('send','sm')} Gửi ${esc(partner()||'người ấy')}</button>
-      <button class="btn ghost block" data-act="duel-from" data-v="t:${t.no}">${ic('swords','sm')} Thách đấu</button></div>
+      <button class="btn ghost block" data-act="duel-from" data-v="t:${t.no}">${ic('swords','sm')} Rủ đấu</button></div>
     <p class="sub-h" style="margin-top:12px">Học <b>thẻ lật</b> để nhớ trước, rồi <b>trắc nghiệm</b> để kiểm tra — đủ cả ${t.words.length} từ.</p>
     <div class="card" style="padding-top:10px">
       <div class="row" style="border:none;padding:4px 0 8px"><span class="ic" style="color:var(--soft)">${ic('search','sm')}</span>
@@ -703,7 +703,7 @@ function viewMyDeck(d){ const cards=S.cards.filter(c=>c.deck_id===d.id);
       <button class="btn block" data-act="study-deck" data-id="${d.id}" data-mode="quiz">${ic('spark','sm')} Trắc nghiệm</button></div>
     <div class="row" style="gap:10px;margin-bottom:8px">
       <button class="btn ghost block" data-act="send-deck" data-id="${d.id}">${ic('send','sm')} Gửi ${esc(partner()||'người ấy')}</button>
-      <button class="btn ghost block" data-act="duel-from" data-v="d:${d.id}">${ic('swords','sm')} Thách đấu</button></div>`:'' }
+      <button class="btn ghost block" data-act="duel-from" data-v="d:${d.id}">${ic('swords','sm')} Rủ đấu</button></div>`:'' }
     <div class="card">
       <div class="label" style="margin-top:0">Thêm từ — gõ rồi nhấn Enter</div>
       <div class="row" style="gap:8px">
@@ -740,20 +740,20 @@ function viewArena(){
   const du=S.duel;
   if(du && du.status==='waiting'){
     if(du.challenger===S.me) return `
-      <h2 class="title">Thách đấu ⚔️</h2>
+      <h2 class="title">Rủ đấu ⚔️</h2>
       <div class="card couple center">
         <div style="font-size:46px;animation:flick 2.4s ease-in-out infinite;display:inline-block">⚔️</div>
-        <b style="display:block;margin-top:6px">Đã gửi lời thách đấu!</b>
+        <b style="display:block;margin-top:6px">Đã gửi lời rủ đấu!</b>
         <div class="muted">Đợi ${esc(partner()||'người ấy')} nhận lời là bắt đầu liền…</div>
         <div class="muted" style="margin-top:8px">${esc(du.title||'')} · ${(du.questions||[]).length} câu</div>
         ${du.stake?`<div style="margin-top:8px;font-style:italic">Cược: “${esc(du.stake)}”</div>`:''}
       </div>
       <button class="btn danger block" data-act="duel-cancel">Huỷ trận</button>`;
     return `
-      <h2 class="title">Thách đấu ⚔️</h2>
+      <h2 class="title">Rủ đấu ⚔️</h2>
       <div class="card" style="border:1.5px solid var(--p1)">
         <div class="row">${ic('swords','lg')}<div class="grow">
-          <b>${esc(partner()||'Người ấy')} thách đấu bạn!</b>
+          <b>${esc(partner()||'Người ấy')} rủ bạn đấu nè!</b>
           <div class="muted">${esc(du.title||'')} · ${(du.questions||[]).length} câu — hai đứa làm CÙNG bộ câu hỏi</div>
           ${du.stake?`<div style="font-style:italic;margin-top:4px">Cược: “${esc(du.stake)}”</div>`:''}
         </div></div>
@@ -769,8 +769,8 @@ function viewArena(){
 function duelCreateView(){
   const srcs=duelSources(); const pre=S.tmp.duelSrc||(srcs[0]&&srcs[0].v);
   const hist=(S.duelHistory||[]).slice(0,6);
-  return `<h2 class="title">Thách đấu ⚔️</h2>
-    <p class="sub-h">Hai đứa làm <b>cùng một bộ câu hỏi</b> — ai đúng nhiều hơn thắng. Cược gì đó cho máu lửa nè.</p>
+  return `<h2 class="title">Rủ đấu ⚔️</h2>
+    <p class="sub-h">Hai đứa làm <b>cùng một bộ câu hỏi</b> — ai đúng nhiều hơn thắng. Cược gì đó cho vui nè.</p>
     <div class="card">
       <label class="fld"><span class="lab">Chọn bộ từ</span>
         <select id="du_src">${srcs.map(o=>`<option value="${esc(o.v)}" ${o.v===pre?'selected':''}>${esc(o.label)}</option>`).join('')}</select></label>
@@ -778,7 +778,7 @@ function duelCreateView(){
         <select id="du_n"><option value="10">10 câu (nhanh gọn)</option><option value="20">20 câu</option><option value="all">Tất cả</option></select></label>
       <label class="fld"><span class="lab">Cược gì nè? (không bắt buộc)</span>
         <input id="du_stake" placeholder="vd: Người thua rửa chén 1 tuần 🍽️"/></label>
-      <button class="btn block" data-act="duel-create">${ic('swords','sm')} Thách đấu ${esc(partner()||'người ấy')}</button>
+      <button class="btn block" data-act="duel-create">${ic('swords','sm')} Rủ ${esc(partner()||'người ấy')} đấu</button>
     </div>
     ${ hist.length?`<div class="label">Lịch sử tỉ thí</div>`+hist.map(x=>{
       const win = x.score_a===x.score_b?null:(x.score_a>x.score_b?'a':'b');
@@ -850,10 +850,10 @@ function duelResultView(du){
       <div class="card"><div class="big">${my}</div><div class="ttl">Bạn</div></div>
       <div class="card"><div class="big">${their}</div><div class="ttl">${esc(partner()||'Người ấy')}</div></div>
     </div>
-    ${ du.stake?`<div class="card center" style="border:1.5px dashed var(--p2)">
+    ${ du.stake?`<div class="card center" style="border:1.5px dashed var(--p2);margin-top:13px">
         <div class="label" style="margin:0 0 4px">Tiền cược 😜</div><b>“${esc(du.stake)}”</b>
         <div class="muted" style="margin-top:6px">${tie?'Hòa nên huỷ cược, đấu lại nha':(iWin?esc(partner()||'Người ấy')+' phải thực hiện đó nha 🫵':'Bạn thua nên… chịu khó thực hiện nha 🫣')}</div></div>`:'' }
-    <button class="btn block" data-act="duel-seen" data-id="${du.id}">OK, tính sổ xong 💞</button>`;
+    <button class="btn block" style="margin-top:16px" data-act="duel-seen" data-id="${du.id}">Biết rồi 💕</button>`;
 }
 /* ----- logic đấu ----- */
 function initDuelPlay(du){ const qs=du.questions||[]; const prog=du['progress_'+S.me]||0;
@@ -867,7 +867,7 @@ async function createDuel(){
   const duel={ id:uid(), space_id:S.space.id, challenger:S.me, status:'waiting', stake, title:s.title,
     questions:buildQuestions(s.words,cap), score_a:0, score_b:0, progress_a:0, progress_b:0,
     done_a:false, done_b:false, created_at:new Date().toISOString(), joined_at:null, finished_at:null };
-  await Store.saveDuel(duel); S.duel=duel; S.duelPlay=null; S.tmp.duelSrc=null; render(); toast('Đã gửi lời thách đấu ⚔️'); }
+  await Store.saveDuel(duel); S.duel=duel; S.duelPlay=null; S.tmp.duelSrc=null; render(); toast('Đã gửi lời rủ đấu ⚔️'); }
 async function joinDuel(id){ const du=S.duel; if(!du||du.id!==id) return;
   await Store.updateDuel(id,S.space.id,{status:'active',joined_at:new Date().toISOString()});
   du.status='active'; initDuelPlay(du); render(); toast('Vào trận! Cố lên 💪'); }
@@ -1152,7 +1152,7 @@ async function handle(act,v,id,t,e){
     case 'duel-from': S.tmp.duelSrc=v; S.view='arena'; S.sub=null; render(); scrollTo(0,0); break;
     case 'duel-create': await createDuel(); break;
     case 'duel-join': await joinDuel(id); break;
-    case 'duel-decline': if(confirm('Từ chối lời thách đấu này?')){ await Store.updateDuel(id,S.space.id,{status:'cancelled'}); S.duel=null; render(); } break;
+    case 'duel-decline': if(confirm('Từ chối lời rủ đấu này?')){ await Store.updateDuel(id,S.space.id,{status:'cancelled'}); S.duel=null; render(); } break;
     case 'duel-cancel': if(confirm('Huỷ trận này?')){ await Store.updateDuel(S.duel.id,S.space.id,{status:'cancelled'}); S.duel=null; S.duelPlay=null; render(); } break;
     case 'duel-cancel-active': if(confirm('Huỷ trận đang diễn ra? (cả hai sẽ mất kết quả)')){ await Store.updateDuel(S.duel.id,S.space.id,{status:'cancelled'}); S.duel=null; S.duelPlay=null; render(); } break;
     case 'd-answer-mc': dAnswerMc(parseInt(v,10)); break;
