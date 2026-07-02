@@ -2,13 +2,28 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>cùng nhau · học mỗi ngày</title>
 <meta name="theme-color" content="#d97a92" />
+
+<!-- Cài như app (PWA) -->
+<link rel="manifest" href="manifest.json" />
+<meta name="mobile-web-app-capable" content="yes" />
+
+<!-- iPhone/iPad: mở toàn màn hình khi thêm vào Màn hình chính, không thanh Safari -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="cùng nhau" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png" />
+<link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png" />
+
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d97a92' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 20C6 16 4 12 4 8.6 4 6 6 4 8.4 4c1.6 0 2.8.9 3.6 2 .8-1.1 2-2 3.6-2C18 4 20 6 20 8.6 20 12 18 16 12 20Z'/></svg>" />
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16.png" />
 <style>
   :root{
     --p1:#d97a92; --p2:#e7a3b4; --accent:#c79a72; --ok:#6cab8e; --no:#e08a93;
@@ -45,7 +60,7 @@
 
   /* header */
   .topbar{ position:sticky; top:0; z-index:30; background:color-mix(in srgb, var(--bg1) 80%, transparent);
-    backdrop-filter:blur(12px); border-bottom:1px solid var(--line); padding:13px 16px; display:flex; align-items:center; gap:11px; }
+    backdrop-filter:blur(12px); border-bottom:1px solid var(--line); padding:calc(13px + env(safe-area-inset-top)) 16px 13px; display:flex; align-items:center; gap:11px; }
   .mono{ width:38px; height:38px; border-radius:12px; flex:none; display:grid; place-items:center; color:#fff;
     background:linear-gradient(135deg,var(--p1),var(--p2)); box-shadow:var(--shadow-sm); }
   .who{ flex:1; line-height:1.15; min-width:0; }
@@ -182,7 +197,7 @@
     padding:11px 17px; border-radius:13px; font-weight:700; font-size:14px; z-index:80; box-shadow:0 8px 24px rgba(0,0,0,.22); animation:up .25s; max-width:90%; }
   #confetti{ position:fixed; inset:0; pointer-events:none; z-index:90; }
 
-  .brand-wrap{ text-align:center; padding:30px 0 6px; }
+  .brand-wrap{ text-align:center; padding:calc(30px + env(safe-area-inset-top)) 0 6px; }
   .brand-mark{ width:62px; height:62px; border-radius:20px; margin:0 auto; display:grid; place-items:center; color:#fff;
     background:linear-gradient(135deg,var(--p1),var(--p2)); box-shadow:var(--shadow); }
   .brand-mark .ic{ width:34px; height:34px; }
@@ -399,6 +414,36 @@ function celebrate(){ const cv=$('#confetti'),ctx=cv.getContext('2d'); cv.width=
     ps.forEach(p=>{ p.y+=p.vy;p.x+=p.vx;p.a+=p.va; ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.a); ctx.fillStyle=p.c; ctx.fillRect(-p.r/2,-p.r/2,p.r,p.r*1.5); ctx.restore(); });
     if(f<150) requestAnimationFrame(loop); else ctx.clearRect(0,0,cv.width,cv.height); })(); }
 
+/* ===================== CÀI NHƯ APP (PWA) ===================== */
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+const isSafari = /^((?!chrome|android|crios|fxios).)*safari/i.test(navigator.userAgent);
+function isStandalone(){ return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true; }
+let deferredInstallPrompt=null;
+window.addEventListener('beforeinstallprompt',(e)=>{ e.preventDefault(); deferredInstallPrompt=e; if(S.view==='settings') render(); });
+function installCard(){
+  if(isIOS){
+    return `<div class="card" style="border:1.5px solid var(--p2)">
+      <div class="row">${ic('spark','lg')}<div class="grow"><b>Cài như app trên iPhone</b><div class="muted">Full màn hình, có icon riêng, không thanh Safari</div></div></div>
+      <ol style="margin:10px 0 0;padding-left:20px;font-size:14px;color:var(--ink);line-height:1.7">
+        <li>Chạm nút <b>Chia sẻ</b> ${shareGlyph()} ở thanh dưới Safari</li>
+        <li>Chọn <b>"Thêm vào MH chính"</b> (Add to Home Screen)</li>
+        <li>Chạm <b>Thêm</b> — xong! Mở lại từ icon trên MH chính nha</li>
+      </ol></div>`;
+  }
+  if(deferredInstallPrompt){
+    return `<div class="card" style="border:1.5px solid var(--p2)"><div class="row">${ic('spark','lg')}
+      <div class="grow"><b>Cài như app</b><div class="muted">Full màn hình, mở nhanh như app thật</div></div></div>
+      <button class="btn block" style="margin-top:10px" data-act="install-app">${ic('spark','sm')} Cài đặt ngay</button></div>`;
+  }
+  return `<div class="card"><div class="row">${ic('spark','lg')}
+    <div class="grow"><b>Cài như app</b><div class="muted">Mở menu trình duyệt (⋮ hoặc Chia sẻ) → "Thêm vào Màn hình chính" / "Cài đặt ứng dụng"</div></div></div></div>`;
+}
+function shareGlyph(){ return `<svg class="ic sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-4px"><path d="M12 3v13"/><path d="M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>`; }
+async function installApp(){ if(!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt(); const r=await deferredInstallPrompt.userChoice;
+  if(r.outcome==='accepted') toast('Đang cài app 🎉'); deferredInstallPrompt=null; render(); }
+if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }
+
 /* ===================== BOOT ===================== */
 async function boot(){
   const un=localStorage.getItem('loveapp_user');
@@ -561,6 +606,10 @@ function viewHome(){ const today=todayStr();
   const dailyMine=S.dailyToday&&(S.me==='a'?S.dailyToday.answer_a:S.dailyToday.answer_b);
   const waitingPartner=!S.space.person_b_username;
   return `
+    ${ (!isStandalone() && !localStorage.getItem('loveapp_hide_install'))?`<div class="card" style="border:1.5px solid var(--p2);cursor:pointer" data-act="go" data-v="settings">
+      <div class="row">${ic('spark','lg')}<div class="grow"><b>Cài "cùng nhau" như app 💕</b>
+      <div class="muted">${isIOS?'Chạm Chia sẻ → Thêm vào MH chính':'Xem hướng dẫn cài đặt'}</div></div>
+      <button class="iconbtn" data-act="hide-install" title="Ẩn">${ic('x','sm')}</button></div></div>`:'' }
     ${ waitingPartner?`<div class="card" style="border:1.5px dashed var(--p2)"><div class="row">${ic('link','lg')}
       <div class="grow"><b>Đang chờ người ấy</b><div class="muted">Gửi mã <b style="color:var(--p1)">${esc(S.space.id)}</b> cho người yêu để ghép đôi.</div></div>
       <button class="btn sm" data-act="copy-code">${ic('copy','sm')}</button></div></div>`:'' }
@@ -983,6 +1032,8 @@ function viewDaily(){ const d=S.dailyToday; if(!d) return `<div class="empty">Đ
 /* ---------- SETTINGS ---------- */
 function viewSettings(){
   return `<div class="row" style="margin-bottom:8px"><button class="iconbtn" data-act="go" data-v="home">${ic('back','sm')}</button><h2 class="title grow" style="margin:0">Cài đặt</h2></div>
+    ${ !isStandalone()?installCard():`<div class="card center" style="background:linear-gradient(150deg, color-mix(in srgb,var(--p1) 14%, var(--card)), var(--card))">
+        <b>${ic('heart','sm')} Đang chạy dạng app rồi nè!</b><div class="muted">Cài xong xuôi hết cả 💕</div></div>` }
     <div class="card"><div class="label" style="margin-top:0">Mã phòng</div>
       <div class="row"><div class="grow" style="font-family:'Fraunces';font-size:22px;color:var(--p1)">${esc(S.space.id)}</div>
         <button class="btn sm" data-act="copy-code">${ic('copy','sm')} Chép</button></div>
@@ -1128,6 +1179,8 @@ async function handle(act,v,id,t,e){
     case 'note-save': await noteSave(); break;
     case 'toggle-done': { const n=S.notes.find(x=>x.id===id); if(n){ n.done=!n.done; await Store.saveNote(n); await loadAll(); render(); } } break;
     case 'enable-notif': await enableNotif(); break;
+    case 'install-app': await installApp(); break;
+    case 'hide-install': localStorage.setItem('loveapp_hide_install','1'); render(); break;
     case 'note-del': if(confirm('Xoá ghi chú này?')){ await Store.deleteNote(S.space.id,id); await loadAll(); render(); } break;
 
     case 'save-daily': await saveDaily(); break;
