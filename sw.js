@@ -1,5 +1,5 @@
 // Service worker cho "cùng nhau" — giúp cài như app + mở nhanh/đỡ trắng màn khi mạng chập chờn.
-const CACHE = 'cungnhau-v4';
+const CACHE = 'cungnhau-v5';
 const SHELL = [
   './',
   './library.js',
@@ -7,6 +7,9 @@ const SHELL = [
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/apple-touch-icon.png',
+  './lottie/love.json',
+  './lottie/crown.json',
+  './lottie/rain.json',
 ];
 
 self.addEventListener('install', (e) => {

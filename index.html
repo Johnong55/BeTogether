@@ -196,6 +196,13 @@
   .toast{ position:fixed; bottom:104px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff;
     padding:11px 17px; border-radius:13px; font-weight:700; font-size:14px; z-index:80; box-shadow:0 8px 24px rgba(0,0,0,.22); animation:up .25s; max-width:90%; }
   #confetti{ position:fixed; inset:0; pointer-events:none; z-index:90; }
+  #loading{ position:fixed; inset:0; z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+    background:linear-gradient(160deg,var(--bg1),var(--bg2)); transition:opacity .45s ease; }
+  #loading.hide{ opacity:0; pointer-events:none; }
+  #loading-anim{ width:150px; height:150px; }
+  #loading .load-txt{ font-family:'Fraunces',serif; color:var(--p1); font-size:16px; letter-spacing:.4px; }
+  .lottie-box{ width:150px; height:150px; margin:4px auto 0; }
+  .lottie-box.rain{ overflow:hidden; border-radius:16px; }
 
   .brand-wrap{ text-align:center; padding:calc(30px + env(safe-area-inset-top)) 0 6px; }
   .brand-mark{ width:62px; height:62px; border-radius:20px; margin:0 auto; display:grid; place-items:center; color:#fff;
@@ -205,9 +212,11 @@
 </head>
 <body>
 <div class="bg"></div>
+<div id="loading"><div id="loading-anim"></div><div class="load-txt">đang mở…</div></div>
 <div id="app"></div>
 <canvas id="confetti"></canvas>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="library.js"></script>
 <script>
@@ -520,22 +529,42 @@ async function bumpStreak(){ const sp=S.space, today=todayStr(); if(sp.last_acti
 
 /* ===================== RENDER ===================== */
 function render(){ const app=$('#app');
-  if(S.view==='auth'){ app.innerHTML=viewAuth(); return; }
-  if(S.view==='pair'){ app.innerHTML=viewPair(); return; }
-  if(S.play){ app.innerHTML=header()+viewStudy(); return; }
-  let b='';
-  switch(S.view){
-    case 'home': b=viewHome(); break;
-    case 'library': b=S.sub?viewTopic():viewLibrary(); break;
-    case 'arena': b=viewArena(); break;
-    case 'inbox': b=viewInbox(); break;
-    case 'notes': b=viewNotes(); break;
-    case 'daily': b=viewDaily(); break;
-    case 'settings': b=viewSettings(); break;
-    default: b=viewHome();
+  if(S.view==='auth'){ app.innerHTML=viewAuth(); }
+  else if(S.view==='pair'){ app.innerHTML=viewPair(); }
+  else if(S.play){ app.innerHTML=header()+viewStudy(); }
+  else {
+    let b='';
+    switch(S.view){
+      case 'home': b=viewHome(); break;
+      case 'library': b=S.sub?viewTopic():viewLibrary(); break;
+      case 'arena': b=viewArena(); break;
+      case 'inbox': b=viewInbox(); break;
+      case 'notes': b=viewNotes(); break;
+      case 'daily': b=viewDaily(); break;
+      case 'settings': b=viewSettings(); break;
+      default: b=viewHome();
+    }
+    app.innerHTML=header()+`<div class="screen">${b}</div>`+nav();
   }
-  app.innerHTML=header()+`<div class="screen">${b}</div>`+nav();
+  hideLoading(); mountLotties();
 }
+
+/* ===================== LOTTIE (animation) ===================== */
+const Lot = window.lottie || window.bodymovin || null;
+const bootStart = Date.now();
+let loadingHidden = false;
+function initLoading(){ if(!Lot) return; const el=$('#loading-anim'); if(el && !el.dataset.done){ el.dataset.done='1';
+    try{ Lot.loadAnimation({ container:el, renderer:'svg', loop:true, autoplay:true, path:'lottie/love.json' }); }catch(e){} } }
+function hideLoading(){ if(loadingHidden) return; loadingHidden=true;
+  const wait=Math.max(0, 650-(Date.now()-bootStart));
+  setTimeout(()=>{ const el=$('#loading'); if(el){ el.classList.add('hide'); setTimeout(()=>el.remove(),500); } }, wait); }
+function mountLotties(){ if(!Lot) return;
+  document.querySelectorAll('[data-lottie]:not([data-lottie-done])').forEach(el=>{
+    el.dataset.lottieDone='1'; const name=el.getAttribute('data-lottie');
+    try{ Lot.loadAnimation({ container:el, renderer:'svg', loop:true, autoplay:true, path:'lottie/'+name+'.json' }); }catch(e){}
+  }); }
+initLoading();
+setTimeout(hideLoading, 9000);
 
 function header(){ if(!S.space) return '';
   return `<div class="topbar">
@@ -841,9 +870,12 @@ function duelResultView(du){
   const total=(du.questions||[]).length;
   const my=S.me==='a'?(du.score_a||0):(du.score_b||0), their=S.me==='a'?(du.score_b||0):(du.score_a||0);
   const tie=my===their, iWin=my>their;
-  if(S.tmp.duelCeleb!==du.id){ S.tmp.duelCeleb=du.id; setTimeout(celebrate,300); }
+  if(S.tmp.duelCeleb!==du.id){ S.tmp.duelCeleb=du.id; if(iWin||tie) setTimeout(celebrate,300); }
+  const anim = tie ? `<div style="font-size:56px">🤝</div>` : (iWin
+      ? `<div class="lottie-box" data-lottie="crown"></div>`
+      : `<div class="lottie-box rain" data-lottie="rain"></div>`);
   return `<div class="center" style="padding-top:12px">
-      <div style="font-size:56px">${tie?'🤝':(iWin?'👑':'😿')}</div>
+      ${anim}
       <h2 class="title" style="margin:8px 0 2px">${tie?'Hòa nhau!':(iWin?'Bạn thắng rồi!':esc(partner()||'Người ấy')+' thắng!')}</h2>
       <p class="muted">${esc(du.title||'')} · ${total} câu</p></div>
     <div class="stat">
@@ -887,7 +919,7 @@ async function dNext(){ const p=S.duelPlay, du=S.duel; if(!p||!du) return;
   await Store.updateDuel(du.id,S.space.id,patch);
   await bumpStreak();
   if(du['done_'+other(S.me)]){ await Store.updateDuel(du.id,S.space.id,{status:'done',finished_at:new Date().toISOString()}); du.status='done'; S.duelHistory=[du,...S.duelHistory.filter(x=>x.id!==du.id)]; }
-  render(); if(du.status==='done') celebrate(); }
+  render(); }
 
 /* ---------- INBOX ---------- */
 function viewInbox(){ const tab=S.inboxTab;
