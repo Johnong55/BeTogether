@@ -2,7 +2,7 @@
   "name": "cùng nhau · học mỗi ngày",
   "short_name": "cùng nhau",
   "description": "Học từ vựng, dò bài và giữ chuỗi cùng người ấy",
-  "start_url": "./index.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",

@@ -1,8 +1,7 @@
 // Service worker cho "cùng nhau" — giúp cài như app + mở nhanh/đỡ trắng màn khi mạng chập chờn.
-const CACHE = 'cungnhau-v3';
+const CACHE = 'cungnhau-v4';
 const SHELL = [
   './',
-  './index.html',
   './library.js',
   './manifest.json',
   './icons/icon-192.png',
@@ -22,23 +21,21 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// Dữ liệu (Supabase) luôn lấy mới từ mạng; giao diện (shell) thì cache-first cho nhanh.
+// Network-first: luôn lấy bản mới nhất nếu có mạng (app đang cập nhật liên tục),
+// chỉ dùng cache khi mất mạng — tránh bị "kẹt" ở bản cũ.
 self.addEventListener('fetch', (e) => {
   const url = e.request.url;
   if (e.request.method !== 'GET' || url.includes('supabase.co')) return;
   e.respondWith(
-    caches.match(e.request).then((cached) => {
-      const fetchPromise = fetch(e.request)
-        .then((res) => {
-          if (res && res.ok) {
-            const copy = res.clone();
-            caches.open(CACHE).then((c) => c.put(e.request, copy));
-          }
-          return res;
-        })
-        .catch(() => cached);
-      return cached || fetchPromise;
-    })
+    fetch(e.request)
+      .then((res) => {
+        if (res && res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(e.request, copy));
+        }
+        return res;
+      })
+      .catch(() => caches.match(e.request))
   );
 });
 
