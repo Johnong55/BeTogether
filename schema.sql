@@ -99,7 +99,8 @@ create table if not exists duels (
   space_id    text references spaces(id) on delete cascade,
   challenger  text,                        -- 'a' | 'b' (người thách)
   status      text default 'waiting',      -- waiting | active | done | cancelled
-  stake       text,                        -- lời cược
+  stake       text,                        -- lời cược của người rủ (nếu người rủ thắng, người kia phải làm)
+  stake_acceptor text,                     -- lời cược của người nhận lời (nếu người nhận thắng)
   title       text,
   questions   jsonb,                       -- bộ câu hỏi chung (y chang cho cả hai)
   score_a     int default 0,
@@ -130,6 +131,7 @@ alter table spaces add column if not exists person_b_username text;
 alter table spaces add column if not exists start_date date;
 alter table notes  add column if not exists remind_at date;
 alter table notes  add column if not exists done boolean default false;
+alter table duels  add column if not exists stake_acceptor text;
 
 -- ============================================================
 --  QUYỀN TRUY CẬP (RLS)
