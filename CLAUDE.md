@@ -10,7 +10,7 @@ Tính năng: đăng nhập + ghép đôi 2 người → học từ vựng (chủ
 ## Kiến trúc (QUAN TRỌNG)
 - **Toàn bộ app nằm trong 1 file `index.html`** (~1360 dòng: CSS + JS thuần, không framework, không build). Render bằng `render()` set `innerHTML`, không có virtual DOM.
 - **Backend = Supabase** (gọi trực tiếp từ trình duyệt qua `@supabase/supabase-js@2` CDN). KHÔNG có server Node riêng (user từng nhờ tách backend/frontend rồi ĐỔI Ý — đã xoá; đừng dựng lại).
-- **`library.js`**: `window.LIBRARY` = 14 chủ đề B2 (~780 từ Anh–Việt), ASCII \u-escaped, trích từ 1 PDF bằng pdfplumber. File dữ liệu tĩnh, nhúng sẵn (không nằm trong Supabase).
+- **`library.js`**: `window.LIBRARY` = 28 chủ đề, ASCII \u-escaped, trích từ PDF. Topic 1–14 = TỪ VỰNG B2 (~780 từ đơn, pdfplumber); topic 15–28 có `kind:'colloc'` = COLLOCATION TOEIC (500 cụm, PDF Benzen là ảnh scan → đã render ảnh + đọc bằng mắt). File tĩnh, nhúng sẵn (không nằm trong Supabase). Tab Học chia 2 nhóm "Từ vựng B2" / "Collocation TOEIC 🧩", cụm hiện thẻ C1..C14; trộn chữ chỉ ra với từ đơn (regex `/^[a-zA-Z]+$/` sẵn có).
 - **`lottie/*.json`**: 3 animation TỰ TẠO (love/crown/rain) + lottie-web từ cdnjs.
 - **PWA**: `manifest.json` + `sw.js` (service worker) + `icons/*`.
 - **`schema.sql`**: toàn bộ bảng Supabase (chạy lại an toàn, idempotent).

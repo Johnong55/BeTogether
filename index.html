@@ -326,6 +326,7 @@ const todayStr = ()=>{ const d=new Date(); return `${d.getFullYear()}-${String(d
 const addDaysStr = (str,n)=>{ const [y,m,d]=str.split('-').map(Number); const dt=new Date(y,m-1,d); dt.setDate(dt.getDate()+n);
   return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`; };
 const other = (p)=> p==='a'?'b':'a';
+const fitPx = (s)=>{ const n=(s||'').length; return n>26?19:(n>15?24:30); }; // cụm dài -> chữ nhỏ lại
 function daysDiff(fromStr){ if(!fromStr) return null; const a=new Date(fromStr+'T00:00:00'); const n=new Date();
   const t=new Date(n.getFullYear(),n.getMonth(),n.getDate()); return Math.round((t-a)/86400000); }
 
@@ -716,35 +717,45 @@ function viewHome(){ const today=todayStr();
     </div>`; }
 
 /* ---------- LIBRARY (bộ từ vựng có sẵn) ---------- */
+/* Phân loại: topic 1-14 = TỪ VỰNG (từ đơn B2), kind:'colloc' = COLLOCATION (cụm từ TOEIC) */
+const isColloc=(t)=> t.kind==='colloc';
+const topicTag=(t)=> isColloc(t) ? 'C'+(t.no-14) : t.no;
+const unitWord=(t)=> isColloc(t) ? 'cụm' : 'từ';
+function topicRow(t,i){
+  return `<div class="card listitem" data-act="open-topic" data-id="${t.no}">
+    <div class="thumb" style="background:${DECK_TINT[i%DECK_TINT.length]};font-family:'Fraunces';font-weight:600;color:var(--p1)">${topicTag(t)}</div>
+    <div class="grow"><b>${esc(t.name)}</b><div class="muted">${esc(t.vi||'')} · ${t.words.length} ${unitWord(t)}</div></div>
+    <span class="muted">›</span></div>`;
+}
 function viewLibrary(){
   const mine=S.decks.map((d,i)=>{ const n=S.cards.filter(c=>c.deck_id===d.id).length;
     return `<div class="card listitem" data-act="open-deck" data-id="${d.id}">
       <div class="thumb" style="background:${d.color||DECK_TINT[i%DECK_TINT.length]}">${ic('heart')}</div>
       <div class="grow"><b>${esc(d.name)}</b><div class="muted">${d.lang?esc(d.lang)+' · ':''}${n} từ</div></div>
       <span class="muted">›</span></div>`; }).join('');
+  const vocab=LIBRARY.filter(t=>!isColloc(t)), colloc=LIBRARY.filter(isColloc);
   return `<div class="row" style="margin-bottom:4px"><h2 class="title grow" style="margin:0">Học từ vựng</h2>
       <button class="btn sm" data-act="new-deck">${ic('plus','sm')} Bộ mới</button></div>
     <p class="sub-h">Học chủ đề có sẵn hoặc tự tạo bộ từ của riêng hai đứa.</p>
     ${ S.decks.length?`<div class="label" style="margin-top:2px">Bộ từ của mình 💗</div>`+mine:'' }
-    <div class="label">Chủ đề B2 có sẵn</div>
-    ${LIBRARY.map((t,i)=>`<div class="card listitem" data-act="open-topic" data-id="${t.no}">
-      <div class="thumb" style="background:${DECK_TINT[i%DECK_TINT.length]};font-family:'Fraunces';font-weight:600;color:var(--p1)">${t.no}</div>
-      <div class="grow"><b>${esc(t.name)}</b><div class="muted">${esc(t.vi||'')} · ${t.words.length} từ</div></div>
-      <span class="muted">›</span></div>`).join('')}`; }
+    <div class="label">Từ vựng B2 (từ đơn)</div>
+    ${vocab.map((t,i)=>topicRow(t,i)).join('')}
+    <div class="label">Collocation TOEIC 🧩 (cụm từ)</div>
+    ${colloc.map((t,i)=>topicRow(t,i)).join('')}`; }
 
 function viewTopic(){ const t=topicByNo(S.sub);
   if(!t){ const d=S.decks.find(x=>x.id===S.sub); if(d) return viewMyDeck(d); S.sub=null; return viewLibrary(); }
   return `
     <div class="row" style="margin-bottom:12px"><button class="iconbtn" data-act="go" data-v="library">${ic('back','sm')}</button>
-      <div class="thumb" style="background:${DECK_TINT[(t.no-1)%DECK_TINT.length]};font-family:'Fraunces';color:var(--p1)">${t.no}</div>
-      <div class="grow"><b style="font-size:17px">${esc(t.name)}</b><div class="muted">${esc(t.vi||'')} · ${t.words.length} từ</div></div></div>
+      <div class="thumb" style="background:${DECK_TINT[(t.no-1)%DECK_TINT.length]};font-family:'Fraunces';color:var(--p1)">${topicTag(t)}</div>
+      <div class="grow"><b style="font-size:17px">${esc(t.name)}</b><div class="muted">${esc(t.vi||'')} · ${t.words.length} ${unitWord(t)}${isColloc(t)?' · collocation':''}</div></div></div>
     <div class="row" style="gap:10px;margin-bottom:8px">
       <button class="btn soft block" data-act="study-topic" data-id="${t.no}" data-mode="flash">${ic('cards','sm')} Thẻ lật</button>
       <button class="btn block" data-act="study-topic" data-id="${t.no}" data-mode="quiz">${ic('spark','sm')} Trắc nghiệm</button></div>
     <div class="row" style="gap:10px;margin-bottom:8px">
       <button class="btn ghost block" data-act="send-topic" data-id="${t.no}">${ic('send','sm')} Gửi ${esc(partner()||'người ấy')}</button>
       <button class="btn ghost block" data-act="duel-from" data-v="t:${t.no}">${ic('swords','sm')} Rủ đấu</button></div>
-    <p class="sub-h" style="margin-top:12px">Học <b>thẻ lật</b> để nhớ trước, rồi <b>trắc nghiệm</b> để kiểm tra — đủ cả ${t.words.length} từ.</p>
+    <p class="sub-h" style="margin-top:12px">Học <b>thẻ lật</b> để nhớ trước, rồi <b>trắc nghiệm</b> để kiểm tra — đủ cả ${t.words.length} ${unitWord(t)}.</p>
     <div class="card" style="padding-top:10px">
       <div class="row" style="border:none;padding:4px 0 8px"><span class="ic" style="color:var(--soft)">${ic('search','sm')}</span>
         <input data-filter="tw" placeholder="Xem trước từ vựng..." style="border:none;padding:6px 4px;box-shadow:none"/></div>
@@ -787,7 +798,7 @@ function viewMyDeck(d){ const cards=S.cards.filter(c=>c.deck_id===d.id);
 function duelSources(){
   const opts=[];
   S.decks.forEach(d=>{ const n=S.cards.filter(c=>c.deck_id===d.id).length; if(n>0) opts.push({v:'d:'+d.id, label:'💗 '+d.name+' ('+n+' từ)'}); });
-  LIBRARY.forEach(t=>opts.push({v:'t:'+t.no, label:'Unit '+t.no+' · '+t.name+' ('+t.words.length+' từ)'}));
+  LIBRARY.forEach(t=>opts.push({v:'t:'+t.no, label:(isColloc(t)?'🧩 '+t.name+' ('+t.words.length+' cụm)':'Unit '+t.no+' · '+t.name+' ('+t.words.length+' từ)')}));
   return opts;
 }
 function wordsOfSource(src){
@@ -876,8 +887,8 @@ function duelPlayView(du){
 }
 function duelMcBody(q,p,fb){
   return `<div class="card center" style="padding:24px 16px">
-      <div class="muted" style="font-weight:700">Nghĩa của từ này là gì?</div>
-      <div style="font-family:'Fraunces';font-size:30px;margin-top:6px">${esc(q.en)}</div></div>
+      <div class="muted" style="font-weight:700">Nghĩa của ${q.en.includes(' ')?'cụm':'từ'} này là gì?</div>
+      <div style="font-family:'Fraunces';font-size:${fitPx(q.en)}px;margin-top:6px">${esc(q.en)}</div></div>
     ${q.options.map((opt,i)=>{ let cls='btn ghost block', style='justify-content:flex-start;text-align:left;margin-bottom:10px';
         if(fb){ if(opt===q.vi){ cls='btn block'; style+=';background:linear-gradient(135deg,var(--ok),#8fc4ac);border:none;color:#fff'; }
                 else if(i===p.chosen){ cls='btn block'; style+=';background:#f1c7ce;border:none;color:var(--no)'; }
@@ -1018,8 +1029,8 @@ function flashView(p){ const total=p.cards.length;
       <div class="grow center" style="font-weight:800">Thẻ ${p.idx+1}/${total}</div><div style="width:38px"></div></div>
     <div class="progress"><i style="width:${p.idx/total*100}%"></i></div>
     <div class="flash ${p.flip?'flip':''}" data-act="flip" style="margin-top:6px"><div class="inner">
-      <div class="face front"><div class="term">${esc(c.en)}</div><div class="hint">Chạm để xem nghĩa</div></div>
-      <div class="face back"><div class="term" style="font-size:24px">${esc(c.vi)}</div></div></div></div>
+      <div class="face front"><div class="term" style="font-size:${fitPx(c.en)}px">${esc(c.en)}</div><div class="hint">Chạm để xem nghĩa</div></div>
+      <div class="face back"><div class="term" style="font-size:${Math.min(24,fitPx(c.vi))}px">${esc(c.vi)}</div></div></div></div>
     <div class="row" style="gap:11px;margin-top:18px">
       <button class="btn soft block" data-act="flip">Lật thẻ</button>
       <button class="btn block" data-act="next-card">${p.idx+1<total?'Thẻ tiếp →':'Xong'}</button></div>`; }
@@ -1043,8 +1054,8 @@ function quizView(p){ const total=p.questions.length;
 
 function mcBody(q,p,fb){
   return `<div class="card center" style="padding:24px 16px">
-      <div class="muted" style="font-weight:700">Nghĩa của từ này là gì?</div>
-      <div style="font-family:'Fraunces';font-size:30px;margin-top:6px">${esc(q.en)}</div></div>
+      <div class="muted" style="font-weight:700">Nghĩa của ${q.en.includes(' ')?'cụm':'từ'} này là gì?</div>
+      <div style="font-family:'Fraunces';font-size:${fitPx(q.en)}px;margin-top:6px">${esc(q.en)}</div></div>
     ${q.options.map((opt,i)=>{ let cls='btn ghost block', style='justify-content:flex-start;text-align:left;margin-bottom:10px';
         if(fb){ if(opt===q.vi){ cls='btn block'; style+=';background:linear-gradient(135deg,var(--ok),#8fc4ac);border:none;color:#fff'; }
                 else if(i===p.chosen){ cls='btn block'; style+=';background:#f1c7ce;border:none;color:var(--no)'; }
