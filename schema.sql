@@ -122,6 +122,10 @@ create table if not exists daily (
   question    text,
   answer_a    text,
   answer_b    text,
+  reaction_a  text,      -- emoji người B thả cho câu trả lời của A
+  reaction_b  text,      -- emoji người A thả cho câu trả lời của B
+  reply_a     text,      -- lời nhắn người B viết cho câu trả lời của A
+  reply_b     text,      -- lời nhắn người A viết cho câu trả lời của B
   unique (space_id, day)
 );
 
@@ -132,6 +136,10 @@ alter table spaces add column if not exists start_date date;
 alter table notes  add column if not exists remind_at date;
 alter table notes  add column if not exists done boolean default false;
 alter table duels  add column if not exists stake_acceptor text;
+alter table daily  add column if not exists reaction_a text;
+alter table daily  add column if not exists reaction_b text;
+alter table daily  add column if not exists reply_a text;
+alter table daily  add column if not exists reply_b text;
 
 -- ============================================================
 --  QUYỀN TRUY CẬP (RLS)

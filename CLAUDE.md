@@ -43,6 +43,15 @@ Object `Store` có 2 chế độ: **cloud** (Supabase, khi có key) và **local*
 
 Streak (`bumpStreak`): học/thi/trả lời câu hỏi xong → chuỗi +1 (1 lần/ngày, no-op nếu đã +hôm nay).
 
+### Câu hỏi mỗi ngày — react & nhắn lại (index.html)
+- Giữ (long-press, 480ms qua `pointerdown/up/move/cancel`) trên câu trả lời của người ấy (`data-longpress="daily-react" data-who="a|b"`) → mở modal thả 1 trong 6 emoji (`REACT_EMOJI`) + ô nhắn lại.
+- Cột DB: `daily.reaction_a/b`, `reply_a/b` (a/b = câu trả lời CỦA AI được react/nhắn, không phải ai viết). `saveDailySafe()` tự fallback bỏ cột mới nếu Supabase chưa chạy SQL (báo toast), không chặn app.
+- Bấm lại đúng emoji đã chọn = bỏ react (toggle).
+
+### Tìm kiếm & lọc tab Học (index.html)
+- 28 chủ đề (14 vựng + 14 colloc) nên có ô tìm kiếm (`data-filter="lib"`, bỏ dấu qua `noDiacritics()`, gõ "hop dong" vẫn ra "Hợp đồng") + chip lọc nhanh Tất cả/Của mình/Từ vựng/Collocation (`S.tmp.libFilter`).
+- `applyLibFilter()` chạy lại sau mỗi `render()` khi ở `view==='library'` không mở topic con, ẩn cả `.lib-sec` rỗng và hiện `#lib-empty` khi không khớp gì.
+
 ## Lottie (index.html: `mountLotties`, `initLoading`)
 - lottie-web cdnjs 5.12.2. 3 file trong `/lottie/`: **love** (tim đập, loading overlay `#loading`), **crown** (vương miện nảy, khi THẮNG), **rain** (mây+mưa, khi THUA).
 - `mountLotties()` chạy cuối `render()`, quét `[data-lottie]:not([data-lottie-done])`. Thắng→confetti, thua→KHÔNG confetti (`celebrate` gated `iWin||tie`).
