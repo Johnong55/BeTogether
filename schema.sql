@@ -140,6 +140,8 @@ alter table daily  add column if not exists reaction_a text;
 alter table daily  add column if not exists reaction_b text;
 alter table daily  add column if not exists reply_a text;
 alter table daily  add column if not exists reply_b text;
+alter table spaces add column if not exists avatar_a text;   -- ảnh đại diện người A (JPEG nén dạng data URL)
+alter table spaces add column if not exists avatar_b text;   -- ảnh đại diện người B
 
 -- ============================================================
 --  QUYỀN TRUY CẬP (RLS)

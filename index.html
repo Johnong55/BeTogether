@@ -198,7 +198,9 @@
   .reply-quote .bub b{ display:block; font-size:11.5px; color:var(--soft); margin-bottom:1px; }
   .reply-box{ display:flex; align-items:center; gap:8px; margin-top:12px; animation:fade .22s; }
   .ava{ width:30px; height:30px; border-radius:50%; flex:none; display:grid; place-items:center; color:#fff;
-    font-weight:800; font-size:13px; background:linear-gradient(135deg,var(--p1),var(--p2)); }
+    font-weight:800; font-size:13px; background:linear-gradient(135deg,var(--p1),var(--p2)); overflow:hidden; }
+  .ava img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .ava.ring{ box-shadow:0 0 0 3px var(--card); }
   .reply-pill{ flex:1; display:flex; align-items:center; gap:4px; background:var(--chip); border:1px solid var(--line);
     border-radius:22px; padding:3px 4px 3px 14px; }
   .reply-pill input{ flex:1; border:none; background:none; box-shadow:none !important; padding:9px 0; font-size:14px; }
@@ -724,7 +726,8 @@ function viewHome(){ const today=todayStr();
       <div class="grow"><b>${dueCount()} lời nhắc cần làm</b><div class="muted">${esc(dueList().slice(0,2).map(n=>n.text).join(' · ')).slice(0,70)}</div></div><span class="muted">›</span></div></div>`:'' }
 
     <div class="card couple">
-      <div class="mono" style="margin:0 auto 8px;width:44px;height:44px">${ic('heart','lg')}</div>
+      <div style="display:flex;justify-content:center;align-items:center;margin-bottom:8px">
+        ${avatarEl('a',48,true)}<div style="margin-left:-12px">${avatarEl('b',48,true)}</div></div>
       ${ days==null?`<div class="nm">${esc(S.space.person_a)} &amp; ${esc(S.space.person_b||'…')}</div>
         <button class="btn soft sm" style="margin-top:10px" data-act="go" data-v="settings">Đặt ngày bắt đầu yêu</button>`
       :`<div class="days">${days}</div><div class="cap">${days===0?'ngày đầu tiên bên nhau':'ngày bên nhau'}</div>
@@ -1165,14 +1168,22 @@ function viewNotes(){
     ${ notes.length? sec('⚠️ Quá hạn',overdue)+sec('Hôm nay',today)+sec('Sắp tới',upcoming)+sec('Ghi chú (không hẹn ngày)',plain)+sec('Đã xong',done)
        : `<div class="empty">${ic('note','lg')}<div>Chưa có gì.<br>Viết lời nhắc hoặc ghi chú đầu tiên nhé!</div></div>` }`; }
 
+/* ---------- AVATAR (ảnh đại diện, lưu data URL trong space.avatar_a/b) ---------- */
+const avatarUrl=(person)=> (S.space && S.space['avatar_'+person]) || '';
+function avatarEl(person, size, ring){ const url=avatarUrl(person), nm=(nameOf(person)||'?').trim()[0]||'?';
+  const sz = size?`width:${size}px;height:${size}px;font-size:${Math.round(size*0.42)}px;`:'';
+  const cls = 'ava'+(ring?' ring':'');
+  if(url) return `<div class="${cls}" style="${sz}"><img src="${esc(url)}" alt=""></div>`;
+  return `<div class="${cls}" style="${sz}">${esc(nm)}</div>`;
+}
+
 /* ---------- DAILY ---------- */
 const REACT_EMOJI=['❤️','😂','😮','😢','👏','🔥'];
-const avaGlyph=(name)=> `<div class="ava">${esc((name||'?').trim()[0]||'?')}</div>`;
 function dReactBadge(who){ const r=(S.dailyToday||{})['reaction_'+who]; return r?`<span class="react-badge">${r}</span>`:''; }
 /* bong bóng lời nhắn kiểu comment (ai nhắn = other(who)) */
 function dReplyBubble(who){ const r=(S.dailyToday||{})['reply_'+who]; if(!r) return '';
   const author = other(who)===S.me ? 'Bạn' : (partner()||'Người ấy');
-  return `<div class="reply-quote">${avaGlyph(author==='Bạn'?meName():partner())}
+  return `<div class="reply-quote">${avatarEl(other(who))}
     <div class="bub"><b>${esc(author)}</b>${esc(r)}</div></div>`; }
 /* thẻ 1 câu trả lời — mine=true là của mình (không react được), false là của người ấy (react/nhắn) */
 function dAnswerCard(who, text, mine){
@@ -1185,7 +1196,7 @@ function dAnswerCard(who, text, mine){
     : `<div class="cmt-actions">
         <button class="${myReact?'hot':''}" data-act="d-react-toggle" data-v="${who}">${myReact||'🙂'} Cảm xúc</button>
         <button data-act="d-reply-toggle" data-v="${who}">💬 Trả lời</button></div>`;
-  const replyBox = replyOpen ? `<div class="reply-box">${avaGlyph(meName())}
+  const replyBox = replyOpen ? `<div class="reply-box">${avatarEl(S.me)}
       <div class="reply-pill"><input id="d_reply_input" autocomplete="off" placeholder="Viết trả lời cho ${esc(partner()||'người ấy')}…" value="${esc((S.dailyToday||{})['reply_'+who]||'')}"/>
         <button class="reply-send" data-act="d-reply-send" data-v="${who}">${ic('send')}</button></div></div>` : '';
   return `<div class="card answer-card${mine?'':' longpressable'}" ${mine?'':`data-longpress="daily-react" data-who="${who}"`}>
@@ -1236,7 +1247,11 @@ function viewSettings(){
       <button class="btn sm" data-act="save-names">Lưu tên</button></div>
     <div class="card"><div class="label" style="margin-top:0">Tông màu</div>
       <div class="chips">${Object.keys(THEMES).map(k=>`<div class="swatch ${S.space.theme===k?'on':''}" data-act="set-theme" data-v="${k}" style="background:${THEME_DOT[k]}" title="${THEMES[k]}"></div>`).join('')}</div></div>
-    <div class="card"><div class="row">${ic('user','lg')}<div class="grow"><b>${esc(S.user.display)}</b><div class="muted">@${esc(S.user.username)} · bạn là ${esc(meName())}</div></div></div>
+    <div class="card"><div class="label" style="margin-top:0">Ảnh đại diện của bạn</div>
+      <div class="row">${avatarEl(S.me,58)}
+        <div class="grow"><b>${esc(S.user.display)}</b><div class="muted">@${esc(S.user.username)} · bạn là ${esc(meName())}</div></div>
+        <button class="btn sm" data-act="avatar-pick">${ic('edit','sm')} ${avatarUrl(S.me)?'Đổi':'Thêm'}</button></div>
+      ${ avatarUrl(S.me)?`<button class="btn soft block sm" style="margin-top:10px" data-act="avatar-remove">${ic('trash','sm')} Bỏ ảnh</button>`:'' }
       <button class="btn soft block sm" style="margin-top:10px" data-act="logout">${ic('logout','sm')} Đăng xuất</button></div>
     <button class="btn danger block" data-act="leave">Rời khỏi phòng này</button>
     <p class="muted center" style="margin-top:14px">${useCloud?'Đồng bộ qua mạng đang bật':'Chế độ thử (chỉ máy này)'} · v2.0</p>`; }
@@ -1408,6 +1423,8 @@ async function handle(act,v,id,t,e){
     case 'd-react-toggle': S.tmp.dReactOpen = S.tmp.dReactOpen===v?null:v; S.tmp.dReplyOpen=null; render(); break;
     case 'd-reply-toggle': S.tmp.dReplyOpen = S.tmp.dReplyOpen===v?null:v; S.tmp.dReactOpen=null; render(); setTimeout(()=>$('#d_reply_input')?.focus(),40); break;
     case 'd-reply-send': await dailyReplySave(v); break;
+    case 'avatar-pick': chooseAvatar(); break;
+    case 'avatar-remove': await removeAvatar(); break;
 
     case 'copy-code': navigator.clipboard?.writeText(S.space.id).then(()=>toast('Đã chép mã'),()=>toast(S.space.id)); break;
     case 'save-start': { const sd=$('#s_start').value; await Store.updateSpace(S.space.id,{start_date:sd}); S.space.start_date=sd; render(); toast('Đã lưu ngày'); } break;
@@ -1554,6 +1571,30 @@ async function dailyReact(who,emoji){ const d=S.dailyToday; if(!d) return; const
 async function dailyReplySave(who){ const d=S.dailyToday; if(!d) return;
   const val=($('#d_reply_input')?.value||'').trim(); S.tmp.dReplyOpen=null;
   await saveDailySafe({['reply_'+who]:val||null}); render(); toast(val?'Đã gửi 💬':'Đã xoá lời nhắn'); }
+
+/* ---------- AVATAR: chọn ảnh từ máy -> nén 128x128 JPEG -> lưu vào phòng ---------- */
+function chooseAvatar(){ const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+  inp.onchange=()=>{ const f=inp.files&&inp.files[0]; if(f) compressAndSaveAvatar(f); };
+  inp.click(); }
+function compressAndSaveAvatar(file){
+  if(file.size>12*1024*1024){ toast('Ảnh hơi lớn, chọn ảnh nhỏ hơn nha'); return; }
+  const rd=new FileReader();
+  rd.onload=()=>{ const img=new Image();
+    img.onload=async ()=>{ try{
+      const SZ=128, cv=document.createElement('canvas'); cv.width=SZ; cv.height=SZ; const ctx=cv.getContext('2d');
+      const scale=Math.max(SZ/img.width, SZ/img.height), w=img.width*scale, h=img.height*scale;
+      ctx.drawImage(img,(SZ-w)/2,(SZ-h)/2,w,h);
+      const url=cv.toDataURL('image/jpeg',0.72);
+      await Store.updateSpace(S.space.id,{['avatar_'+S.me]:url});
+      S.space['avatar_'+S.me]=url; render(); toast('Đã đổi ảnh đại diện 💕');
+    }catch(e){ console.error(e); toast('Chưa lưu được ảnh — nhớ chạy SQL cột avatar trong Supabase nha'); } };
+    img.onerror=()=>toast('Không đọc được ảnh này');
+    img.src=rd.result; };
+  rd.onerror=()=>toast('Không đọc được ảnh này');
+  rd.readAsDataURL(file);
+}
+async function removeAvatar(){ try{ await Store.updateSpace(S.space.id,{['avatar_'+S.me]:null});
+  S.space['avatar_'+S.me]=null; render(); toast('Đã bỏ ảnh đại diện'); }catch(e){ toast('Chưa bỏ được ảnh'); } }
 
 window.addEventListener('resize',()=>{ const c=$('#confetti'); c.width=innerWidth; c.height=innerHeight; });
 boot();

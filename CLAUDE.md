@@ -49,6 +49,10 @@ Streak (`bumpStreak`): học/thi/trả lời câu hỏi xong → chuỗi +1 (1 l
 - **Ô trả lời viên thuốc** (`.reply-pill` + `.reply-send` icon send): mở bằng nút "Trả lời" (`d-reply-toggle`), Enter hoặc nút gửi để lưu (`d-reply-send`). Hiện lại dưới dạng bong bóng comment (`.reply-quote`).
 - State ẩn ở `S.tmp.dReactOpen`/`dReplyOpen` (= who đang mở, mutually exclusive; reset khi `go`). Cột DB: `daily.reaction_a/b`, `reply_a/b` (a/b = câu trả lời CỦA AI được react/nhắn). `saveDailySafe()` fallback bỏ cột mới nếu Supabase chưa chạy SQL (báo toast), không chặn app.
 
+### Ảnh đại diện (index.html: `avatarEl`, `compressAndSaveAvatar`)
+- Lưu **data URL JPEG** trong `spaces.avatar_a/b` (không dùng Supabase Storage). Upload: `chooseAvatar()` mở input file → vẽ canvas **128×128 cover-crop** → `toDataURL('image/jpeg',0.72)` (~1.5KB) → `updateSpace`. Catch lỗi nếu chưa chạy SQL cột avatar.
+- `avatarEl(person,size,ring)`: có ảnh → `<div class="ava"><img>`, chưa có → chữ cái đầu tên trên gradient. Dùng ở: Cài đặt (đổi/bỏ ảnh của `S.me`), màn Nhà (2 avatar chồng nhẹ, `ring`), câu hỏi mỗi ngày (bong bóng reply + ô nhập). `.ava` cũ letter-only đã nâng cấp (thêm `img`, `.ring`).
+
 ### Tìm kiếm & lọc tab Học (index.html)
 - 28 chủ đề (14 vựng + 14 colloc) nên có ô tìm kiếm (`data-filter="lib"`, bỏ dấu qua `noDiacritics()`, gõ "hop dong" vẫn ra "Hợp đồng") + chip lọc nhanh Tất cả/Của mình/Từ vựng/Collocation (`S.tmp.libFilter`).
 - `applyLibFilter()` chạy lại sau mỗi `render()` khi ở `view==='library'` không mở topic con, ẩn cả `.lib-sec` rỗng và hiện `#lib-empty` khi không khớp gì.
