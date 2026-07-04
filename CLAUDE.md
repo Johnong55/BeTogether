@@ -43,10 +43,11 @@ Object `Store` có 2 chế độ: **cloud** (Supabase, khi có key) và **local*
 
 Streak (`bumpStreak`): học/thi/trả lời câu hỏi xong → chuỗi +1 (1 lần/ngày, no-op nếu đã +hôm nay).
 
-### Câu hỏi mỗi ngày — react & nhắn lại (index.html)
-- Giữ (long-press, 480ms qua `pointerdown/up/move/cancel`) trên câu trả lời của người ấy (`data-longpress="daily-react" data-who="a|b"`) → mở modal thả 1 trong 6 emoji (`REACT_EMOJI`) + ô nhắn lại.
-- Cột DB: `daily.reaction_a/b`, `reply_a/b` (a/b = câu trả lời CỦA AI được react/nhắn, không phải ai viết). `saveDailySafe()` tự fallback bỏ cột mới nếu Supabase chưa chạy SQL (báo toast), không chặn app.
-- Bấm lại đúng emoji đã chọn = bỏ react (toggle).
+### Câu hỏi mỗi ngày — react & nhắn lại kiểu Messenger (index.html: `dAnswerCard`, `viewDaily`)
+- Mỗi câu trả lời là 1 "comment": thẻ của mình chỉ có nút **Sửa**; thẻ người ấy có thanh hành động **🙂 Cảm xúc · 💬 Trả lời** (kiểu FB Thích|Trả lời).
+- **Thanh cảm xúc nổi** (`.react-bar`, position absolute, bo 999px, animation `reactPop`): mở bằng nút "Cảm xúc" (`d-react-toggle`) HOẶC long-press 480ms (`pointerdown/up/leave/cancel/scroll`, `data-longpress="daily-react"`). Chọn 1 trong 6 emoji (`REACT_EMOJI`) → lưu + đóng. Bấm lại emoji đang chọn = bỏ (toggle). Bấm ra ngoài (listener click thứ 2, chạy SAU handler chính nên emoji vẫn nhận) → đóng thanh.
+- **Ô trả lời viên thuốc** (`.reply-pill` + `.reply-send` icon send): mở bằng nút "Trả lời" (`d-reply-toggle`), Enter hoặc nút gửi để lưu (`d-reply-send`). Hiện lại dưới dạng bong bóng comment (`.reply-quote`).
+- State ẩn ở `S.tmp.dReactOpen`/`dReplyOpen` (= who đang mở, mutually exclusive; reset khi `go`). Cột DB: `daily.reaction_a/b`, `reply_a/b` (a/b = câu trả lời CỦA AI được react/nhắn). `saveDailySafe()` fallback bỏ cột mới nếu Supabase chưa chạy SQL (báo toast), không chặn app.
 
 ### Tìm kiếm & lọc tab Học (index.html)
 - 28 chủ đề (14 vựng + 14 colloc) nên có ô tìm kiếm (`data-filter="lib"`, bỏ dấu qua `noDiacritics()`, gõ "hop dong" vẫn ra "Hợp đồng") + chip lọc nhanh Tất cả/Của mình/Từ vựng/Collocation (`S.tmp.libFilter`).
