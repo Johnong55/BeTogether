@@ -937,7 +937,7 @@ function duelCreateView(){
         <div class="grow"><b>${esc(x.title||'')}</b>
           <div class="muted">${(x.created_at||'').slice(5,10).replace('-','/')} · ${esc(nameOf('a'))} ${x.score_a||0} — ${x.score_b||0} ${esc(nameOf('b'))}</div>
           ${(x.stake||x.stake_acceptor)?`<div class="muted" style="font-style:italic">“${esc(x.stake||x.stake_acceptor)}”</div>`:''}</div>
-        <div style="font-size:22px">${win===null?'🤝':(win===S.me?'👑':'😿')}</div></div></div>`;}).join(''):'' }`;
+        <div style="font-size:22px">${win===null?'🤝':(win===S.me?'👑':'🥈')}</div></div></div>`;}).join(''):'' }`;
 }
 function duelPlayView(du){
   if(!S.duelPlay || S.duelPlay.id!==du.id) initDuelPlay(du);
