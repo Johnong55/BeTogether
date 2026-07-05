@@ -157,9 +157,16 @@
   .check .ic{ width:15px; height:15px; opacity:0; } .check.on .ic{ opacity:1; }
 
   /* flashcard */
+  .flash-wrap{ perspective:1600px; }
   .flash{ perspective:1200px; }
   .flash .inner{ position:relative; min-height:220px; transition:transform .55s; transform-style:preserve-3d; }
   .flash.flip .inner{ transform:rotateY(180deg); }
+  /* lật trang sách khi qua thẻ mới: trang cũ lật về trái, trang mới rơi vào */
+  .flash.turn{ animation:pageOut .42s ease-in forwards; transform-origin:left center; }
+  .flash.turn-in{ animation:pageIn .46s cubic-bezier(.2,.72,.3,1); transform-origin:left center; }
+  @keyframes pageOut{ from{ transform:rotateY(0); opacity:1; } to{ transform:rotateY(-152deg); opacity:.12; } }
+  @keyframes pageIn{ 0%{ transform:rotateY(108deg); opacity:.12; } 100%{ transform:rotateY(0); opacity:1; } }
+  @media(prefers-reduced-motion:reduce){ .flash.turn,.flash.turn-in{ animation:none; } }
   .flash .face{ position:absolute; inset:0; backface-visibility:hidden; display:flex; flex-direction:column;
     align-items:center; justify-content:center; padding:26px; border-radius:22px; text-align:center; }
   .flash .front{ background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow); }
@@ -1125,9 +1132,9 @@ function flashView(p){ const total=p.cards.length;
     <div class="row" style="margin-bottom:8px"><button class="iconbtn" data-act="quit-play">${ic('x','sm')}</button>
       <div class="grow center" style="font-weight:800">Thẻ ${p.idx+1}/${total}</div><div style="width:38px"></div></div>
     <div class="progress"><i style="width:${p.idx/total*100}%"></i></div>
-    <div class="flash ${p.flip?'flip':''}" data-act="flip" style="margin-top:6px"><div class="inner">
+    <div class="flash-wrap" style="margin-top:6px"><div class="flash ${p.flip?'flip':''}${p.turnIn?' turn-in':''}" data-act="flip"><div class="inner">
       <div class="face front"><div class="term" style="font-size:${fitPx(c.en)}px">${esc(c.en)}</div><div class="hint">Chạm để xem nghĩa</div></div>
-      <div class="face back"><div class="term" style="font-size:${Math.min(24,fitPx(c.vi))}px">${esc(c.vi)}</div></div></div></div>
+      <div class="face back"><div class="term" style="font-size:${Math.min(24,fitPx(c.vi))}px">${esc(c.vi)}</div></div></div></div></div>
     ${flashExample(c)}
     <div class="row" style="gap:11px;margin-top:14px">
       <button class="btn soft block" data-act="flip">Lật thẻ</button>
@@ -1609,8 +1616,14 @@ function checkScramble(){ const p=S.play; if(!p||p.phase!=='ask') return; const 
 async function nextQ(){ const p=S.play; if(!p) return;
   if(p.idx+1<p.questions.length){ p.idx++; p.phase='ask'; p.chosen=null; p.answerGiven=''; render(); }
   else await finishStudy(); }
-async function nextCard(){ const p=S.play; if(!p) return;
-  if(p.idx+1<p.cards.length){ p.idx++; p.flip=false; render(); } else await finishStudy(); }
+async function nextCard(){ const p=S.play; if(!p||p.turning) return;
+  if(p.idx+1>=p.cards.length){ await finishStudy(); return; }
+  const fl=$('.flash');
+  if(fl && !matchMedia('(prefers-reduced-motion:reduce)').matches){
+    p.turning=true; fl.classList.remove('flip'); fl.classList.add('turn');   // lật trang cũ đi
+    await new Promise(r=>setTimeout(r,410)); p.turning=false; }
+  p.idx++; p.flip=false; p.turnIn=true; render(); p.turnIn=false;             // trang mới rơi vào
+}
 /* Xin AI ví dụ + cách dùng cho thẻ đang xem (cache theo từ để khỏi gọi lại) */
 async function aiExampleForCurrent(){ const p=S.play; if(!p||!p.cards) return; const c=p.cards[p.idx]; if(!c) return;
   p.exCache=p.exCache||{}; const cur=p.exCache[c.en]; if(cur==='loading'||(cur&&!cur.error)) return;
