@@ -130,10 +130,6 @@
     text-shadow:0 2px 14px color-mix(in srgb,var(--card) 78%, transparent); }
   .couple .cap{ color:var(--soft); font-weight:700; margin-top:2px; }
   .couple .nm{ font-weight:800; margin-top:8px; }
-  .tank-hint{ position:absolute; z-index:2; bottom:8px; right:10px; background:color-mix(in srgb,var(--card) 80%, transparent);
-    border:1px solid var(--line); border-radius:999px; padding:3px 10px; font-family:'Nunito'; font-size:10.5px; font-weight:800;
-    color:var(--p1); cursor:pointer; backdrop-filter:blur(4px); }
-  .tank-hint:active{ transform:scale(.94); }
 
   .stat{ display:flex; gap:10px; }
   .stat .card{ flex:1; text-align:center; margin:0; padding:14px 8px; }
@@ -562,12 +558,14 @@ const HeartTank={
   stop(){ this.running=false; if(this.raf) cancelAnimationFrame(this.raf); this.raf=null; },
 };
 function mountHeartTank(){ const cv=$('#heart-tank'); if(cv) HeartTank.ensure(cv); }
-function enableHeartMotion(){ const D=window.DeviceMotionEvent;
+/* iOS cần cử chỉ mới xin được quyền cảm biến -> tự xin ÂM THẦM ngay lần chạm đầu tiên (không cần nút) */
+let heartMotionAsked=false;
+function tryEnableHeartMotionOnce(){ if(heartMotionAsked||HeartTank.motionOn) return; heartMotionAsked=true;
+  const D=window.DeviceMotionEvent;
   if(D && typeof D.requestPermission==='function'){
-    D.requestPermission().then(s=>{ if(s==='granted'){ HeartTank.attach(); HeartTank.motionOn=true; if(S.view==='home')render(); toast('Nghiêng máy để tim lắc 💕'); }
-      else toast('Bạn chưa cho phép cảm biến'); }).catch(()=>toast('Không bật được cảm biến'));
-  } else if(D){ HeartTank.attach(); HeartTank.motionOn=true; if(S.view==='home')render(); toast('Nghiêng máy để tim lắc 💕'); }
-  else toast('Máy này không có cảm biến chuyển động'); }
+    D.requestPermission().then(s=>{ if(s==='granted'){ HeartTank.attach(); HeartTank.motionOn=true; } }).catch(()=>{});
+  } /* Android/desktop đã tự gắn trong HeartTank.ensure() */ }
+document.addEventListener('pointerdown', tryEnableHeartMotionOnce);
 document.addEventListener('visibilitychange',()=>{ if(document.hidden) HeartTank.stop(); else if(S.view==='home'&&!S.play) mountHeartTank(); });
 window.addEventListener('resize',()=>{ if(HeartTank.cv && document.body.contains(HeartTank.cv)) HeartTank.resize(); });
 
@@ -837,7 +835,6 @@ function viewHome(){ const today=todayStr();
       :`<div class="days">${days}</div><div class="cap">${days===0?'ngày đầu tiên bên nhau':'ngày bên nhau'}</div>
         <div class="nm">${esc(S.space.person_a)} &amp; ${esc(S.space.person_b||'…')}</div>`}
       </div>
-      ${ HeartTank.motionOn?'' : `<button class="tank-hint" data-act="tilt-hearts">💗 nghiêng máy</button>` }
     </div>
 
     <div class="stat">
@@ -1581,7 +1578,6 @@ async function handle(act,v,id,t,e){
     case 'enable-notif': await enableNotif(); break;
     case 'install-app': await installApp(); break;
     case 'hide-install': localStorage.setItem('loveapp_hide_install','1'); render(); break;
-    case 'tilt-hearts': enableHeartMotion(); break;
     case 'note-del': if(confirm('Xoá ghi chú này?')){ await Store.deleteNote(S.space.id,id); await loadAll(); render(); } break;
 
     case 'save-daily': await saveDaily(); break;
