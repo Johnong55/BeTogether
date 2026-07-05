@@ -36,7 +36,7 @@ Object `Store` có 2 chế độ: **cloud** (Supabase, khi có key) và **local*
 ## Các màn/tab (nav dưới cùng): Nhà · Học · Đấu · Hộp thư · Nhắc
 - **Nhà (home)**: đếm ngày bên nhau, chuỗi/kỷ lục, nhiệm vụ hôm nay, câu hỏi mỗi ngày (thẻ bấm vào), banner nhắc/đấu/cài-app.
 - **Học (library)**: "Bộ từ của mình" (tự tạo: thêm nhanh Enter/dán hàng loạt) + 14 chủ đề B2 có sẵn. Mỗi bộ: **Thẻ lật** (học nhớ) / **Trắc nghiệm** (thi, mix trắc nghiệm + trộn chữ) / Gửi / Rủ đấu. `startStudy(words,{mode:'flash'|'quiz',...})`, `buildQuestions()` dùng HẾT từ (không giới hạn 12).
-- **Đấu (arena)**: "Rủ đấu" — chọn bộ + số câu + cược → người kia NHẬN LỜI mới bắt đầu → cả hai làm **cùng 1 bộ câu hỏi** (sinh 1 lần lưu chung) → thấy tiến độ đối thủ ~trực tiếp → xong hiện thắng/thua + cược + lịch sử. Chữ dùng "Rủ đấu" (KHÔNG dùng "thách đấu" — user thấy gắt).
+- **Đấu (arena)**: "Rủ đấu" — chọn bộ + số câu + cược → người kia NHẬN LỜI (cược lại được, cột `stake_acceptor`) mới bắt đầu → cả hai làm **cùng 1 bộ câu hỏi** (sinh 1 lần lưu chung) → thấy tiến độ đối thủ ~trực tiếp → xong hiện thắng(👑)/thua(🥈)/hòa(🤝) + cược + lịch sử. Chữ dùng "Rủ đấu" (KHÔNG dùng "thách đấu" — user thấy gắt). **Nhấn giữ 1 trận trong lịch sử** (`data-longpress="duel-stake"`) → popup `openDuelStakeModal` chi tiết ai cược gì + ai phải làm gì (winStake = `win===challenger?stake:stake_acceptor`, khớp `duelResultView`).
 - **Hộp thư (inbox)**: bài dò nhận/gửi, mỗi bài có Thẻ lật/Trắc nghiệm cho cả hai.
 - **Nhắc (notes)**: ghi chú = lời nhắc có ngày (remind_at); chia Quá hạn/Hôm nay/Sắp tới/Không hẹn/Đã xong; chấm đỏ + banner; nút bật thông báo hệ thống (Notification API, chỉ khi mở app).
 - **Cài đặt (⚙️)**: mã phòng, mời theo tên, ngày bắt đầu yêu, tên, tông màu, đăng xuất/rời phòng, hướng dẫn cài app.

@@ -931,13 +931,34 @@ function duelCreateView(){
         <input id="du_stake" placeholder="vd: rửa chén 1 tuần 🍽️"/></label>
       <button class="btn block" data-act="duel-create">${ic('swords','sm')} Rủ ${esc(partner()||'người ấy')} đấu</button>
     </div>
-    ${ hist.length?`<div class="label">Lịch sử tỉ thí</div>`+hist.map(x=>{
+    ${ hist.length?`<div class="label">Lịch sử tỉ thí</div>
+      <p class="sub-h" style="margin:-8px 0 10px">Giữ một trận để xem ai cược gì 👀</p>`+hist.map(x=>{
       const win = x.score_a===x.score_b?null:(x.score_a>x.score_b?'a':'b');
-      return `<div class="card"><div class="row">
+      const hasStake=x.stake||x.stake_acceptor;
+      return `<div class="card longpressable" data-longpress="duel-stake" data-id="${x.id}"><div class="row">
         <div class="grow"><b>${esc(x.title||'')}</b>
           <div class="muted">${(x.created_at||'').slice(5,10).replace('-','/')} · ${esc(nameOf('a'))} ${x.score_a||0} — ${x.score_b||0} ${esc(nameOf('b'))}</div>
-          ${(x.stake||x.stake_acceptor)?`<div class="muted" style="font-style:italic">“${esc(x.stake||x.stake_acceptor)}”</div>`:''}</div>
+          ${hasStake?`<div class="muted" style="font-style:italic">“${esc(x.stake||x.stake_acceptor)}”</div>`:''}</div>
         <div style="font-size:22px">${win===null?'🤝':(win===S.me?'👑':'🥈')}</div></div></div>`;}).join(''):'' }`;
+}
+/* Popup chi tiết kèo cược của 1 trận (mở bằng nhấn giữ trong lịch sử) */
+function openDuelStakeModal(id){ const x=(S.duelHistory||[]).find(d=>d.id===id); if(!x) return;
+  const chal=x.challenger||'a', acc=other(chal);
+  const win = x.score_a===x.score_b?null:(x.score_a>x.score_b?'a':'b');
+  const line=(who,stake)=> `<div class="row" style="gap:10px;padding:8px 0;border-top:1px solid var(--line)">
+      ${avatarEl(who,32)}<div class="grow"><div class="muted" style="font-weight:800;font-size:12px">Nếu ${esc(nameOf(who))} thắng</div>
+      <div>${stake?'“'+esc(stake)+'”':'<span class="muted">không đặt cược</span>'}</div></div></div>`;
+  let result;
+  if(win===null){ result=`<b>Hòa nhau 🤝</b> — huỷ cược, đấu lại nha`; }
+  else{ const winStake = win===chal ? x.stake : (x.stake_acceptor||x.stake);
+    result = winStake
+      ? `<b>${esc(nameOf(win))} thắng 👑</b><div style="margin-top:4px">${esc(nameOf(other(win)))} phải: <b>“${esc(winStake)}”</b> ${other(win)===S.me?'🫣':'🫵'}</div>`
+      : `<b>${esc(nameOf(win))} thắng 👑</b><div class="muted" style="margin-top:4px">Không có cược cho bên thắng — thoát nạn 😙</div>`; }
+  modal(`<h2 class="title" style="margin-top:0">Kèo cược ⚔️</h2>
+    <p class="muted" style="margin:-8px 0 6px">${esc(x.title||'')} · ${(x.created_at||'').slice(5,10).replace('-','/')} · ${esc(nameOf('a'))} ${x.score_a||0} — ${x.score_b||0} ${esc(nameOf('b'))}</p>
+    <div class="card" style="margin:8px 0">${line(chal,x.stake)}${line(acc,x.stake_acceptor)}</div>
+    <div class="card center" style="border:1.5px dashed var(--p2)">${result}</div>
+    <button class="btn block" style="margin-top:14px" data-act="close-modal">Đóng</button>`);
 }
 function duelPlayView(du){
   if(!S.duelPlay || S.duelPlay.id!==du.id) initDuelPlay(du);
@@ -1355,7 +1376,9 @@ document.addEventListener('pointerdown',(e)=>{ const el=e.target.closest('[data-
   lpCancel(); lpEl=el; el.classList.add('lp-active');
   lpTimer=setTimeout(()=>{ lpTimer=null; el.classList.remove('lp-active'); lpEl=null;
     if(navigator.vibrate){ try{ navigator.vibrate(12); }catch(err){} }
-    const kind=el.dataset.longpress; if(kind==='daily-react'){ S.tmp.dReactOpen=el.dataset.who; S.tmp.dReplyOpen=null; render(); }
+    const kind=el.dataset.longpress;
+    if(kind==='daily-react'){ S.tmp.dReactOpen=el.dataset.who; S.tmp.dReplyOpen=null; render(); }
+    else if(kind==='duel-stake'){ openDuelStakeModal(el.dataset.id); }
   }, 480); });
 document.addEventListener('pointerup', lpCancel);
 document.addEventListener('pointerleave', lpCancel, true);
