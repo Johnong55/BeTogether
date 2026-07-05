@@ -514,17 +514,21 @@ function drawHeartShape(ctx,x,y,r,col,rot){
 const Heart_COLS=['#e7a3b4','#d97a92','#f2b3c4','#ef9ab0','#f6c9d5','#e58aa4'];
 const HeartTank={
   cv:null, ctx:null, dpr:1, w:0, h:0, parts:[], gx:0, gy:0.34, t:0, running:false, raf:null, motionOn:false, listening:false, G:0.34, lastO:0,
-  onOrient(e){ const g=e.gamma; if(g==null) return; const b=(e.beta==null?0:e.beta);
+  /* Đọc thẳng vector trọng lực: hướng "xuống" thật của thế giới -> tim luôn dồn đúng đáy,
+     nghiêng/xoay kiểu gì cũng đúng (khắc phục lỗi phải lật ngược mới thấy tim). */
+  onMotion(e){ const a=e.accelerationIncludingGravity; if(!a||a.x==null) return;
     HeartTank.lastO=(window.performance?performance.now():Date.now());
-    const rad=Math.max(-55,Math.min(55,g))*Math.PI/180;
-    HeartTank.gx=Math.sin(rad)*HeartTank.G;
-    HeartTank.gy=Math.max(0.12, Math.cos(rad))*HeartTank.G*(b<0?0.6:1); },  // ngửa máy -> nhẹ bớt
-  attach(){ if(this.listening) return; window.addEventListener('deviceorientation',this.onOrient,true); this.listening=true; },
-  ensure(cv){ if(!cv) return; const changed=(this.cv!==cv); this.cv=cv; this.ctx=cv.getContext('2d');
+    const G=HeartTank.G, k=G/9.8;
+    let tx=-a.x*k, ty=a.y*k;                       // màn hình: x phải+, y xuống+ ; a.y hướng lên -> xuống = +a.y
+    if(Math.hypot(a.x,a.y)<2){ ty=G*0.5; tx*=0.5; } // máy nằm ngang -> vẫn nhẹ nhàng dồn xuống, khỏi lửng lơ
+    tx=Math.max(-G,Math.min(G,tx)); ty=Math.max(-G,Math.min(G,ty));
+    HeartTank.gx=HeartTank.gx*0.82+tx*0.18; HeartTank.gy=HeartTank.gy*0.82+ty*0.18; }, // làm mượt
+  attach(){ if(this.listening) return; window.addEventListener('devicemotion',this.onMotion,true); this.listening=true; },
+  ensure(cv){ if(!cv) return; this.cv=cv; this.ctx=cv.getContext('2d');
     this.resize();
     if(!this.parts.length) this.seed(30);
     // Android/desktop: gắn cảm biến luôn (không cần xin quyền)
-    const D=window.DeviceOrientationEvent;
+    const D=window.DeviceMotionEvent;
     if(D && typeof D.requestPermission!=='function'){ this.attach(); this.motionOn=true; }
     if(!this.running){ this.running=true; this.loop(); } },
   resize(){ const cv=this.cv; const w=cv.clientWidth||cv.parentElement.clientWidth||300, h=cv.clientHeight||150;
@@ -556,12 +560,12 @@ const HeartTank={
   stop(){ this.running=false; if(this.raf) cancelAnimationFrame(this.raf); this.raf=null; },
 };
 function mountHeartTank(){ const cv=$('#heart-tank'); if(cv) HeartTank.ensure(cv); }
-function enableHeartMotion(){ const D=window.DeviceOrientationEvent;
+function enableHeartMotion(){ const D=window.DeviceMotionEvent;
   if(D && typeof D.requestPermission==='function'){
     D.requestPermission().then(s=>{ if(s==='granted'){ HeartTank.attach(); HeartTank.motionOn=true; if(S.view==='home')render(); toast('Nghiêng máy để tim lắc 💕'); }
       else toast('Bạn chưa cho phép cảm biến'); }).catch(()=>toast('Không bật được cảm biến'));
   } else if(D){ HeartTank.attach(); HeartTank.motionOn=true; if(S.view==='home')render(); toast('Nghiêng máy để tim lắc 💕'); }
-  else toast('Máy này không có cảm biến nghiêng'); }
+  else toast('Máy này không có cảm biến chuyển động'); }
 document.addEventListener('visibilitychange',()=>{ if(document.hidden) HeartTank.stop(); else if(S.view==='home'&&!S.play) mountHeartTank(); });
 window.addEventListener('resize',()=>{ if(HeartTank.cv && document.body.contains(HeartTank.cv)) HeartTank.resize(); });
 
