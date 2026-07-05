@@ -123,10 +123,17 @@
 
   /* hero couple */
   .couple{ background:linear-gradient(150deg, color-mix(in srgb,var(--p1) 14%, var(--card)), var(--card));
-    text-align:center; padding:22px 16px; }
-  .couple .days{ font-family:'Fraunces'; font-size:46px; line-height:1; color:var(--p1); }
+    text-align:center; padding:22px 16px; position:relative; overflow:hidden; }
+  #heart-tank{ position:absolute; inset:0; z-index:0; pointer-events:none; }
+  .couple-body{ position:relative; z-index:1; }
+  .couple .days{ font-family:'Fraunces'; font-size:46px; line-height:1; color:var(--p1);
+    text-shadow:0 2px 14px color-mix(in srgb,var(--card) 78%, transparent); }
   .couple .cap{ color:var(--soft); font-weight:700; margin-top:2px; }
   .couple .nm{ font-weight:800; margin-top:8px; }
+  .tank-hint{ position:absolute; z-index:2; bottom:8px; right:10px; background:color-mix(in srgb,var(--card) 80%, transparent);
+    border:1px solid var(--line); border-radius:999px; padding:3px 10px; font-family:'Nunito'; font-size:10.5px; font-weight:800;
+    color:var(--p1); cursor:pointer; backdrop-filter:blur(4px); }
+  .tank-hint:active{ transform:scale(.94); }
 
   .stat{ display:flex; gap:10px; }
   .stat .card{ flex:1; text-align:center; margin:0; padding:14px 8px; }
@@ -494,6 +501,70 @@ function rainfall(){ const cv=$('#confetti'),ctx=cv.getContext('2d'); cv.width=i
       ctx.strokeStyle=p.c; ctx.lineWidth=p.w; ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p.x-p.l*.14,p.y+p.l); ctx.stroke(); });
     if(f<240) requestAnimationFrame(loop); else ctx.clearRect(0,0,cv.width,cv.height); })(); }
 
+/* ===================== LY TIM (ngày bên nhau) — tim đổ như nước, lắc theo cảm biến ===================== */
+function drawHeartShape(ctx,x,y,r,col,rot){
+  ctx.save(); ctx.translate(x,y); ctx.rotate(rot||0); ctx.scale(r/9,r/9); ctx.beginPath();
+  ctx.moveTo(0,-3);
+  ctx.bezierCurveTo(0,-5,-3.2,-6.2,-5.2,-4.2);
+  ctx.bezierCurveTo(-8,-1.4,-5.6,3,0,7);
+  ctx.bezierCurveTo(5.6,3,8,-1.4,5.2,-4.2);
+  ctx.bezierCurveTo(3.2,-6.2,0,-5,0,-3);
+  ctx.closePath(); ctx.fillStyle=col; ctx.fill(); ctx.restore();
+}
+const Heart_COLS=['#e7a3b4','#d97a92','#f2b3c4','#ef9ab0','#f6c9d5','#e58aa4'];
+const HeartTank={
+  cv:null, ctx:null, dpr:1, w:0, h:0, parts:[], gx:0, gy:0.34, t:0, running:false, raf:null, motionOn:false, listening:false, G:0.34, lastO:0,
+  onOrient(e){ const g=e.gamma; if(g==null) return; const b=(e.beta==null?0:e.beta);
+    HeartTank.lastO=(window.performance?performance.now():Date.now());
+    const rad=Math.max(-55,Math.min(55,g))*Math.PI/180;
+    HeartTank.gx=Math.sin(rad)*HeartTank.G;
+    HeartTank.gy=Math.max(0.12, Math.cos(rad))*HeartTank.G*(b<0?0.6:1); },  // ngửa máy -> nhẹ bớt
+  attach(){ if(this.listening) return; window.addEventListener('deviceorientation',this.onOrient,true); this.listening=true; },
+  ensure(cv){ if(!cv) return; const changed=(this.cv!==cv); this.cv=cv; this.ctx=cv.getContext('2d');
+    this.resize();
+    if(!this.parts.length) this.seed(30);
+    // Android/desktop: gắn cảm biến luôn (không cần xin quyền)
+    const D=window.DeviceOrientationEvent;
+    if(D && typeof D.requestPermission!=='function'){ this.attach(); this.motionOn=true; }
+    if(!this.running){ this.running=true; this.loop(); } },
+  resize(){ const cv=this.cv; const w=cv.clientWidth||cv.parentElement.clientWidth||300, h=cv.clientHeight||150;
+    this.dpr=Math.min(2, window.devicePixelRatio||1); this.w=w; this.h=h;
+    cv.width=Math.round(w*this.dpr); cv.height=Math.round(h*this.dpr);
+    this.ctx.setTransform(this.dpr,0,0,this.dpr,0,0);
+    for(const p of this.parts){ p.x=Math.min(w-p.r,Math.max(p.r,p.x)); p.y=Math.min(h-p.r,Math.max(p.r,p.y)); } },
+  seed(n){ this.parts=[]; const w=this.w,h=this.h;
+    for(let i=0;i<n;i++){ const r=8+Math.random()*4;
+      this.parts.push({ x:r+Math.random()*(w-2*r), y:r+Math.random()*(h-2*r), vx:0, vy:0, r,
+        col:Heart_COLS[i%Heart_COLS.length], rot:(Math.random()-0.5)*0.5, vr:(Math.random()-0.5)*0.02 }); } },
+  loop(){ if(!this.running) return;
+    const ctx=this.ctx,w=this.w,h=this.h,P=this.parts;
+    const now=(window.performance?performance.now():Date.now());
+    const sensorActive=this.motionOn && (now-this.lastO<1500);   // đang nhận cảm biến thật?
+    if(!sensorActive){ this.t+=0.016; this.gx=Math.sin(this.t*1.1)*0.06; this.gy=this.G; } // chưa có cảm biến: đung đưa nhẹ
+    for(const p of P){ p.vx+=this.gx; p.vy+=this.gy; p.vx*=0.985; p.vy*=0.985; p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr;
+      if(p.x<p.r){p.x=p.r;p.vx*=-0.38;} if(p.x>w-p.r){p.x=w-p.r;p.vx*=-0.38;}
+      if(p.y<p.r){p.y=p.r;p.vy*=-0.38;} if(p.y>h-p.r){p.y=h-p.r;p.vy*=-0.38;} }
+    for(let i=0;i<P.length;i++)for(let j=i+1;j<P.length;j++){ const a=P[i],b=P[j];
+      let dx=b.x-a.x,dy=b.y-a.y,d2=dx*dx+dy*dy; const rr=a.r+b.r;
+      if(d2<rr*rr && d2>0.01){ const d=Math.sqrt(d2),ov=(rr-d)/2,nx=dx/d,ny=dy/d;
+        a.x-=nx*ov;a.y-=ny*ov;b.x+=nx*ov;b.y+=ny*ov;
+        const va=a.vx*nx+a.vy*ny,vb=b.vx*nx+b.vy*ny,tr=(va-vb)*0.5;
+        a.vx-=tr*nx*0.5;a.vy-=tr*ny*0.5;b.vx+=tr*nx*0.5;b.vy+=tr*ny*0.5; } }
+    ctx.clearRect(0,0,w,h);
+    for(const p of P) drawHeartShape(ctx,p.x,p.y,p.r,p.col,p.rot);
+    this.raf=requestAnimationFrame(()=>this.loop()); },
+  stop(){ this.running=false; if(this.raf) cancelAnimationFrame(this.raf); this.raf=null; },
+};
+function mountHeartTank(){ const cv=$('#heart-tank'); if(cv) HeartTank.ensure(cv); }
+function enableHeartMotion(){ const D=window.DeviceOrientationEvent;
+  if(D && typeof D.requestPermission==='function'){
+    D.requestPermission().then(s=>{ if(s==='granted'){ HeartTank.attach(); HeartTank.motionOn=true; if(S.view==='home')render(); toast('Nghiêng máy để tim lắc 💕'); }
+      else toast('Bạn chưa cho phép cảm biến'); }).catch(()=>toast('Không bật được cảm biến'));
+  } else if(D){ HeartTank.attach(); HeartTank.motionOn=true; if(S.view==='home')render(); toast('Nghiêng máy để tim lắc 💕'); }
+  else toast('Máy này không có cảm biến nghiêng'); }
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) HeartTank.stop(); else if(S.view==='home'&&!S.play) mountHeartTank(); });
+window.addEventListener('resize',()=>{ if(HeartTank.cv && document.body.contains(HeartTank.cv)) HeartTank.resize(); });
+
 /* ===================== CÀI NHƯ APP (PWA) ===================== */
 const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
 const isSafari = /^((?!chrome|android|crios|fxios).)*safari/i.test(navigator.userAgent);
@@ -645,6 +716,7 @@ function render(){ const app=$('#app');
   }
   if(anim) app.querySelectorAll('.screen').forEach(el=>el.classList.add(anim));
   if(S.view==='library' && !S.sub) applyLibFilter();
+  if(S.view==='home' && !S.play) mountHeartTank(); else HeartTank.stop();
   hideLoading(); mountLotties();
 }
 
@@ -750,12 +822,16 @@ function viewHome(){ const today=todayStr();
       <div class="grow"><b>${dueCount()} lời nhắc cần làm</b><div class="muted">${esc(dueList().slice(0,2).map(n=>n.text).join(' · ')).slice(0,70)}</div></div><span class="muted">›</span></div></div>`:'' }
 
     <div class="card couple">
+      <canvas id="heart-tank"></canvas>
+      <div class="couple-body">
       <div style="display:flex;justify-content:center;align-items:center;margin-bottom:8px">
         ${avatarEl('a',48,true)}<div style="margin-left:-12px">${avatarEl('b',48,true)}</div></div>
       ${ days==null?`<div class="nm">${esc(S.space.person_a)} &amp; ${esc(S.space.person_b||'…')}</div>
         <button class="btn soft sm" style="margin-top:10px" data-act="go" data-v="settings">Đặt ngày bắt đầu yêu</button>`
       :`<div class="days">${days}</div><div class="cap">${days===0?'ngày đầu tiên bên nhau':'ngày bên nhau'}</div>
         <div class="nm">${esc(S.space.person_a)} &amp; ${esc(S.space.person_b||'…')}</div>`}
+      </div>
+      ${ HeartTank.motionOn?'' : `<button class="tank-hint" data-act="tilt-hearts">💗 nghiêng máy</button>` }
     </div>
 
     <div class="stat">
@@ -1499,6 +1575,7 @@ async function handle(act,v,id,t,e){
     case 'enable-notif': await enableNotif(); break;
     case 'install-app': await installApp(); break;
     case 'hide-install': localStorage.setItem('loveapp_hide_install','1'); render(); break;
+    case 'tilt-hearts': enableHeartMotion(); break;
     case 'note-del': if(confirm('Xoá ghi chú này?')){ await Store.deleteNote(S.space.id,id); await loadAll(); render(); } break;
 
     case 'save-daily': await saveDaily(); break;
