@@ -582,9 +582,18 @@ async function duelTick(){
   }catch(e){}
 }
 
+/* Gọi API AI (Cloudflare Pages Function) — có timeout, tự ném lỗi để nơi gọi fallback */
+async function apiPost(path, body, ms){ const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(), ms||8000);
+  try{ const r=await fetch(path,{ method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify(body||{}), signal:ctl.signal });
+    clearTimeout(t); if(!r.ok) throw new Error('HTTP '+r.status); const j=await r.json(); if(j&&j.error) throw new Error(j.error); return j;
+  }catch(e){ clearTimeout(t); throw e; } }
+
 async function ensureDaily(sid,day){ let d=await Store.getDaily(sid,day);
   if(!d){ const idx=parseInt(day.replace(/-/g,''),10)%DAILY_QUESTIONS.length;
-    d={ id:uid(), space_id:sid, day, question:DAILY_QUESTIONS[idx], answer_a:null, answer_b:null };
+    let question=DAILY_QUESTIONS[idx];  // mặc định: danh sách cố định (dùng khi AI lỗi / chế độ máy)
+    if(useCloud){ try{ const r=await apiPost('/api/daily-question',{ recent:(S.dailyHistory||[]).slice(0,6).map(x=>x.question).filter(Boolean) },7000);
+        if(r&&r.question) question=r.question; }catch(e){ /* im lặng, dùng câu mặc định */ } }
+    d={ id:uid(), space_id:sid, day, question, answer_a:null, answer_b:null };
     try{ await Store.saveDaily(d); }catch(e){ d=await Store.getDaily(sid,day)||d; } } return d; }
 /* Nạp nhật ký câu hỏi các ngày (chỉ khi mở màn câu hỏi, không nằm trong poll 5s) */
 async function loadDailyHistory(){ if(!S.space) return;
@@ -1098,9 +1107,20 @@ function flashView(p){ const total=p.cards.length;
     <div class="flash ${p.flip?'flip':''}" data-act="flip" style="margin-top:6px"><div class="inner">
       <div class="face front"><div class="term" style="font-size:${fitPx(c.en)}px">${esc(c.en)}</div><div class="hint">Chạm để xem nghĩa</div></div>
       <div class="face back"><div class="term" style="font-size:${Math.min(24,fitPx(c.vi))}px">${esc(c.vi)}</div></div></div></div>
-    <div class="row" style="gap:11px;margin-top:18px">
+    ${flashExample(c)}
+    <div class="row" style="gap:11px;margin-top:14px">
       <button class="btn soft block" data-act="flip">Lật thẻ</button>
       <button class="btn block" data-act="next-card">${p.idx+1<total?'Thẻ tiếp →':'Xong'}</button></div>`; }
+/* Khối ví dụ AI dưới thẻ lật — cache theo từ trong S.play.exCache */
+function flashExample(c){ const ex=(S.play.exCache||{})[c.en];
+  if(ex==='loading') return `<div class="card center" style="margin-top:12px"><div class="muted">${ic('spark','sm')} Đang nghĩ ví dụ…</div></div>`;
+  if(ex&&ex.error) return `<button class="btn ghost block" style="margin-top:12px" data-act="ai-example">${ic('spark','sm')} Thử lại xin ví dụ</button>`;
+  if(ex) return `<div class="card" style="margin-top:12px;border:1px solid var(--p2)">
+      <div class="label" style="margin-top:0">${ic('spark','sm')} Ví dụ (AI)</div>
+      <p style="margin:0 0 6px;font-weight:700">${esc(ex.example||'')}</p>
+      ${ex.example_vi?`<p class="muted" style="margin:0 0 8px">${esc(ex.example_vi)}</p>`:''}
+      ${ex.usage?`<p style="margin:0;font-size:14px"><b>Cách dùng:</b> ${esc(ex.usage)}</p>`:''}</div>`;
+  return `<button class="btn ghost block" style="margin-top:12px" data-act="ai-example">${ic('spark','sm')} Xin ví dụ (AI)</button>`; }
 
 function quizView(p){ const total=p.questions.length;
   if(p.done){ const pct=total?Math.round(p.score/total*100):0, msg=pct>=80?'Giỏi quá đi':pct>=50?'Cố thêm chút nha':'Không sao, học lại lần nữa nhé';
@@ -1433,6 +1453,7 @@ async function handle(act,v,id,t,e){
     case 'inbox-tab': S.inboxTab=v; render(); break;
     case 'flip': if(S.play){ S.play.flip=!S.play.flip; const fl=$('.flash'); if(fl) fl.classList.toggle('flip',S.play.flip); else render(); } break;
     case 'next-card': await nextCard(); break;
+    case 'ai-example': await aiExampleForCurrent(); break;
     case 'answer-mc': answerMc(parseInt(v,10)); break;
     case 'check-scramble': checkScramble(); break;
     case 'next-q': await nextQ(); break;
@@ -1567,6 +1588,14 @@ async function nextQ(){ const p=S.play; if(!p) return;
   else await finishStudy(); }
 async function nextCard(){ const p=S.play; if(!p) return;
   if(p.idx+1<p.cards.length){ p.idx++; p.flip=false; render(); } else await finishStudy(); }
+/* Xin AI ví dụ + cách dùng cho thẻ đang xem (cache theo từ để khỏi gọi lại) */
+async function aiExampleForCurrent(){ const p=S.play; if(!p||!p.cards) return; const c=p.cards[p.idx]; if(!c) return;
+  p.exCache=p.exCache||{}; const cur=p.exCache[c.en]; if(cur==='loading'||(cur&&!cur.error)) return;
+  p.exCache[c.en]='loading'; render();
+  try{ const j=await apiPost('/api/word-example',{en:c.en,vi:c.vi},9000);
+    p.exCache[c.en]={ example:j.example||'', example_vi:j.example_vi||'', usage:j.usage||'' };
+  }catch(e){ p.exCache[c.en]={error:true}; toast('Chưa lấy được ví dụ (cần deploy bản AI)'); }
+  render(); }
 async function finishStudy(){ const p=S.play; p.done=true;
   p.streakUp=await bumpStreak();
   if(p.mode==='quiz' && p.src==='lesson' && p.quiz && p.quiz.to_person===S.me && p.quiz.status!=='answered'){

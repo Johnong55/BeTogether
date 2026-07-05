@@ -58,6 +58,14 @@ Streak (`bumpStreak`): học/thi/trả lời câu hỏi xong → chuỗi +1 (1 l
 - 28 chủ đề (14 vựng + 14 colloc) nên có ô tìm kiếm (`data-filter="lib"`, bỏ dấu qua `noDiacritics()`, gõ "hop dong" vẫn ra "Hợp đồng") + chip lọc nhanh Tất cả/Của mình/Từ vựng/Collocation (`S.tmp.libFilter`).
 - `applyLibFilter()` chạy lại sau mỗi `render()` khi ở `view==='library'` không mở topic con, ẩn cả `.lib-sec` rỗng và hiện `#lib-empty` khi không khớp gì.
 
+## AI — Cloudflare Workers AI qua Pages Functions (KHÔNG phải server Node riêng)
+- Thư mục **`functions/api/*.js`** = Cloudflare **Pages Functions**, tự thành endpoint trên cùng domain `cungnhau.pages.dev`. `wrangler.toml` khai báo binding `[ai] binding="AI"` → hàm gọi `env.AI.run(MODEL, {...})`. Deploy vẫn `wrangler pages deploy .` (thấy dòng "Uploading Functions bundle").
+- 2 endpoint: **`/api/daily-question`** (POST `{recent:[]}` → `{question}`) và **`/api/word-example`** (POST `{en,vi}` → `{example,example_vi,usage}`).
+- index.html gọi qua `apiPost(path,body,ms)` (có timeout, ném lỗi để fallback). **Câu hỏi mỗi ngày**: `ensureDaily` thử AI trước, lỗi/chế độ máy → dùng `DAILY_QUESTIONS` cố định (sinh 1 lần/ngày, lưu chung `daily.question`). **Ví dụ từ**: nút "Xin ví dụ (AI)" ở màn thẻ lật (`flashExample`, `aiExampleForCurrent`, cache theo từ trong `S.play.exCache`).
+- ⚠️ **Model Workers AI hay bị deprecate** (báo lỗi `5028`). Dùng `npx wrangler ai models` để xem model còn sống rồi đổi hằng `MODEL` trong 2 file. Hiện dùng `@cf/meta/llama-3.3-70b-instruct-fp8-fast`.
+- ⚠️ `env.AI.run` có khi trả `response` là **object** (không phải string) → luôn `String(out.response)` / kiểm tra `typeof` trước khi `.trim()`/parse. Endpoint tự parse JSON lỏng lẻo (regex `\{...\}`).
+- Preview local (`python http.server`) KHÔNG có `/api` → `apiPost` 404 → fallback êm; muốn test AI thật phải deploy rồi `curl` domain thật.
+
 ## Lottie (index.html: `mountLotties`, `initLoading`)
 - lottie-web cdnjs 5.12.2. 3 file trong `/lottie/`: **love** (tim đập, loading overlay `#loading`), **crown** (vương miện nảy, khi THẮNG), **rain** (mây+mưa, khi THUA).
 - `mountLotties()` chạy cuối `render()`, quét `[data-lottie]:not([data-lottie-done])`. Thắng→confetti, thua→KHÔNG confetti (`celebrate` gated `iWin||tie`).
