@@ -89,7 +89,20 @@ create table if not exists notes (
   text        text,
   color       text,
   remind_at   date,                         -- ngày nhắc (lời nhắc); null = ghi chú thường
+  remind_time text,                         -- giờ nhắc cụ thể 'HH:MM' (giờ Việt Nam), null = mặc định đầu ngày
+  notified_at timestamptz,                  -- lúc đã đẩy push cho lời nhắc này (chặn gửi lại)
   done        boolean default false,        -- đã xong chưa
+  created_at  timestamptz default now()
+);
+
+-- Thuê bao nhận thông báo đẩy (Web Push) — mỗi máy/thiết bị đã bật thông báo là 1 dòng
+create table if not exists push_subscriptions (
+  id          text primary key,
+  space_id    text references spaces(id) on delete cascade,
+  person      text,                        -- 'a' | 'b'
+  endpoint    text unique,
+  p256dh      text,
+  auth        text,
   created_at  timestamptz default now()
 );
 
@@ -143,6 +156,8 @@ alter table daily  add column if not exists reply_b text;
 alter table spaces add column if not exists avatar_a text;   -- ảnh đại diện người A (JPEG nén dạng data URL)
 alter table spaces add column if not exists avatar_b text;   -- ảnh đại diện người B
 alter table quizzes add column if not exists progress jsonb; -- tiến độ đang làm dở (thoát ra vào lại không mất)
+alter table notes   add column if not exists remind_time text;
+alter table notes   add column if not exists notified_at timestamptz;
 
 -- ============================================================
 --  QUYỀN TRUY CẬP (RLS)
@@ -152,7 +167,7 @@ alter table quizzes add column if not exists progress jsonb; -- tiến độ đa
 do $$
 declare t text;
 begin
-  foreach t in array array['users','spaces','invites','decks','cards','quizzes','notes','daily','duels'] loop
+  foreach t in array array['users','spaces','invites','decks','cards','quizzes','notes','daily','duels','push_subscriptions'] loop
     execute format('alter table %I enable row level security;', t);
     execute format('drop policy if exists "allow all" on %I;', t);
     execute format('create policy "allow all" on %I for all using (true) with check (true);', t);

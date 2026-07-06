@@ -71,6 +71,19 @@ Streak (`bumpStreak`): học/thi/trả lời câu hỏi xong → chuỗi +1 (1 l
 - `mountLotties()` chạy cuối `render()`, quét `[data-lottie]:not([data-lottie-done])`. Thắng→confetti, thua→KHÔNG confetti (`celebrate` gated `iWin||tie`).
 - ⚠️ **GOTCHA**: repeater Lottie LỒNG NHAU (dọc×ngang) bị nhân sai offset trong lottie-web → rain.json dùng **mỗi cột 1 repeater dọc riêng** (sinh bằng Python, 10 cột so le). Đừng lồng repeater.
 
+## Thông báo đẩy (Web Push) — `push-worker/`
+- Nhắc (notes) có `remind_at`(ngày) + `remind_time`(giờ 'HH:MM', không bắt buộc) + `notified_at` (đã đẩy push chưa, chặn gửi lại). Nút "Bật thông báo đẩy" ở tab Nhắc (`enableNotif` trong index.html) xin quyền Notification + đăng ký `PushManager.subscribe` bằng `VAPID_PUBLIC_KEY` (hardcode ở index.html, không nhạy cảm) rồi lưu endpoint/p256dh/auth vào bảng `push_subscriptions` (Supabase). Nếu subscribe lỗi (không hỗ trợ, chưa cài app trên iOS…) vẫn fallback về thông báo "chỉ khi mở app" cũ (`maybeNotify`), không chặn app.
+- **`push-worker/`** là 1 **Cloudflare Worker RIÊNG** (không phải Pages Functions của app chính) — chạy cron `*/5 phút` (`push-worker/wrangler.toml`), tự kiểm tra `notes` tới giờ (so `remind_at`+`remind_time` theo giờ VN UTC+7, hardcode `TZ_OFFSET_HOURS=7`) rồi đẩy Web Push tới mọi `push_subscriptions` cùng `space_id` (cả hai người, giống cách `maybeNotify` cũ báo chung cho cả phòng). Gửi xong (hoặc không có ai để gửi) thì set `notified_at` — mỗi lời nhắc chỉ đẩy **1 lần**.
+- Tự cài đặt mã hoá **RFC 8291 (aes128gcm) + VAPID (RFC 8292)** bằng Web Crypto (`crypto.subtle`) thuần, KHÔNG dùng thư viện `web-push` (Workers runtime không cần npm install gì thêm). Đã tự kiểm chứng round-trip (mã hoá rồi giải mã lại, ký JWT rồi verify) bằng `preview_eval` trước khi tin dùng — xem lại nếu cần sửa thuật toán, đừng đoán mò vì sai sẽ SILENT FAIL (không báo lỗi rõ ràng, chỉ đơn giản là không có thông báo tới máy).
+- **Deploy TÁCH RIÊNG** khỏi app chính (khác lệnh `wrangler pages deploy`):
+  ```
+  cd push-worker
+  wrangler secret put VAPID_PRIVATE_KEY_PKCS8   # dán khoá riêng tư PKCS8 base64 (KHÔNG commit vào repo)
+  wrangler deploy
+  ```
+- ⚠️ Mỗi lần thêm cột/bảng liên quan (`push_subscriptions`, `notes.remind_time`, `notes.notified_at`) → USER PHẢI tự chạy SQL (xem schema.sql phần "Bổ sung cột").
+- ⚠️ iOS Safari: chỉ nhận được push nếu đã **cài app vào màn hình chính** (PWA installed), mở tab thường không đủ quyền push.
+
 ## Triển khai (deploy)
 - **Chính: Cloudflare Pages** → **https://cungnhau.pages.dev** . Lệnh (đã đăng nhập wrangler):
   ```

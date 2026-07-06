@@ -1,0 +1,18 @@
+# Cloudflare Worker riêng (KHÔNG phải Pages Functions) — chạy nền định kỳ để kiểm tra
+# lời nhắc tới giờ và đẩy Web Push tới các máy đã bật thông báo. Deploy tách biệt với app chính:
+#   cd push-worker && wrangler deploy
+name = "cungnhau-push-cron"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+
+[triggers]
+crons = ["*/5 * * * *"]
+
+[vars]
+SUPABASE_URL = "https://vklsqexomaconbzoufmu.supabase.co"
+SUPABASE_ANON_KEY = "sb_publishable_YDj6liDtYbMFq38GhwCwIQ_KlS-lNwI"
+VAPID_PUBLIC_KEY = "BEF2DJGS7-NEjOMHJuEgYGnvjQHE3zM4o49D_XsbkE9M-FEKjWbpkYoRB8tHLYOhhFE_cabFhCxJtZIZbQzwLE8"
+VAPID_SUBJECT = "mailto:trijohn124@gmail.com"
+
+# VAPID_PRIVATE_KEY_PKCS8 là bí mật — KHÔNG khai ở đây, đặt bằng:
+#   wrangler secret put VAPID_PRIVATE_KEY_PKCS8
