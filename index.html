@@ -180,6 +180,19 @@
   .progress{ height:7px; background:var(--line); border-radius:99px; overflow:hidden; margin:8px 0 16px; }
   .progress > i{ display:block; height:100%; background:linear-gradient(90deg,var(--p1),var(--accent)); border-radius:99px; transition:width .3s; }
 
+  /* đấm kiếm mở màn khi trận đấu bắt đầu (2 lưỡi kiếm lao vào nhau, nổ tia sáng) */
+  .duel-clash{ min-height:56vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; text-align:center; }
+  .clash-vs{ position:relative; width:200px; height:100px; }
+  .clash-sw{ position:absolute; top:50%; font-size:52px; transform:translateY(-50%); filter:drop-shadow(0 4px 10px rgba(160,110,120,.28)); }
+  .clash-sw.l{ left:-14px; animation:clashL .8s cubic-bezier(.3,.1,.25,1) forwards; }
+  .clash-sw.r{ right:-14px; animation:clashR .8s cubic-bezier(.3,.1,.25,1) forwards; }
+  @keyframes clashL{ 0%{ left:-14px; transform:translateY(-50%) rotate(-30deg);} 75%{ left:calc(50% - 44px); transform:translateY(-50%) rotate(18deg);} 100%{ left:calc(50% - 40px); transform:translateY(-50%) rotate(6deg);} }
+  @keyframes clashR{ 0%{ right:-14px; transform:translateY(-50%) scaleX(-1) rotate(-30deg);} 75%{ right:calc(50% - 44px); transform:translateY(-50%) scaleX(-1) rotate(18deg);} 100%{ right:calc(50% - 40px); transform:translateY(-50%) scaleX(-1) rotate(6deg);} }
+  .clash-spark{ position:absolute; top:50%; left:50%; font-size:38px; opacity:0; transform:translate(-50%,-50%) scale(.3); animation:clashSpark .55s ease .62s forwards; }
+  @keyframes clashSpark{ 0%{ transform:translate(-50%,-50%) scale(.3); opacity:0;} 45%{ transform:translate(-50%,-50%) scale(1.6); opacity:1;} 100%{ transform:translate(-50%,-50%) scale(1.1); opacity:0;} }
+  .clash-txt{ font-family:'Fraunces'; font-size:24px; color:var(--p1); opacity:0; animation:fade .4s ease .55s forwards; }
+  @media(prefers-reduced-motion:reduce){ .clash-sw,.clash-spark,.clash-txt{ animation:none !important; opacity:1; } .clash-sw.l{ left:calc(50% - 40px); } .clash-sw.r{ right:calc(50% - 40px); } }
+
   /* long-press (react câu hỏi mỗi ngày) */
   .longpressable{ -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; cursor:pointer; transition:transform .12s; }
   .longpressable.lp-active{ transform:scale(.98); }
@@ -1046,7 +1059,21 @@ function openDuelStakeModal(id){ const x=(S.duelHistory||[]).find(d=>d.id===id);
     <div class="card center" style="border:1.5px dashed var(--p2)">${result}</div>
     <button class="btn block" style="margin-top:14px" data-act="close-modal">Đóng</button>`);
 }
+/* Màn "đấm kiếm" mở đầu trận — hiện đúng 1 lần cho mỗi trận (cả hai phía), xong tự chuyển sang câu hỏi */
+function duelClashView(){
+  return `<div class="duel-clash">
+    <div class="clash-vs"><div class="clash-sw l">⚔️</div><div class="clash-sw r">⚔️</div><div class="clash-spark">✨</div></div>
+    <div class="clash-txt">Bắt đầu đấu!</div>
+  </div>`;
+}
 function duelPlayView(du){
+  if(!S.tmp.duelClashDone) S.tmp.duelClashDone=new Set();
+  if(!S.tmp.duelClashDone.has(du.id)){
+    S.tmp.duelClashDone.add(du.id);
+    if(navigator.vibrate){ try{ navigator.vibrate([15,40,15]); }catch(e){} }
+    setTimeout(()=>{ if(S.view==='arena' && S.duel && S.duel.id===du.id) render(); }, 1500);
+    return duelClashView();
+  }
   if(!S.duelPlay || S.duelPlay.id!==du.id) initDuelPlay(du);
   const p=S.duelPlay, qs=du.questions||[], total=qs.length||1;
   const op=du['progress_'+other(S.me)]||0;
