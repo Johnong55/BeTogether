@@ -1563,8 +1563,8 @@ async function handle(act,v,id,t,e){
     case 'flip': if(S.play){ S.play.flip=!S.play.flip; const fl=$('.flash'); if(fl) fl.classList.toggle('flip',S.play.flip); else render(); } break;
     case 'next-card': await nextCard(); break;
     case 'ai-example': await aiExampleForCurrent(); break;
-    case 'answer-mc': answerMc(parseInt(v,10)); break;
-    case 'check-scramble': checkScramble(); break;
+    case 'answer-mc': await answerMc(parseInt(v,10)); break;
+    case 'check-scramble': await checkScramble(); break;
     case 'next-q': await nextQ(); break;
     case 'to-quiz': { const p=S.play; startStudy(p.words,{mode:'quiz',src:p.src,quiz:p.quiz,title:p.title,back:p.back}); } break;
     case 'restudy': { const p=S.play; startStudy(p.words,{mode:p.mode,src:p.src,quiz:p.quiz,title:p.title,back:p.back}); } break;
@@ -1678,20 +1678,36 @@ function studyTopic(topicNo){ const t=topicByNo(topicNo); if(!t) return; startSt
 async function pickup(qid){ const q=S.quizzes.find(x=>x.id===qid); if(!q) return;
   if(q.status==='pending' && q.to_person===S.me){ q.status='picked'; q.picked_at=new Date().toISOString(); await Store.saveQuiz(q); }
   startStudy(q.items,{src:'lesson',quiz:q,title:q.title,back:'inbox'}); }
+/* Lưu bài dò kèm progress — chịu được DB cũ chưa chạy SQL thêm cột progress */
+async function saveQuizSafe(q){ try{ await Store.saveQuiz(q); }
+  catch(e){ const {progress,...rest}=q;
+    try{ await Store.saveQuiz(rest); toast('Đã lưu tạm — nhờ chạy SQL cột progress để lưu tiến độ lâu dài nha'); }catch(e2){} } }
+/* Lưu tiến độ đang làm dở của bài dò (được gửi), để thoát ra vào lại không mất */
+async function saveLessonProgress(idx,score){ const p=S.play; if(!p||!p.quiz||p.src!=='lesson') return;
+  p.quiz.progress = p.mode==='quiz' ? {mode:'quiz',idx,score,questions:p.questions} : {mode:'flash',idx,cards:p.cards};
+  await saveQuizSafe(p.quiz); }
 function startStudy(words,opts){ opts=opts||{}; const mode=opts.mode||'quiz';
   const norm=(words||[]).map(w=>({ en:(w.en||w.front||'').trim(), vi:(w.vi||w.back||'').trim() })).filter(w=>w.en&&w.vi);
   if(!norm.length){ toast('Chủ đề này chưa có từ để học'); return; }
+  const prog = opts.quiz && opts.quiz.progress && opts.quiz.progress.mode===mode ? opts.quiz.progress : null;
+  const cards = mode==='flash'? (prog && prog.cards && prog.cards.length===norm.length ? prog.cards : shuffle(norm)) : [];
+  const questions = mode==='quiz'? (prog && prog.questions && prog.questions.length ? prog.questions : buildQuestions(norm)) : [];
+  const idx = prog ? Math.max(0, prog.idx||0) : 0;
+  const alreadyDone = mode==='quiz' && prog && idx>=questions.length;
   S.play={ mode, src:opts.src||'lib', quiz:opts.quiz||null, title:opts.title||'Học', back:opts.back||'library',
-    words:norm, idx:0, score:0, done:false, streakUp:false, flip:false,
-    cards: mode==='flash'? shuffle(norm) : [],
-    questions: mode==='quiz'? buildQuestions(norm) : [],
+    words:norm, idx: alreadyDone?Math.max(0,questions.length-1):(mode==='flash'?Math.min(idx,cards.length-1):idx),
+    score:(prog&&prog.score)||0, done:alreadyDone, streakUp:false, flip:false,
+    cards, questions,
     phase:'ask', chosen:null, answerGiven:'', lastCorrect:null };
-  render(); scrollTo(0,0); }
-function answerMc(i){ const p=S.play; if(!p||p.phase!=='ask') return; const q=p.questions[p.idx];
-  p.chosen=i; p.lastCorrect=(q.options[i]===q.vi); if(p.lastCorrect)p.score++; p.phase='feedback'; render(); }
-function checkScramble(){ const p=S.play; if(!p||p.phase!=='ask') return; const q=p.questions[p.idx];
+  render(); scrollTo(0,0);
+  if(alreadyDone) finishStudy(); }
+async function answerMc(i){ const p=S.play; if(!p||p.phase!=='ask') return; const q=p.questions[p.idx];
+  p.chosen=i; p.lastCorrect=(q.options[i]===q.vi); if(p.lastCorrect)p.score++; p.phase='feedback'; render();
+  await saveLessonProgress(p.idx+1,p.score); }
+async function checkScramble(){ const p=S.play; if(!p||p.phase!=='ask') return; const q=p.questions[p.idx];
   const val=($('#sc_input')?.value||'').trim(); if(!val){ toast('Gõ từ đã nha'); return; }
-  p.answerGiven=val; p.lastCorrect=(val.toLowerCase()===q.en.toLowerCase()); if(p.lastCorrect)p.score++; p.phase='feedback'; render(); }
+  p.answerGiven=val; p.lastCorrect=(val.toLowerCase()===q.en.toLowerCase()); if(p.lastCorrect)p.score++; p.phase='feedback'; render();
+  await saveLessonProgress(p.idx+1,p.score); }
 async function nextQ(){ const p=S.play; if(!p) return;
   if(p.idx+1<p.questions.length){ p.idx++; p.phase='ask'; p.chosen=null; p.answerGiven=''; render(); }
   else await finishStudy(); }
@@ -1702,6 +1718,7 @@ async function nextCard(){ const p=S.play; if(!p||p.turning) return;
     p.turning=true; fl.classList.remove('flip'); fl.classList.add('turn');   // lật trang cũ đi
     await new Promise(r=>setTimeout(r,410)); p.turning=false; }
   p.idx++; p.flip=false; p.turnIn=true; render(); p.turnIn=false;             // trang mới rơi vào
+  await saveLessonProgress(p.idx,null);
 }
 /* Xin AI ví dụ + cách dùng cho thẻ đang xem (cache theo từ để khỏi gọi lại) */
 async function aiExampleForCurrent(){ const p=S.play; if(!p||!p.cards) return; const c=p.cards[p.idx]; if(!c) return;
@@ -1713,9 +1730,12 @@ async function aiExampleForCurrent(){ const p=S.play; if(!p||!p.cards) return; c
   render(); }
 async function finishStudy(){ const p=S.play; p.done=true;
   p.streakUp=await bumpStreak();
-  if(p.mode==='quiz' && p.src==='lesson' && p.quiz && p.quiz.to_person===S.me && p.quiz.status!=='answered'){
-    const q=p.quiz; q.status='answered'; q.score=p.score; q.total=p.questions.length; q.answered_at=new Date().toISOString();
-    await Store.saveQuiz(q); }
+  if(p.quiz && p.src==='lesson'){
+    const q=p.quiz; let changed=false;
+    if(p.mode==='quiz' && q.to_person===S.me && q.status!=='answered'){
+      q.status='answered'; q.score=p.score; q.total=p.questions.length; q.answered_at=new Date().toISOString(); changed=true; }
+    if(q.progress){ q.progress=null; changed=true; }
+    if(changed) await saveQuizSafe(q); }
   render(); celebrate(); }
 async function noteSave(){ const text=($('#m_note')?.value||'').trim(); if(!text){ toast('Viết gì đó đã nha'); return; }
   const remind_at=($('#m_remind')?.value||'')||null;
