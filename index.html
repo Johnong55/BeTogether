@@ -1251,6 +1251,7 @@ function flashExample(c){ const ex=(S.play.exCache||{})[c.en];
   if(ex&&ex.error) return `<button class="btn ghost block" style="margin-top:12px" data-act="ai-example">${ic('spark','sm')} Thử lại xin ví dụ</button>`;
   if(ex) return `<div class="card" style="margin-top:12px;border:1px solid var(--p2)">
       <div class="label" style="margin-top:0">${ic('spark','sm')} Ví dụ (AI)</div>
+      ${ex.meaning_note?`<p style="margin:0 0 8px;font-size:13px;font-weight:700;color:var(--no)">⚠️ ${esc(ex.meaning_note)}</p>`:''}
       <p style="margin:0 0 6px;font-weight:700">${esc(ex.example||'')}</p>
       ${ex.example_vi?`<p class="muted" style="margin:0 0 8px">${esc(ex.example_vi)}</p>`:''}
       ${ex.usage?`<p style="margin:0;font-size:14px"><b>Cách dùng:</b> ${esc(ex.usage)}</p>`:''}</div>`;
@@ -1752,7 +1753,7 @@ async function aiExampleForCurrent(){ const p=S.play; if(!p||!p.cards) return; c
   p.exCache=p.exCache||{}; const cur=p.exCache[c.en]; if(cur==='loading'||(cur&&!cur.error)) return;
   p.exCache[c.en]='loading'; render();
   try{ const j=await apiPost('/api/word-example',{en:c.en,vi:c.vi},9000);
-    p.exCache[c.en]={ example:j.example||'', example_vi:j.example_vi||'', usage:j.usage||'' };
+    p.exCache[c.en]={ example:j.example||'', example_vi:j.example_vi||'', usage:j.usage||'', meaning_note:j.meaning_note||'' };
   }catch(e){ p.exCache[c.en]={error:true}; toast('Chưa lấy được ví dụ (cần deploy bản AI)'); }
   render(); }
 async function finishStudy(){ const p=S.play; p.done=true;
