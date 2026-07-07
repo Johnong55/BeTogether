@@ -303,6 +303,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="library.js"></script>
+<script src="grammar.js"></script>
 <script>
 /* =================================================================
    CẤU HÌNH — dán thông tin Supabase để BẬT đồng bộ qua mạng.
@@ -354,6 +355,9 @@ const THEME_DOT = { blush:'#d97a92', sage:'#7fa68c', dusk:'#9384c0', sky:'#6f9dc
 const DECK_TINT = ['#f3dbe1','#e3ecdf','#e2dcf0','#dde8f1','#efe2cf','#f0e3d9'];
 const NOTE_TINT = ['#fdeef0','#eef6ef','#efeafa','#e9f1f8','#f9f0e3','#f4eee9'];
 const LIBRARY = (window.LIBRARY||[]);
+const GRAMMAR = (window.GRAMMAR||[]);
+const grammarById = (id)=> GRAMMAR.find(g=>g.id===id);
+const GRAMMAR_GROUPS = [['present','Các thì Hiện tại'],['past','Các thì Quá khứ'],['future','Các thì Tương lai'],['conditional','Câu điều kiện'],['passive','Câu bị động'],['reported','Câu tường thuật'],['comparison','So sánh']];
 const ALL_VI = LIBRARY.flatMap(t=>t.words.map(w=>w.vi));
 const topicByNo = (no)=> LIBRARY.find(t=>String(t.no)===String(no));
 function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
@@ -746,7 +750,7 @@ function render(){ const app=$('#app');
     let b='';
     switch(S.view){
       case 'home': b=viewHome(); break;
-      case 'library': b=S.sub?viewTopic():viewLibrary(); break;
+      case 'library': b=S.sub?(String(S.sub).startsWith('g:')?viewGrammar():viewTopic()):viewLibrary(); break;
       case 'arena': b=viewArena(); break;
       case 'inbox': b=viewInbox(); break;
       case 'notes': b=viewNotes(); break;
@@ -913,9 +917,22 @@ function topicRow(t,i){
     <div class="grow"><b>${esc(t.name)}</b><div class="muted">${esc(t.vi||'')} · ${t.words.length} ${unitWord(t)}</div></div>
     <span class="muted">›</span></div>`;
 }
+function grammarRow(g,i){
+  const nm=noDiacritics(g.name+' '+g.en+' ngu phap grammar '+(g.tag||'')).toLowerCase();
+  return `<div class="card listitem" data-act="open-grammar" data-id="${g.id}" data-flt="lib" data-name="${esc(nm)}">
+    <div class="thumb" style="background:${DECK_TINT[i%DECK_TINT.length]};font-family:'Fraunces';font-weight:600;color:var(--p1);font-size:13px">${esc(g.tag||'NP')}</div>
+    <div class="grow"><b>${esc(g.name)}</b><div class="muted">${esc(g.en)} · ${g.practice.length} câu luyện</div></div>
+    <span class="muted">›</span></div>`;
+}
+function grammarSections(){
+  let out=''; let i=0;
+  GRAMMAR_GROUPS.forEach(([gk,label])=>{ const items=GRAMMAR.filter(g=>g.group===gk); if(!items.length) return;
+    out+=`<div class="label">${esc(label)}</div>`+items.map(g=>grammarRow(g,i++)).join(''); });
+  return out;
+}
 function viewLibrary(){
   const filter=S.tmp.libFilter||'all';
-  const showMine=filter==='all'||filter==='mine', showVocab=filter==='all'||filter==='vocab', showColloc=filter==='all'||filter==='colloc';
+  const showMine=filter==='all'||filter==='mine', showVocab=filter==='all'||filter==='vocab', showColloc=filter==='all'||filter==='colloc', showGrammar=filter==='all'||filter==='grammar';
   const mine=S.decks.map((d,i)=>{ const n=S.cards.filter(c=>c.deck_id===d.id).length;
     const name=noDiacritics(d.name+' '+(d.lang||'')+' bo cua minh').toLowerCase();
     return `<div class="card listitem" data-act="open-deck" data-id="${d.id}" data-flt="lib" data-name="${esc(name)}">
@@ -937,10 +954,12 @@ function viewLibrary(){
       ${S.decks.length?chip('mine','Của mình 💗'):''}
       ${chip('vocab','Từ vựng B2')}
       ${chip('colloc','Collocation 🧩')}
+      ${GRAMMAR.length?chip('grammar','Ngữ pháp 📖'):''}
     </div>
     ${ showMine && S.decks.length?`<div class="lib-sec"><div class="label" style="margin-top:2px">Bộ từ của mình 💗</div>${mine}</div>`:'' }
     ${ showVocab?`<div class="lib-sec"><div class="label">Từ vựng B2 (từ đơn)</div>${vocab.map((t,i)=>topicRow(t,i)).join('')}</div>`:'' }
     ${ showColloc?`<div class="lib-sec"><div class="label">Collocation TOEIC 🧩 (cụm từ)</div>${colloc.map((t,i)=>topicRow(t,i)).join('')}</div>`:'' }
+    ${ showGrammar && GRAMMAR.length?`<div class="lib-sec"><div class="label" style="color:var(--accent)">Ngữ pháp 📖 (thì · cách dùng · luyện tập)</div>${grammarSections()}</div>`:'' }
     <div class="empty" id="lib-empty" style="display:none">${ic('search','lg')}<div>Không tìm thấy chủ đề nào khớp.<br>Thử từ khoá khác xem sao?</div></div>`; }
 
 function viewTopic(){ const t=topicByNo(S.sub);
@@ -962,6 +981,32 @@ function viewTopic(){ const t=topicByNo(S.sub);
       ${t.words.map(w=>`<div class="cardrow" data-flt="tw" data-name="${esc((w.en+' '+w.vi).toLowerCase())}">
         <div class="grow"><b>${esc(w.en)}</b><div class="muted">${esc(w.vi)}</div></div></div>`).join('')}
     </div>`; }
+
+/* ---------- NGỮ PHÁP ---------- */
+function viewGrammar(){ const g=grammarById(String(S.sub).slice(2));
+  if(!g){ S.sub=null; return viewLibrary(); }
+  const fRow=(lab,txt)=>`<div class="cardrow"><div style="width:64px;flex:none;font-weight:800;color:var(--soft);font-size:12px">${lab}</div><div class="grow" style="font-family:'Fraunces';font-size:15px">${esc(txt)}</div></div>`;
+  return `
+    <div class="row" style="margin-bottom:12px"><button class="iconbtn" data-act="go" data-v="library">${ic('back','sm')}</button>
+      <div class="thumb" style="background:${DECK_TINT[1]};font-family:'Fraunces';color:var(--p1);font-size:13px">${esc(g.tag||'NP')}</div>
+      <div class="grow"><b style="font-size:17px">${esc(g.name)}</b><div class="muted">${esc(g.en)}</div></div></div>
+
+    <button class="btn block" data-act="grammar-practice" data-id="${g.id}" style="margin-bottom:14px">${ic('spark','sm')} Luyện tập (${g.practice.length} câu)</button>
+
+    <div class="label" style="margin-top:0">Công thức</div>
+    <div class="card" style="padding:8px 14px">
+      ${fRow('(+)',g.formula.aff)}${fRow('(−)',g.formula.neg)}${fRow('(?)',g.formula.ques)}
+    </div>
+
+    <div class="label">Cách dùng</div>
+    <div class="card">${g.usage.map(u=>`<div class="task"><div class="tx grow" style="font-weight:600">• ${esc(u)}</div></div>`).join('')}</div>
+
+    ${ g.signals&&g.signals.length?`<div class="label">Dấu hiệu nhận biết</div>
+      <div class="chips" style="margin-bottom:4px">${g.signals.map(s=>`<span class="chip" style="cursor:default">${esc(s)}</span>`).join('')}</div>`:'' }
+
+    <div class="label">Ví dụ</div>
+    <div class="card">${g.examples.map((e,i)=>`<div class="cardrow"><div class="grow"><b>${esc(e.en)}</b><div class="muted">${esc(e.vi)}</div></div></div>`).join('')}</div>`;
+}
 
 /* ---------- BỘ TỪ CỦA MÌNH ---------- */
 function viewMyDeck(d){ const cards=S.cards.filter(c=>c.deck_id===d.id);
@@ -1245,7 +1290,51 @@ function viewInbox(){ const tab=S.inboxTab;
       </div>`;}).join('') : `<div class="empty">${ic('inbox','lg')}<div>${tab==='in'?'Chưa có bài nào gửi cho bạn.':'Bạn chưa gửi chủ đề nào.<br>Vào Học → chọn chủ đề → Gửi.'}</div></div>` }`; }
 
 /* ---------- STUDY (thẻ lật + trắc nghiệm) ---------- */
-function viewStudy(){ return S.play.mode==='flash' ? flashView(S.play) : quizView(S.play); }
+function viewStudy(){ return S.play.mode==='flash' ? flashView(S.play) : S.play.mode==='grammar' ? grammarPracticeView(S.play) : quizView(S.play); }
+
+/* ---------- LUYỆN NGỮ PHÁP (chia động từ + trắc nghiệm) ---------- */
+function grammarPracticeView(p){ const total=p.questions.length;
+  if(p.done){ const pct=total?Math.round(p.score/total*100):0, msg=pct>=80?'Giỏi quá đi':pct>=50?'Cố thêm chút nha':'Ôn lại rồi thử lại nhé';
+    return `<div class="screen center">
+      <div class="brand-mark" style="margin:18px auto 0">${ic(pct>=80?'trophy':'heart')}</div>
+      <h1 style="margin:14px 0 4px">${p.score}/${total} đúng</h1><p style="font-weight:700">${msg}</p>
+      ${p.streakUp?`<div class="card" style="background:linear-gradient(150deg,var(--p1),var(--p2));color:#fff;margin-top:12px">
+        <b style="font-size:19px">Chuỗi ${S.space.streak} ngày</b><div style="opacity:.9">Giữ được chuỗi hôm nay rồi</div></div>`:''}
+      <div class="row" style="gap:10px;margin-top:16px">
+        <button class="btn ghost block" data-act="restudy">Làm lại</button>
+        <button class="btn block" data-act="finish-play">Xong</button></div></div>`; }
+  const q=p.questions[p.idx], fb=(p.phase==='feedback');
+  return `<div class="screen">
+    <div class="row" style="margin-bottom:8px"><button class="iconbtn" data-act="quit-play">${ic('x','sm')}</button>
+      <div class="grow center" style="font-weight:800">Câu ${p.idx+1}/${total}</div><div style="width:38px"></div></div>
+    ${progressBar(p.idx/total*100)}
+    ${ q.type==='mc' ? grMcBody(q,p,fb) : grConjBody(q,p,fb) }`; }
+
+function grConjBody(q,p,fb){
+  return `<div class="card" style="padding:22px 16px">
+      <div class="muted" style="font-weight:700;margin-bottom:8px">Chia động từ / điền vào chỗ trống</div>
+      <div style="font-family:'Fraunces';font-size:19px;line-height:1.5">${esc(q.q)}</div></div>
+    <input id="gr_input" placeholder="Điền đáp án..." autocapitalize="none" autocomplete="off" autocorrect="off" spellcheck="false" ${fb?'disabled':''} value="${esc(p.answerGiven||'')}" style="text-align:center;font-size:18px"/>
+    ${ fb ? grFeedback(p,q) : `<button class="btn block" style="margin-top:12px" data-act="check-grammar">Kiểm tra</button>` }`; }
+
+function grMcBody(q,p,fb){
+  return `<div class="card" style="padding:22px 16px">
+      <div style="font-family:'Fraunces';font-size:18px;line-height:1.5">${esc(q.q)}</div></div>
+    ${q.options.map((opt,i)=>{ let cls='btn ghost block', style='justify-content:flex-start;text-align:left;margin-bottom:10px';
+        if(fb){ if(i===q.answer){ cls='btn block'; style+=';background:linear-gradient(135deg,var(--ok),#8fc4ac);border:none;color:#fff'; }
+                else if(i===p.chosen){ cls='btn block'; style+=';background:#f1c7ce;border:none;color:var(--no)'; }
+                else style+=';opacity:.45'; }
+        return `<button class="${cls}" style="${style}" ${fb?'disabled':''} data-act="grammar-mc" data-v="${i}">${esc(opt)}</button>`;
+      }).join('')}
+    ${ fb?grFeedback(p,q):'' }`; }
+
+function grFeedback(p,q){ const ok=p.lastCorrect;
+  const ans = q.type==='mc' ? q.options[q.answer] : q.answer;
+  return `<div class="card" style="background:${ok?'var(--chip)':'#fdeef0'};margin-top:12px">
+      <b style="color:${ok?'var(--ok)':'var(--no)'}">${ok?'Chính xác! 🎉':'Chưa đúng'}</b>
+      ${ !ok?`<div style="margin-top:4px">Đáp án: <b>${esc(ans)}</b></div>`:'' }
+      ${ q.explain?`<div class="muted" style="margin-top:6px">💡 ${esc(q.explain)}</div>`:'' }</div>
+    <button class="btn block" data-act="next-q">${p.idx+1<p.questions.length?'Câu tiếp':'Xem kết quả'}</button>`; }
 
 function flashView(p){ const total=p.cards.length;
   if(p.done){
@@ -1558,6 +1647,7 @@ function applyLibFilter(){
 
 document.addEventListener('keydown',(e)=>{ if(e.key!=='Enter') return;
   if(e.target.id==='sc_input'){ e.preventDefault(); handle('check-scramble'); }
+  else if(e.target.id==='gr_input'){ e.preventDefault(); handle('check-grammar'); }
   else if(e.target.id==='dsc_input'){ e.preventDefault(); handle('d-check-scramble'); }
   else if(e.target.id==='d_reply_input'){ e.preventDefault(); handle('d-reply-send',S.tmp.dReplyOpen); }
   else if(e.target.id==='qa_front'){ e.preventDefault(); $('#qa_back')?.focus(); }
@@ -1584,6 +1674,10 @@ async function handle(act,v,id,t,e){
 
     case 'lib-filter': S.tmp.libFilter=v; render(); break;
     case 'open-topic': S.sub=id; S.view='library'; render(); scrollTo(0,0); break;
+    case 'open-grammar': S.sub='g:'+id; S.view='library'; render(); scrollTo(0,0); break;
+    case 'grammar-practice': startGrammarPractice(id); break;
+    case 'check-grammar': await checkGrammar(); break;
+    case 'grammar-mc': grammarMc(parseInt(v,10)); break;
     case 'study-topic': { const tt=topicByNo(id); if(tt) startStudy(tt.words,{mode:t.dataset.mode||'quiz',src:'lib',title:tt.name,back:'library'}); } break;
     case 'send-topic': await sendTopic(id); break;
 
@@ -1625,7 +1719,7 @@ async function handle(act,v,id,t,e){
     case 'check-scramble': await checkScramble(); break;
     case 'next-q': await nextQ(); break;
     case 'to-quiz': { const p=S.play; startStudy(p.words,{mode:'quiz',src:p.src,quiz:p.quiz,title:p.title,back:p.back}); } break;
-    case 'restudy': { const p=S.play; startStudy(p.words,{mode:p.mode,src:p.src,quiz:p.quiz,title:p.title,back:p.back}); } break;
+    case 'restudy': { const p=S.play; if(p.mode==='grammar') startGrammarPractice(p.grammarId); else startStudy(p.words,{mode:p.mode,src:p.src,quiz:p.quiz,title:p.title,back:p.back}); } break;
     case 'quit-play': { const back=(S.play&&S.play.back)||'home'; S.play=null; S.view=back; render(); } break;
     case 'finish-play': S.play=null; S.view='home'; await loadAll(); render(); break;
 
@@ -1759,6 +1853,25 @@ function startStudy(words,opts){ opts=opts||{}; const mode=opts.mode||'quiz';
     phase:'ask', chosen:null, answerGiven:'', lastCorrect:null };
   render(); scrollTo(0,0);
   if(alreadyDone) finishStudy(); }
+/* ----- luyện ngữ pháp ----- */
+function startGrammarPractice(id){ const g=grammarById(id);
+  if(!g||!g.practice||!g.practice.length){ toast('Chủ điểm này chưa có bài luyện'); return; }
+  S.play={ mode:'grammar', grammarId:id, src:'grammar', quiz:null, title:g.name, back:'library',
+    questions:shuffle(g.practice.slice()), idx:0, score:0, done:false, streakUp:false,
+    phase:'ask', chosen:null, answerGiven:'', lastCorrect:null };
+  render(); scrollTo(0,0); }
+const CONTRACTIONS=[["do not","don't"],["does not","doesn't"],["did not","didn't"],["is not","isn't"],["are not","aren't"],["was not","wasn't"],["were not","weren't"],["has not","hasn't"],["have not","haven't"],["had not","hadn't"],["will not","won't"],["i will","i'll"],["will have","'ll have"],["will be","'ll be"]];
+function normAns(s){ let x=(s||'').toLowerCase().trim().replace(/[’]/g,"'").replace(/\s+/g,' ').replace(/[.!?]+$/,'');
+  CONTRACTIONS.forEach(([full,con])=>{ x=x.split(con).join(full); });  // đưa mọi contraction về dạng đầy đủ
+  return x.replace(/\s+/g,' ').trim(); }
+function matchAnswer(val,q){ const v=normAns(val);
+  const cands=[q.answer].concat(q.alts||[]);
+  return cands.some(c=>normAns(c)===v); }
+async function checkGrammar(){ const p=S.play; if(!p||p.phase!=='ask') return; const q=p.questions[p.idx];
+  const val=($('#gr_input')?.value||'').trim(); if(!val){ toast('Điền đáp án đã nha'); return; }
+  p.answerGiven=val; p.lastCorrect=matchAnswer(val,q); if(p.lastCorrect)p.score++; p.phase='feedback'; render(); }
+function grammarMc(i){ const p=S.play; if(!p||p.phase!=='ask') return; const q=p.questions[p.idx];
+  p.chosen=i; p.lastCorrect=(i===q.answer); if(p.lastCorrect)p.score++; p.phase='feedback'; render(); }
 async function answerMc(i){ const p=S.play; if(!p||p.phase!=='ask') return; const q=p.questions[p.idx];
   p.chosen=i; p.lastCorrect=(q.options[i]===q.vi); if(p.lastCorrect)p.score++; p.phase='feedback'; render();
   await saveLessonProgress(p.idx+1,p.score); }
