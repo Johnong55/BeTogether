@@ -7,23 +7,30 @@ const TZ_OFFSET_HOURS = 7; // Việt Nam UTC+7, không có giờ tiết kiệm �
 
 export default {
   async scheduled(event, env, ctx) { ctx.waitUntil(run(env)); },
-  async fetch(req, env) { await run(env); return new Response('ok'); }, // cho phép gọi tay để test
+  // cho phép gọi tay để test — trả về log chi tiết dạng JSON để debug khi thông báo không tới
+  async fetch(req, env) { const result = await run(env); return new Response(JSON.stringify(result, null, 2), { headers: { 'Content-Type': 'application/json' } }); },
 };
 
 async function run(env) {
   const notes = await getDueNotes(env);
+  const log = [];
   for (const note of notes) {
     const subs = await getSubs(env, note.space_id);
+    const subResults = [];
     for (const sub of subs) {
       try {
         await sendPush(env, sub, { title: 'cùng nhau 🔔', body: note.text });
+        subResults.push({ sub: sub.id, ok: true });
       } catch (e) {
+        subResults.push({ sub: sub.id, ok: false, status: e && e.status, message: e && e.message });
         if (e && (e.status === 404 || e.status === 410)) await deleteSub(env, sub.id);
       }
     }
     await markNotified(env, note.id);
+    log.push({ note: note.id, text: note.text, subs: subResults });
   }
-  return { checked: notes.length };
+  console.log(JSON.stringify({ checked: notes.length, log }));
+  return { checked: notes.length, log };
 }
 
 function sbHeaders(env) {
@@ -154,5 +161,5 @@ async function sendPush(env, sub, payloadObj) {
     headers: { 'Content-Type': 'application/octet-stream', 'Content-Encoding': 'aes128gcm', TTL: '86400', Authorization: header },
     body,
   });
-  if (!res.ok) { const err = new Error('push failed ' + res.status); err.status = res.status; throw err; }
+  if (!res.ok) { const bodyText = await res.text().catch(() => ''); const err = new Error(`push failed ${res.status}: ${bodyText}`); err.status = res.status; throw err; }
 }
