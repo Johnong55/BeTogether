@@ -560,7 +560,7 @@ const HeartTank={
   attach(){ if(this.listening) return; window.addEventListener('devicemotion',this.onMotion,true); this.listening=true; },
   ensure(cv){ if(!cv) return; this.cv=cv; this.ctx=cv.getContext('2d');
     this.resize();
-    if(!this.parts.length) this.seed(Math.round(Math.max(36, Math.min(54, this.w*this.h/1600))));
+    if(!this.parts.length) this.seed(100);
     // Android/desktop: gắn cảm biến luôn (không cần xin quyền)
     const D=window.DeviceMotionEvent;
     if(D && typeof D.requestPermission!=='function'){ this.attach(); this.motionOn=true; }
