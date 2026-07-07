@@ -180,6 +180,19 @@
   .progress{ height:7px; background:var(--line); border-radius:99px; overflow:hidden; margin:8px 0 16px; }
   .progress > i{ display:block; height:100%; background:linear-gradient(90deg,var(--p1),var(--accent)); border-radius:99px; transition:width .3s; }
 
+  /* Thanh tiến độ kiểu "thanh trụ" có trái tim bay vòng quanh — dùng khi làm bài/thi đấu */
+  .progress-heart{ position:relative; margin:8px 0 16px; }
+  .progress-heart .progress{ margin:0; box-shadow:inset 0 1.5px 3px rgba(0,0,0,.14), inset 0 -1px 0 rgba(255,255,255,.5); }
+  .progress-heart .orbit-heart{ position:absolute; top:50%; left:0; font-size:11px; line-height:1;
+    transform:translate(-50%,-50%); pointer-events:none; animation:heartDrift 3.6s linear infinite, heartOrbit 1.2s ease-in-out infinite; }
+  @keyframes heartDrift{ from{ left:-4%; } to{ left:104%; } }
+  @keyframes heartOrbit{
+    0%,100%{ transform:translate(-50%,-50%) translateY(0) scale(1); opacity:1; z-index:3; }
+    25%{ transform:translate(-50%,-50%) translateY(-8px) scale(.5); opacity:.5; z-index:1; }
+    75%{ transform:translate(-50%,-50%) translateY(8px) scale(.5); opacity:.5; z-index:1; }
+  }
+  @media (prefers-reduced-motion:reduce){ .progress-heart .orbit-heart{ display:none; } }
+
   /* đấm kiếm mở màn khi trận đấu bắt đầu (2 lưỡi kiếm lao vào nhau, nổ tia sáng) */
   .duel-clash{ min-height:56vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; text-align:center; }
   .clash-vs{ position:relative; width:200px; height:100px; }
@@ -396,6 +409,12 @@ const other = (p)=> p==='a'?'b':'a';
 const fitPx = (s)=>{ const n=(s||'').length; return n>26?19:(n>15?24:30); }; // cụm dài -> chữ nhỏ lại
 function daysDiff(fromStr){ if(!fromStr) return null; const a=new Date(fromStr+'T00:00:00'); const n=new Date();
   const t=new Date(n.getFullYear(),n.getMonth(),n.getDate()); return Math.round((t-a)/86400000); }
+/* Thanh tiến độ "thanh trụ" + trái tim bay vòng quanh — dùng cho màn học/thi và đấu trường */
+function progressBar(pct,opts){ opts=opts||{}; const id=opts.id?` id="${opts.id}"`:''; const style=opts.style?`;${opts.style}`:'';
+  return `<div class="progress-heart"><div class="progress"><i${id} style="width:${pct}%${style}"></i></div>
+    <span class="orbit-heart" style="animation-delay:0s,0s">💗</span>
+    <span class="orbit-heart" style="animation-delay:-1.2s,-.4s">💗</span>
+    <span class="orbit-heart" style="animation-delay:-2.4s,-.8s">💗</span></div>`; }
 
 /* ===================== STORE (cloud / máy) ===================== */
 const useCloud = !!(SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase);
@@ -1089,7 +1108,7 @@ function duelPlayView(du){
         <div class="muted">Đợi ${esc(partner()||'người ấy')} làm xong là biết ai thắng…</div></div>
       <div class="card"><div class="row"><span class="muted grow">Tiến độ của ${esc(partner()||'người ấy')}</span>
         <span class="muted" id="opp-txt">${esc(partner()||'Người ấy')}: ${op}/${total}</span></div>
-        <div class="progress"><i id="opp-fill" style="width:${op/total*100}%"></i></div></div>
+        ${progressBar(op/total*100,{id:'opp-fill'})}</div>
       <button class="btn danger block sm" data-act="duel-cancel-active">Huỷ trận (nếu chờ lâu quá)</button>`;
   }
   const q=qs[p.idx], fb=p.phase==='feedback';
@@ -1097,8 +1116,8 @@ function duelPlayView(du){
       <div class="grow center" style="font-weight:800">⚔️ Câu ${p.idx+1}/${total}</div><div style="width:38px"></div></div>
     <div class="row" style="margin:6px 2px 2px"><span class="muted grow">Bạn: ${p.score} đúng</span>
       <span class="muted" id="opp-txt">${esc(partner()||'Người ấy')}: ${op}/${total}</span></div>
-    <div class="progress"><i id="opp-fill" style="width:${op/total*100}%;background:linear-gradient(90deg,var(--accent),var(--p2))"></i></div>
-    <div class="progress"><i style="width:${p.idx/total*100}%"></i></div>
+    ${progressBar(op/total*100,{id:'opp-fill',style:'background:linear-gradient(90deg,var(--accent),var(--p2))'})}
+    ${progressBar(p.idx/total*100)}
     ${ q.kind==='mc' ? duelMcBody(q,p,fb) : duelScrBody(q,p,fb) }`;
 }
 function duelMcBody(q,p,fb){
@@ -1243,7 +1262,7 @@ function flashView(p){ const total=p.cards.length;
   return `<div class="screen">
     <div class="row" style="margin-bottom:8px"><button class="iconbtn" data-act="quit-play">${ic('x','sm')}</button>
       <div class="grow center" style="font-weight:800">Thẻ ${p.idx+1}/${total}</div><div style="width:38px"></div></div>
-    <div class="progress"><i style="width:${p.idx/total*100}%"></i></div>
+    ${progressBar(p.idx/total*100)}
     <div class="flash-wrap" style="margin-top:6px"><div class="flash ${p.flip?'flip':''}${p.turnIn?' turn-in':''}" data-act="flip"><div class="inner">
       <div class="face front"><div class="term" style="font-size:${fitPx(c.en)}px">${esc(c.en)}</div><div class="hint">Chạm để xem nghĩa</div></div>
       <div class="face back"><div class="term" style="font-size:${Math.min(24,fitPx(c.vi))}px">${esc(c.vi)}</div></div></div></div></div>
@@ -1277,7 +1296,7 @@ function quizView(p){ const total=p.questions.length;
   return `<div class="screen">
     <div class="row" style="margin-bottom:8px"><button class="iconbtn" data-act="quit-play">${ic('x','sm')}</button>
       <div class="grow center" style="font-weight:800">Câu ${p.idx+1}/${total}</div><div style="width:38px"></div></div>
-    <div class="progress"><i style="width:${p.idx/total*100}%"></i></div>
+    ${progressBar(p.idx/total*100)}
     ${ q.kind==='mc' ? mcBody(q,p,fb) : scrambleBody(q,p,fb) }`; }
 
 function mcBody(q,p,fb){
