@@ -278,5 +278,204 @@ window.GRAMMAR = [
     { type:'conj', q:"By 6 p.m., she ___ (study) for eight hours.", answer:"will have been studying", alts:[], explain:"will + have + been + V-ing, liên tục đến '6 p.m.'." },
     { type:'mc', q:'Chọn thì nhấn mạnh tính LIÊN TỤC: "By June, she ___ for 8 hours."', options:["will study","will have studied","will have been studying","studies"], answer:2, explain:"Nhấn khoảng thời gian liên tục đến một mốc tương lai → Tương lai hoàn thành tiếp diễn." }
   ]
+},
+/* ===================== CÂU ĐIỀU KIỆN ===================== */
+{
+  id:'conditional-0', group:'conditional', name:'Câu điều kiện loại 0', en:'Zero Conditional', tag:'ĐK0',
+  forms:[
+    { l:'Cấu trúc', t:'If + S + V(hiện tại đơn), S + V(hiện tại đơn)' },
+    { l:'Nghĩa', t:'Sự thật luôn đúng (Nếu A thì B). If có thể thay bằng When.' }
+  ],
+  usage:[
+    "Chân lý, sự thật khoa học hiển nhiên.",
+    "Thói quen, điều luôn đúng khi có điều kiện.",
+    "Hướng dẫn (có thể dùng When thay If)."
+  ],
+  signals:["if","when","always"],
+  examples:[
+    { en:"If you heat ice, it melts.", vi:"Nếu bạn đun đá, nó tan chảy." },
+    { en:"If it rains, the ground gets wet.", vi:"Nếu trời mưa, mặt đất ướt." },
+    { en:"Plants die if they don't get water.", vi:"Cây chết nếu không được tưới nước." },
+    { en:"When the sun sets, it gets dark.", vi:"Khi mặt trời lặn, trời tối." }
+  ],
+  practice:[
+    { type:'conj', q:"If you heat ice, it ___ (melt).", answer:"melts", alts:[], explain:"Điều kiện loại 0: cả hai vế dùng Hiện tại đơn; 'it' → thêm -s." },
+    { type:'conj', q:"If it ___ (rain), the ground gets wet.", answer:"rains", alts:[], explain:"Vế If cũng dùng Hiện tại đơn; 'it' → rains." },
+    { type:'conj', q:"Plants die if they ___ (not / get) water.", answer:"do not get", alts:["don't get"], explain:"Phủ định Hiện tại đơn số nhiều: do not + V nguyên." },
+    { type:'mc', q:"Câu điều kiện loại 0 dùng khi nào?", options:["Sự thật hiển nhiên, luôn đúng","Điều không có thật ở hiện tại","Tiếc nuối quá khứ","Dự đoán chắc chắn sẽ xảy ra"], answer:0, explain:"Loại 0 diễn tả chân lý/sự thật luôn đúng." },
+    { type:'mc', q:"Chọn câu ĐÚNG (điều kiện loại 0):", options:["If you heat ice, it melted.","If you heat ice, it will melt.","If you heat ice, it melts.","If you heated ice, it melts."], answer:2, explain:"Loại 0: cả hai vế Hiện tại đơn." }
+  ]
+},
+{
+  id:'conditional-1', group:'conditional', name:'Câu điều kiện loại 1', en:'First Conditional', tag:'ĐK1',
+  forms:[
+    { l:'Cấu trúc', t:'If + S + V(hiện tại đơn), S + will + V(nguyên)' },
+    { l:'Nghĩa', t:'Điều kiện CÓ THẬT, có thể xảy ra ở hiện tại/tương lai.' }
+  ],
+  usage:[
+    "Điều có khả năng xảy ra trong tương lai nếu điều kiện được thoả.",
+    "Lời hứa, lời cảnh báo, đề nghị.",
+    "Có thể dùng can/may/should thay cho will ở vế chính."
+  ],
+  signals:["if","unless","as long as","in case"],
+  examples:[
+    { en:"If it rains, I will stay at home.", vi:"Nếu trời mưa, tôi sẽ ở nhà." },
+    { en:"If you study hard, you will pass the exam.", vi:"Nếu bạn học chăm, bạn sẽ đậu kỳ thi." },
+    { en:"She won't come if she is busy.", vi:"Cô ấy sẽ không đến nếu bận." },
+    { en:"Unless you hurry, you will miss the bus.", vi:"Trừ khi bạn nhanh lên, bạn sẽ lỡ xe buýt." }
+  ],
+  practice:[
+    { type:'conj', q:"If it rains, I ___ (stay) at home.", answer:"will stay", alts:["'ll stay"], explain:"Vế chính loại 1: will + V nguyên." },
+    { type:'conj', q:"If you ___ (study) hard, you will pass.", answer:"study", alts:[], explain:"Vế If dùng Hiện tại đơn (KHÔNG dùng will)." },
+    { type:'conj', q:"She ___ (not / come) if she is busy.", answer:"will not come", alts:["won't come"], explain:"Vế chính phủ định: will + not + V." },
+    { type:'conj', q:"If you don't hurry, you ___ (miss) the bus.", answer:"will miss", alts:["'ll miss"], explain:"Vế chính: will + V nguyên." },
+    { type:'mc', q:"Chọn câu ĐÚNG (điều kiện loại 1):", options:["If it will rain, I will stay home.","If it rains, I will stay home.","If it rained, I will stay home.","If it rains, I stayed home."], answer:1, explain:"Vế If dùng Hiện tại đơn, vế chính dùng will." },
+    { type:'mc', q:"Vế 'If' trong điều kiện loại 1 dùng thì gì?", options:["Hiện tại đơn","Tương lai đơn (will)","Quá khứ đơn","Quá khứ hoàn thành"], answer:0, explain:"Vế If loại 1 dùng Hiện tại đơn." }
+  ]
+},
+{
+  id:'conditional-2', group:'conditional', name:'Câu điều kiện loại 2', en:'Second Conditional', tag:'ĐK2',
+  forms:[
+    { l:'Cấu trúc', t:'If + S + V(quá khứ đơn), S + would + V(nguyên)' },
+    { l:'Nghĩa', t:'Điều kiện KHÔNG CÓ THẬT / khó xảy ra ở hiện tại (giả định).' }
+  ],
+  usage:[
+    "Giả định trái với thực tế hiện tại.",
+    "Đưa lời khuyên (If I were you, ...).",
+    "Động từ to be dùng WERE cho MỌI ngôi."
+  ],
+  signals:["if","would","were"],
+  examples:[
+    { en:"If I were rich, I would travel the world.", vi:"Nếu tôi giàu, tôi sẽ đi du lịch khắp thế giới (thực tế không giàu)." },
+    { en:"If I were you, I would apologize.", vi:"Nếu tôi là bạn, tôi sẽ xin lỗi." },
+    { en:"She would help you if she had time.", vi:"Cô ấy sẽ giúp bạn nếu có thời gian (thực tế không có)." },
+    { en:"If he studied harder, he would get better grades.", vi:"Nếu anh ấy học chăm hơn, anh ấy sẽ đạt điểm cao hơn." }
+  ],
+  practice:[
+    { type:'conj', q:"If I ___ (be) rich, I would travel a lot.", answer:"were", alts:[], explain:"Điều kiện loại 2: to be luôn dùng 'were' cho mọi ngôi." },
+    { type:'conj', q:"If I were you, I ___ (apologize).", answer:"would apologize", alts:["'d apologize"], explain:"Vế chính loại 2: would + V nguyên." },
+    { type:'conj', q:"She would help you if she ___ (have) time.", answer:"had", alts:[], explain:"Vế If dùng Quá khứ đơn (have → had)." },
+    { type:'conj', q:"If he ___ (study) harder, he would pass.", answer:"studied", alts:[], explain:"Vế If dùng Quá khứ đơn (study → studied)." },
+    { type:'mc', q:"Trong điều kiện loại 2, động từ to be dùng dạng nào cho MỌI ngôi?", options:["was","is","were","been"], answer:2, explain:"Dùng 'were': If I were / If he were..." },
+    { type:'mc', q:"Chọn câu ĐÚNG (điều kiện loại 2):", options:["If I was you, I would help.","If I were you, I would help.","If I am you, I would help.","If I were you, I will help."], answer:1, explain:"Loại 2: If + were, vế chính + would." }
+  ]
+},
+{
+  id:'conditional-3', group:'conditional', name:'Câu điều kiện loại 3', en:'Third Conditional', tag:'ĐK3',
+  forms:[
+    { l:'Cấu trúc', t:'If + S + had + V3, S + would have + V3' },
+    { l:'Nghĩa', t:'Điều kiện KHÔNG CÓ THẬT trong quá khứ (tiếc nuối).' }
+  ],
+  usage:[
+    "Giả định trái với điều đã xảy ra trong quá khứ.",
+    "Nuối tiếc hoặc trách móc về điều đã qua."
+  ],
+  signals:["if","would have","had + V3"],
+  examples:[
+    { en:"If I had studied, I would have passed.", vi:"Nếu tôi đã học, tôi đã đậu (nhưng tôi đã không học)." },
+    { en:"If she had left earlier, she wouldn't have missed the train.", vi:"Nếu cô ấy rời đi sớm hơn, cô ấy đã không lỡ tàu." },
+    { en:"We would have won if we had played better.", vi:"Chúng tôi đã thắng nếu chơi tốt hơn." }
+  ],
+  practice:[
+    { type:'conj', q:"If I ___ (study), I would have passed.", answer:"had studied", alts:[], explain:"Vế If loại 3: had + V3 (study → studied)." },
+    { type:'conj', q:"If she had left earlier, she ___ (not / miss) the train.", answer:"would not have missed", alts:["wouldn't have missed"], explain:"Vế chính phủ định: would not have + V3 (miss → missed)." },
+    { type:'conj', q:"We ___ (win) if we had played better.", answer:"would have won", alts:["'d have won"], explain:"Vế chính loại 3: would have + V3 (win → won)." },
+    { type:'mc', q:"Câu điều kiện loại 3 nói về điều gì?", options:["Sự thật hiển nhiên","Tương lai có thể xảy ra","Giả định trái với quá khứ (tiếc nuối)","Thói quen hiện tại"], answer:2, explain:"Loại 3 giả định trái với quá khứ." },
+    { type:'mc', q:"Chọn câu ĐÚNG (điều kiện loại 3):", options:["If I had studied, I would pass.","If I studied, I would have passed.","If I had studied, I would have passed.","If I have studied, I would have passed."], answer:2, explain:"Loại 3: If + had + V3, vế chính + would have + V3." }
+  ]
+},
+/* ===================== CÂU BỊ ĐỘNG ===================== */
+{
+  id:'passive-voice', group:'passive', name:'Câu bị động', en:'Passive Voice', tag:'BĐ',
+  forms:[
+    { l:'Chủ động', t:'S + V + O' },
+    { l:'Bị động', t:'O + be (chia theo thì) + V3 (+ by + S)' },
+    { l:'Lưu ý', t:'"be" chia theo thì của câu chủ động; động từ chính → V3.' }
+  ],
+  usage:[
+    "Nhấn mạnh đối tượng bị tác động thay vì người thực hiện.",
+    "Khi không biết hoặc không cần nêu người thực hiện.",
+    "Văn phong trang trọng, khoa học, tin tức."
+  ],
+  signals:["by + tân ngữ","được","bị"],
+  examples:[
+    { en:"English is spoken in many countries.", vi:"Tiếng Anh được nói ở nhiều nước. (Hiện tại đơn)" },
+    { en:"The house was built in 1990.", vi:"Ngôi nhà được xây năm 1990. (Quá khứ đơn)" },
+    { en:"The work has been done.", vi:"Công việc đã được hoàn thành. (Hiện tại hoàn thành)" },
+    { en:"The report will be finished tomorrow.", vi:"Bản báo cáo sẽ được hoàn thành ngày mai. (Tương lai)" },
+    { en:"The road is being repaired.", vi:"Con đường đang được sửa. (Hiện tại tiếp diễn)" }
+  ],
+  practice:[
+    { type:'conj', q:"English ___ (speak) in many countries.", answer:"is spoken", alts:[], explain:"Bị động Hiện tại đơn: is/are + V3 (speak → spoken)." },
+    { type:'conj', q:"The house ___ (build) in 1990.", answer:"was built", alts:[], explain:"Bị động Quá khứ đơn: was/were + V3 (build → built)." },
+    { type:'conj', q:"The report will ___ (finish) tomorrow.", answer:"be finished", alts:[], explain:"Bị động tương lai: will + be + V3 (finish → finished)." },
+    { type:'conj', q:"The work has ___ (do) already.", answer:"been done", alts:[], explain:"Bị động Hiện tại hoàn thành: have/has + been + V3 (do → done)." },
+    { type:'conj', q:"The road ___ (repair) right now.", answer:"is being repaired", alts:[], explain:"Bị động Hiện tại tiếp diễn: is/are + being + V3." },
+    { type:'mc', q:'Đổi sang bị động: "They clean the room every day."', options:["The room cleans every day.","The room is cleaned every day.","The room is cleaning every day.","The room was cleaned every day."], answer:1, explain:"Hiện tại đơn bị động: is/are + V3 (clean → cleaned)." },
+    { type:'mc', q:"Cấu trúc cơ bản của câu bị động là gì?", options:["S + be + V-ing","S + have + V3","S + be + V3","S + will + V"], answer:2, explain:"Bị động = be (chia theo thì) + V3 (quá khứ phân từ)." }
+  ]
+},
+/* ===================== CÂU TƯỜNG THUẬT ===================== */
+{
+  id:'reported-speech', group:'reported', name:'Câu tường thuật', en:'Reported Speech', tag:'TT',
+  forms:[
+    { l:'Câu kể', t:'S + said (that) + S + V(lùi thì)' },
+    { l:'Câu hỏi Yes/No', t:'S + asked + if/whether + S + V(lùi thì)' },
+    { l:'Câu mệnh lệnh', t:'S + told + O + (not) to + V(nguyên)' }
+  ],
+  usage:[
+    "Thuật lại lời người khác nói (không dùng dấu ngoặc kép).",
+    "Lùi thì 1 bậc: hiện tại → quá khứ, quá khứ → quá khứ hoàn thành, will → would.",
+    "Đổi đại từ và trạng từ: now→then, today→that day, here→there, this→that, yesterday→the day before, tomorrow→the next day."
+  ],
+  signals:["said","told","asked","that","if / whether"],
+  examples:[
+    { en:'"I am tired." → She said (that) she was tired.', vi:"Cô ấy nói rằng cô ấy mệt." },
+    { en:'"I will call you." → He said he would call me.', vi:"Anh ấy nói sẽ gọi cho tôi." },
+    { en:'"Do you like coffee?" → She asked if I liked coffee.', vi:"Cô ấy hỏi tôi có thích cà phê không." },
+    { en:'"Close the door." → He told me to close the door.', vi:"Anh ấy bảo tôi đóng cửa." }
+  ],
+  practice:[
+    { type:'mc', q:'Direct: "I am busy." → Reported: She said she ___ busy.', options:["is","was","were","has been"], answer:1, explain:"Lùi thì: am/is → was." },
+    { type:'mc', q:'Direct: "I will help you." → He said he ___ help me.', options:["will","would","will be","would have"], answer:1, explain:"will → would." },
+    { type:'mc', q:'Direct: "Do you speak English?" → She asked ___ I spoke English.', options:["that","if","what","to"], answer:1, explain:"Câu hỏi Yes/No → asked + if/whether." },
+    { type:'mc', q:'Direct: "Close the door." → He told me ___ the door.', options:["close","to close","closing","closed"], answer:1, explain:"Câu mệnh lệnh → told + O + to + V nguyên." },
+    { type:'mc', q:'Direct: "I saw him yesterday." → He said he had seen him ___.', options:["yesterday","the day before","tomorrow","now"], answer:1, explain:"yesterday → the day before." },
+    { type:'mc', q:'Lùi thì: câu "I work here" trong câu tường thuật thành gì?', options:["I work here","I worked here","I had worked here","I am working here"], answer:1, explain:"Hiện tại đơn → Quá khứ đơn." },
+    { type:'mc', q:'Direct: "I like this book." → She said she liked ___ book.', options:["this","that","these","a"], answer:1, explain:"this → that trong câu tường thuật." }
+  ]
+},
+/* ===================== SO SÁNH ===================== */
+{
+  id:'comparison', group:'comparison', name:'So sánh (hơn · nhất · bằng)', en:'Comparatives & Superlatives', tag:'SS',
+  forms:[
+    { l:'So sánh bằng', t:'S + V + as + adj/adv + as ...' },
+    { l:'So sánh hơn', t:'Ngắn: adj-er + than | Dài: more + adj + than' },
+    { l:'So sánh nhất', t:'Ngắn: the + adj-est | Dài: the most + adj' }
+  ],
+  usage:[
+    "So sánh 2 hay nhiều người/vật.",
+    "Tính từ NGẮN (1 âm tiết) + -er / -est.",
+    "Tính từ DÀI (2+ âm tiết) dùng more / most.",
+    "Bất quy tắc: good→better→best, bad→worse→worst, far→farther/further→farthest, many/much→more→most, little→less→least."
+  ],
+  signals:["than","as ... as","the most","-er","-est"],
+  examples:[
+    { en:"She is taller than me.", vi:"Cô ấy cao hơn tôi." },
+    { en:"This book is more interesting than that one.", vi:"Cuốn sách này thú vị hơn cuốn kia." },
+    { en:"He is the tallest boy in the class.", vi:"Cậu ấy là cậu bé cao nhất lớp." },
+    { en:"Today is as hot as yesterday.", vi:"Hôm nay nóng bằng hôm qua." },
+    { en:"This is the most expensive car here.", vi:"Đây là chiếc xe đắt nhất ở đây." }
+  ],
+  practice:[
+    { type:'conj', q:"She is ___ (tall) than me.", answer:"taller", alts:[], explain:"Tính từ ngắn: adj + -er + than (tall → taller)." },
+    { type:'conj', q:"This book is ___ (interesting) than that one.", answer:"more interesting", alts:[], explain:"Tính từ dài: more + adj + than." },
+    { type:'conj', q:"He is the ___ (tall) boy in the class.", answer:"tallest", alts:[], explain:"So sánh nhất tính từ ngắn: the + adj-est (tall → tallest)." },
+    { type:'conj', q:"This is the ___ (expensive) car here.", answer:"most expensive", alts:[], explain:"So sánh nhất tính từ dài: the most + adj." },
+    { type:'conj', q:"My grades are ___ (good) than yours.", answer:"better", alts:[], explain:"good là bất quy tắc: good → better → best." },
+    { type:'conj', q:"Today is as ___ (hot) as yesterday.", answer:"hot", alts:[], explain:"So sánh bằng: as + adj nguyên + as." },
+    { type:'mc', q:"So sánh hơn của 'good' là gì?", options:["gooder","more good","better","best"], answer:2, explain:"good → better (so sánh hơn) → best (so sánh nhất)." },
+    { type:'mc', q:"Chọn câu ĐÚNG:", options:["She is more tall than me.","She is taller than me.","She is tallest than me.","She is as taller as me."], answer:1, explain:"Tính từ ngắn 'tall' → taller than." }
+  ]
 }
 ];

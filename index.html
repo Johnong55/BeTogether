@@ -985,7 +985,8 @@ function viewTopic(){ const t=topicByNo(S.sub);
 /* ---------- NGỮ PHÁP ---------- */
 function viewGrammar(){ const g=grammarById(String(S.sub).slice(2));
   if(!g){ S.sub=null; return viewLibrary(); }
-  const fRow=(lab,txt)=>`<div class="cardrow"><div style="width:64px;flex:none;font-weight:800;color:var(--soft);font-size:12px">${lab}</div><div class="grow" style="font-family:'Fraunces';font-size:15px">${esc(txt)}</div></div>`;
+  const fRow=(lab,txt)=>`<div class="cardrow"><div style="width:80px;flex:none;font-weight:800;color:var(--soft);font-size:12px">${esc(lab)}</div><div class="grow" style="font-family:'Fraunces';font-size:15px">${esc(txt)}</div></div>`;
+  const forms = g.forms ? g.forms.map(f=>[f.l,f.t]) : [['(+)',g.formula.aff],['(−)',g.formula.neg],['(?)',g.formula.ques]];
   return `
     <div class="row" style="margin-bottom:12px"><button class="iconbtn" data-act="go" data-v="library">${ic('back','sm')}</button>
       <div class="thumb" style="background:${DECK_TINT[1]};font-family:'Fraunces';color:var(--p1);font-size:13px">${esc(g.tag||'NP')}</div>
@@ -993,9 +994,9 @@ function viewGrammar(){ const g=grammarById(String(S.sub).slice(2));
 
     <button class="btn block" data-act="grammar-practice" data-id="${g.id}" style="margin-bottom:14px">${ic('spark','sm')} Luyện tập (${g.practice.length} câu)</button>
 
-    <div class="label" style="margin-top:0">Công thức</div>
+    <div class="label" style="margin-top:0">${g.forms?'Cấu trúc':'Công thức'}</div>
     <div class="card" style="padding:8px 14px">
-      ${fRow('(+)',g.formula.aff)}${fRow('(−)',g.formula.neg)}${fRow('(?)',g.formula.ques)}
+      ${forms.map(([l,t])=>fRow(l,t)).join('')}
     </div>
 
     <div class="label">Cách dùng</div>
@@ -1860,7 +1861,7 @@ function startGrammarPractice(id){ const g=grammarById(id);
     questions:shuffle(g.practice.slice()), idx:0, score:0, done:false, streakUp:false,
     phase:'ask', chosen:null, answerGiven:'', lastCorrect:null };
   render(); scrollTo(0,0); }
-const CONTRACTIONS=[["do not","don't"],["does not","doesn't"],["did not","didn't"],["is not","isn't"],["are not","aren't"],["was not","wasn't"],["were not","weren't"],["has not","hasn't"],["have not","haven't"],["had not","hadn't"],["will not","won't"],["i will","i'll"],["will have","'ll have"],["will be","'ll be"]];
+const CONTRACTIONS=[["do not","don't"],["does not","doesn't"],["did not","didn't"],["is not","isn't"],["are not","aren't"],["was not","wasn't"],["were not","weren't"],["has not","hasn't"],["have not","haven't"],["had not","hadn't"],["will not","won't"],["would not","wouldn't"],["should not","shouldn't"],["i will","i'll"],["will have","'ll have"],["will be","'ll be"],["would have","'d have"]];
 function normAns(s){ let x=(s||'').toLowerCase().trim().replace(/[’]/g,"'").replace(/\s+/g,' ').replace(/[.!?]+$/,'');
   CONTRACTIONS.forEach(([full,con])=>{ x=x.split(con).join(full); });  // đưa mọi contraction về dạng đầy đủ
   return x.replace(/\s+/g,' ').trim(); }
