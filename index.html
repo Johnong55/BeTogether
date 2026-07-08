@@ -992,7 +992,9 @@ function viewGrammar(){ const g=grammarById(String(S.sub).slice(2));
       <div class="thumb" style="background:${DECK_TINT[1]};font-family:'Fraunces';color:var(--p1);font-size:13px">${esc(g.tag||'NP')}</div>
       <div class="grow"><b style="font-size:17px">${esc(g.name)}</b><div class="muted">${esc(g.en)}</div></div></div>
 
-    <button class="btn block" data-act="grammar-practice" data-id="${g.id}" style="margin-bottom:14px">${ic('spark','sm')} Luyện tập (${g.practice.length} câu)</button>
+    <div class="row" style="gap:10px;margin-bottom:14px">
+      <button class="btn block" data-act="grammar-practice" data-id="${g.id}">${ic('spark','sm')} Luyện tập (${g.practice.length})</button>
+      <button class="btn ghost block" data-act="send-grammar" data-id="${g.id}">${ic('send','sm')} Gửi ${esc(partner()||'người ấy')}</button></div>
 
     <div class="label" style="margin-top:0">${g.forms?'Cấu trúc':'Công thức'}</div>
     <div class="card" style="padding:8px 14px">
@@ -1282,10 +1284,11 @@ function viewInbox(){ const tab=S.inboxTab;
         <div class="row" style="margin-bottom:8px"><div class="grow"><div class="muted" style="font-weight:700">${who} · ${(q.created_at||'').slice(5,10).replace('-','/')}</div>
           <b>${esc(q.title)}</b></div><span class="status ${q.status}">${lbl[q.status]||q.status}</span></div>
         ${q.message?`<p class="muted" style="margin:0 0 10px;font-style:italic">“${esc(q.message)}”</p>`:''}
-        <div class="muted" style="margin-bottom:10px">${(q.items||[]).length} từ${q.status==='answered'?` · ${q.score}/${q.total} đúng`:''}</div>
-        <div class="row" style="gap:10px">
+        <div class="muted" style="margin-bottom:10px">${(q.items||[]).length} ${isGrammarQuiz(q)?'câu ngữ pháp':'từ'}${q.status==='answered'?` · ${q.score}/${q.total} đúng`:''}</div>
+        ${ isGrammarQuiz(q)?`<div class="row"><button class="btn block sm" data-act="study-lesson" data-id="${q.id}">${ic('spark','sm')} ${q.status==='answered'?'Luyện lại':(tab==='in'&&q.status==='picked'?'Luyện tiếp':'Luyện tập')}</button></div>`
+        :`<div class="row" style="gap:10px">
           <button class="btn soft block sm" data-act="study-lesson" data-id="${q.id}" data-mode="flash">${ic('cards','sm')} Thẻ lật</button>
-          <button class="btn block sm" data-act="study-lesson" data-id="${q.id}" data-mode="quiz">${ic('spark','sm')} ${q.status==='answered'?'Thi lại':(tab==='in'&&q.status==='picked'?'Thi tiếp':'Trắc nghiệm')}</button></div>
+          <button class="btn block sm" data-act="study-lesson" data-id="${q.id}" data-mode="quiz">${ic('spark','sm')} ${q.status==='answered'?'Thi lại':(tab==='in'&&q.status==='picked'?'Thi tiếp':'Trắc nghiệm')}</button></div>` }
         ${ tab==='out'&&q.status==='answered'?`<div class="center" style="font-weight:800;color:var(--ok);margin-top:8px">${esc(partner())} đã học: ${q.score}/${q.total}</div>`:'' }
         ${ tab==='out'&&q.status!=='answered'?`<div class="muted center" style="margin-top:8px">Đang chờ ${esc(partner()||'người ấy')} học…</div>`:'' }
       </div>`;}).join('') : `<div class="empty">${ic('inbox','lg')}<div>${tab==='in'?'Chưa có bài nào gửi cho bạn.':'Bạn chưa gửi chủ đề nào.<br>Vào Học → chọn chủ đề → Gửi.'}</div></div>` }`; }
@@ -1677,6 +1680,7 @@ async function handle(act,v,id,t,e){
     case 'open-topic': S.sub=id; S.view='library'; render(); scrollTo(0,0); break;
     case 'open-grammar': S.sub='g:'+id; S.view='library'; render(); scrollTo(0,0); break;
     case 'grammar-practice': startGrammarPractice(id); break;
+    case 'send-grammar': await sendGrammar(id); break;
     case 'check-grammar': await checkGrammar(); break;
     case 'grammar-mc': grammarMc(parseInt(v,10)); break;
     case 'study-topic': { const tt=topicByNo(id); if(tt) startStudy(tt.words,{mode:t.dataset.mode||'quiz',src:'lib',title:tt.name,back:'library'}); } break;
@@ -1710,7 +1714,8 @@ async function handle(act,v,id,t,e){
     case 'duel-seen': markDuelSeen(id); S.duel=null; S.duelPlay=null; render(); break;
     case 'study-lesson': { const q=S.quizzes.find(x=>x.id===id); if(q){
         if(q.status==='pending' && q.to_person===S.me){ q.status='picked'; q.picked_at=new Date().toISOString(); await Store.saveQuiz(q); }
-        startStudy(q.items,{mode:t.dataset.mode||'quiz',src:'lesson',quiz:q,title:q.title,back:'inbox'}); } } break;
+        if(isGrammarQuiz(q)) startGrammarPractice(null,{quiz:q});
+        else startStudy(q.items,{mode:t.dataset.mode||'quiz',src:'lesson',quiz:q,title:q.title,back:'inbox'}); } } break;
 
     case 'inbox-tab': S.inboxTab=v; render(); break;
     case 'flip': if(S.play){ S.play.flip=!S.play.flip; const fl=$('.flash'); if(fl) fl.classList.toggle('flip',S.play.flip); else render(); } break;
@@ -1720,7 +1725,7 @@ async function handle(act,v,id,t,e){
     case 'check-scramble': await checkScramble(); break;
     case 'next-q': await nextQ(); break;
     case 'to-quiz': { const p=S.play; startStudy(p.words,{mode:'quiz',src:p.src,quiz:p.quiz,title:p.title,back:p.back}); } break;
-    case 'restudy': { const p=S.play; if(p.mode==='grammar') startGrammarPractice(p.grammarId); else startStudy(p.words,{mode:p.mode,src:p.src,quiz:p.quiz,title:p.title,back:p.back}); } break;
+    case 'restudy': { const p=S.play; if(p.mode==='grammar') startGrammarPractice(p.grammarId, p.quiz?{quiz:p.quiz}:undefined); else startStudy(p.words,{mode:p.mode,src:p.src,quiz:p.quiz,title:p.title,back:p.back}); } break;
     case 'quit-play': { const back=(S.play&&S.play.back)||'home'; S.play=null; S.view=back; render(); } break;
     case 'finish-play': S.play=null; S.view='home'; await loadAll(); render(); break;
 
@@ -1821,6 +1826,12 @@ async function sendTopic(topicNo){ const t=topicByNo(topicNo); if(!t) return;
   await Store.saveQuiz({ id:uid(), space_id:S.space.id, from_person:S.me, to_person:other(S.me), title:t.name, message:'',
     status:'pending', items, score:0, total:items.length, created_at:new Date().toISOString(), picked_at:null, answered_at:null });
   await loadAll(); S.view='inbox'; S.inboxTab='out'; render(); toast('Đã gửi cho '+(partner()||'người ấy')); }
+async function sendGrammar(id){ const g=grammarById(id); if(!g) return;
+  const items=(g.practice||[]).map(p=>Object.assign({},p));  // gửi kèm câu luyện (có .type để nhận diện là ngữ pháp)
+  if(!items.length){ toast('Chủ điểm này chưa có câu luyện'); return; }
+  await Store.saveQuiz({ id:uid(), space_id:S.space.id, from_person:S.me, to_person:other(S.me), title:'📖 '+g.name, message:'',
+    status:'pending', items, score:0, total:items.length, created_at:new Date().toISOString(), picked_at:null, answered_at:null });
+  await loadAll(); S.view='inbox'; S.inboxTab='out'; render(); toast('Đã gửi ngữ pháp cho '+(partner()||'người ấy')); }
 async function sendDeck(deckId){ const d=S.decks.find(x=>x.id===deckId); if(!d) return;
   const items=S.cards.filter(c=>c.deck_id===deckId).map(c=>({en:c.front, vi:c.back}));
   if(!items.length){ toast('Bộ này chưa có từ nào'); return; }
@@ -1854,11 +1865,15 @@ function startStudy(words,opts){ opts=opts||{}; const mode=opts.mode||'quiz';
     phase:'ask', chosen:null, answerGiven:'', lastCorrect:null };
   render(); scrollTo(0,0);
   if(alreadyDone) finishStudy(); }
-/* ----- luyện ngữ pháp ----- */
-function startGrammarPractice(id){ const g=grammarById(id);
-  if(!g||!g.practice||!g.practice.length){ toast('Chủ điểm này chưa có bài luyện'); return; }
-  S.play={ mode:'grammar', grammarId:id, src:'grammar', quiz:null, title:g.name, back:'library',
-    questions:shuffle(g.practice.slice()), idx:0, score:0, done:false, streakUp:false,
+/* ----- luyện ngữ pháp (dùng cho cả tự luyện lẫn "bài dò" gửi qua Hộp thư) ----- */
+const isGrammarQuiz = (q)=> !!(q && q.items && q.items[0] && q.items[0].type);
+function startGrammarPractice(id, opts){ opts=opts||{};
+  let questions, title, back, quiz=null, src='grammar', grammarId=id;
+  if(opts.quiz){ quiz=opts.quiz; questions=(quiz.items||[]); title=quiz.title; back='inbox'; src='lesson'; grammarId=null; }
+  else { const g=grammarById(id); if(!g||!g.practice||!g.practice.length){ toast('Chủ điểm này chưa có bài luyện'); return; } questions=g.practice.slice(); title=g.name; back='library'; }
+  if(!questions.length){ toast('Bài này chưa có câu luyện'); return; }
+  S.play={ mode:'grammar', grammarId, src, quiz, title, back,
+    questions:shuffle(questions.slice()), idx:0, score:0, done:false, streakUp:false,
     phase:'ask', chosen:null, answerGiven:'', lastCorrect:null };
   render(); scrollTo(0,0); }
 const CONTRACTIONS=[["do not","don't"],["does not","doesn't"],["did not","didn't"],["is not","isn't"],["are not","aren't"],["was not","wasn't"],["were not","weren't"],["has not","hasn't"],["have not","haven't"],["had not","hadn't"],["will not","won't"],["would not","wouldn't"],["should not","shouldn't"],["i will","i'll"],["will have","'ll have"],["will be","'ll be"],["would have","'d have"]];
@@ -1904,7 +1919,7 @@ async function finishStudy(){ const p=S.play; p.done=true;
   p.streakUp=await bumpStreak();
   if(p.quiz && p.src==='lesson'){
     const q=p.quiz; let changed=false;
-    if(p.mode==='quiz' && q.to_person===S.me && q.status!=='answered'){
+    if((p.mode==='quiz'||p.mode==='grammar') && q.to_person===S.me && q.status!=='answered'){
       q.status='answered'; q.score=p.score; q.total=p.questions.length; q.answered_at=new Date().toISOString(); changed=true; }
     if(q.progress){ q.progress=null; changed=true; }
     if(changed) await saveQuizSafe(q); }
