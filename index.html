@@ -666,8 +666,19 @@ async function loadAll(){ if(!S.space) return; const sid=S.space.id;
   const [q,n,d,c,du]=await Promise.all([Store.listQuizzes(sid),Store.listNotes(sid),Store.listDecks(sid),Store.listCards(sid),Store.listDuels(sid)]);
   S.quizzes=q; S.notes=n; S.decks=d; S.cards=c; applyDuels(du);
   S.dailyToday=await ensureDaily(sid,todayStr()); maybeNotify(); }
+let duelInited=false;
 function applyDuels(list){
   S.duelHistory=list.filter(x=>x.status==='done');
+  if(!duelInited){
+    // Lần tải đầu sau khi đăng nhập: coi MỌI trận đã xong là "đã xem"
+    // → không ép xem lại kết quả cũ (nhất là sau khi cài lại app, localStorage bị xoá sạch).
+    // Chỉ trận nào kết thúc NGAY TRONG lúc đang mở app mới hiện màn kết quả.
+    try{ const done=list.filter(x=>x.status==='done').map(x=>x.id);
+      const merged=[...new Set([...done,...duelSeenIds()])];
+      localStorage.setItem('loveapp_duel_seen',JSON.stringify(merged.slice(0,200)));
+    }catch(e){}
+    duelInited=true;
+  }
   const cur=list.find(x=>x.status==='waiting'||x.status==='active')
     || list.find(x=>x.status==='done' && !duelSeenIds().includes(x.id)) || null;
   S.duel=cur;
