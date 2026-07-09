@@ -551,7 +551,7 @@ function drawHeartShape(ctx,x,y,r,col,rot){
 }
 const Heart_COLS=['#e7a3b4','#d97a92','#f2b3c4','#ef9ab0','#f6c9d5','#e58aa4'];
 const HeartTank={
-  cv:null, ctx:null, dpr:1, w:0, h:0, parts:[], gx:0, gy:0.42, t:0, running:false, raf:null, motionOn:false, listening:false, G:0.42, lastO:0,
+  cv:null, ctx:null, dpr:1, w:0, h:0, parts:[], gx:0, gy:0.32, t:0, running:false, raf:null, motionOn:false, listening:false, G:0.32, lastO:0,
   /* Đọc thẳng vector trọng lực: hướng "xuống" thật của thế giới -> tim luôn dồn đúng đáy,
      nghiêng/xoay kiểu gì cũng đúng (khắc phục lỗi phải lật ngược mới thấy tim). */
   onMotion(e){ const a=e.accelerationIncludingGravity; if(!a||a.x==null) return;
@@ -564,7 +564,7 @@ const HeartTank={
   attach(){ if(this.listening) return; window.addEventListener('devicemotion',this.onMotion,true); this.listening=true; },
   ensure(cv){ if(!cv) return; this.cv=cv; this.ctx=cv.getContext('2d');
     this.resize();
-    if(!this.parts.length) this.seed(100);
+    if(!this.parts.length) this.seed(44);
     // Android/desktop: gắn cảm biến luôn (không cần xin quyền)
     const D=window.DeviceMotionEvent;
     if(D && typeof D.requestPermission!=='function'){ this.attach(); this.motionOn=true; }
@@ -575,7 +575,7 @@ const HeartTank={
     this.ctx.setTransform(this.dpr,0,0,this.dpr,0,0);
     for(const p of this.parts){ p.x=Math.min(w-p.r,Math.max(p.r,p.x)); p.y=Math.min(h-p.r,Math.max(p.r,p.y)); } },
   seed(n){ this.parts=[]; const w=this.w,h=this.h;
-    for(let i=0;i<n;i++){ const r=6.5+Math.random()*3.5;
+    for(let i=0;i<n;i++){ const r=7.5+Math.random()*3.5;
       this.parts.push({ x:r+Math.random()*(w-2*r), y:r+Math.random()*(h-2*r), vx:0, vy:0, r,
         col:Heart_COLS[i%Heart_COLS.length], rot:(Math.random()-0.5)*0.5, vr:(Math.random()-0.5)*0.02 }); } },
   loop(){ if(!this.running) return;
@@ -583,17 +583,27 @@ const HeartTank={
     const now=(window.performance?performance.now():Date.now());
     const sensorActive=this.motionOn && (now-this.lastO<1500);   // đang nhận cảm biến thật?
     if(!sensorActive){ this.t+=0.016; this.gx=Math.sin(this.t*1.1)*this.G*0.32; this.gy=this.G; } // chưa có cảm biến: đung đưa nhẹ
-    for(const p of P){ p.vx+=this.gx; p.vy+=this.gy; p.vx*=0.94; p.vy*=0.94; p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr*0.6; p.vr*=0.96;
-      if(p.x<p.r){p.x=p.r;p.vx*=-0.3;} if(p.x>w-p.r){p.x=w-p.r;p.vx*=-0.3;}
-      if(p.y<p.r){p.y=p.r;p.vy*=-0.3;} if(p.y>h-p.r){p.y=h-p.r;p.vy*=-0.3;} }
-    // va chạm mềm (dính như nước): tách chồng + khử vận tốc lại gần
-    for(let i=0;i<P.length;i++)for(let j=i+1;j<P.length;j++){ const a=P[i],b=P[j];
-      let dx=b.x-a.x,dy=b.y-a.y,d2=dx*dx+dy*dy; const rr=a.r+b.r;
-      if(d2<rr*rr && d2>0.01){ const d=Math.sqrt(d2),ov=(rr-d)/2,nx=dx/d,ny=dy/d;
-        a.x-=nx*ov;a.y-=ny*ov;b.x+=nx*ov;b.y+=ny*ov;
-        const rel=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;
-        if(rel<0){ const imp=-rel*0.5; a.vx-=imp*nx;a.vy-=imp*ny;b.vx+=imp*nx;b.vy+=imp*ny; } } }
-    for(const p of P){ if(p.x<p.r)p.x=p.r; else if(p.x>w-p.r)p.x=w-p.r; if(p.y<p.r)p.y=p.r; else if(p.y>h-p.r)p.y=h-p.r; } // kẹp biên: không lọt ra ngoài box
+    // Nghiêng máy (đổi hướng trọng lực) -> đánh thức toàn bộ tim để chảy; đứng yên -> để tim "ngủ"
+    const gChange=Math.hypot(this.gx-(this._pgx||0), this.gy-(this._pgy||0)); this._pgx=this.gx; this._pgy=this.gy;
+    if(gChange>0.04 || !sensorActive){ for(const p of P){ p.asleep=false; p.sleep=0; } }
+    const MAXV=3.0;
+    for(const p of P){ p._px=p.x; p._py=p.y; if(p.asleep) continue;   // tim ngủ -> bỏ qua trọng lực + tích phân (đứng yên hẳn)
+      p.vx+=this.gx; p.vy+=this.gy; p.vx*=0.93; p.vy*=0.93;
+      const sp=Math.hypot(p.vx,p.vy); if(sp>MAXV){ const s=MAXV/sp; p.vx*=s; p.vy*=s; } // kẹp tốc độ -> không "nổ" khi va chạm
+      p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr*0.5; p.vr*=0.95;
+      if(p.x<p.r){p.x=p.r; if(p.vx<0)p.vx=0;} if(p.x>w-p.r){p.x=w-p.r; if(p.vx>0)p.vx=0;}   // tường: triệt tiêu vận tốc đâm vào (không nảy)
+      if(p.y<p.r){p.y=p.r; if(p.vy<0)p.vy=0;} if(p.y>h-p.r){p.y=h-p.r; if(p.vy>0)p.vy=0;} }
+    // va chạm mềm như chất lỏng: nới chồng lấn từ từ qua 2 lượt (giải ràng buộc) -> êm, không hỗn loạn
+    for(let pass=0;pass<2;pass++){
+      for(let i=0;i<P.length;i++)for(let j=i+1;j<P.length;j++){ const a=P[i],b=P[j];
+        let dx=b.x-a.x,dy=b.y-a.y,d2=dx*dx+dy*dy; const rr=a.r+b.r;
+        if(d2<rr*rr && d2>0.01){ const d=Math.sqrt(d2),corr=(rr-d)*0.25,nx=dx/d,ny=dy/d; // nới nhẹ 25% mỗi bên/lượt
+          a.x-=nx*corr;a.y-=ny*corr;b.x+=nx*corr;b.y+=ny*corr;
+          const rel=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;
+          if(rel<0){ const imp=-rel*0.25; a.vx-=imp*nx;a.vy-=imp*ny;b.vx+=imp*nx;b.vy+=imp*ny; } } } }
+    for(const p of P){ if(p.x<p.r)p.x=p.r; else if(p.x>w-p.r)p.x=w-p.r; if(p.y<p.r)p.y=p.r; else if(p.y>h-p.r)p.y=h-p.r; } // kẹp biên
+    // đóng băng tim gần như đứng yên (giữ nguyên vị trí đủ lâu) -> hết rung lấn cấn khi chạm nhau
+    for(const p of P){ if(Math.hypot(p.x-p._px,p.y-p._py)<0.12){ p.sleep=(p.sleep||0)+1; if(p.sleep>16){ p.asleep=true; p.vx=0; p.vy=0; } } else { p.sleep=0; p.asleep=false; } }
     ctx.clearRect(0,0,w,h);
     for(const p of P) drawHeartShape(ctx,p.x,p.y,p.r,p.col,p.rot);
     this.raf=requestAnimationFrame(()=>this.loop()); },
