@@ -925,12 +925,14 @@ function viewHome(){ const today=todayStr();
     </div>`; }
 
 /* ---------- LIBRARY (bộ từ vựng có sẵn) ---------- */
-/* Phân loại: topic 1-14 = TỪ VỰNG (từ đơn B2), kind:'colloc' = COLLOCATION (cụm từ TOEIC) */
+/* Phân loại: topic 1-14 = TỪ VỰNG (từ đơn B2), kind:'colloc' = COLLOCATION (cụm từ TOEIC),
+   kind:'topic' = CHỦ ĐỀ THEO NHÓM (crawl từ Langmaster: gia đình, động vật, màu sắc...) */
 const isColloc=(t)=> t.kind==='colloc';
-const topicTag=(t)=> isColloc(t) ? 'C'+(t.no-14) : t.no;
+const isTopic=(t)=> t.kind==='topic';
+const topicTag=(t)=> isTopic(t) ? (t.emoji||'🌷') : (isColloc(t) ? 'C'+(t.no-14) : t.no);
 const unitWord=(t)=> isColloc(t) ? 'cụm' : 'từ';
 function topicSearchName(t){
-  return noDiacritics(t.name+' '+(t.vi||'')+' '+(isColloc(t)?'collocation toeic cum':'tu vung b2 don')).toLowerCase();
+  return noDiacritics(t.name+' '+(t.vi||'')+' '+(isTopic(t)?'chu de theo nhom':isColloc(t)?'collocation toeic cum':'tu vung b2 don')).toLowerCase();
 }
 function topicRow(t,i){
   return `<div class="card listitem" data-act="open-topic" data-id="${t.no}" data-flt="lib" data-name="${esc(topicSearchName(t))}">
@@ -953,14 +955,14 @@ function grammarSections(){
 }
 function viewLibrary(){
   const filter=S.tmp.libFilter||'all';
-  const showMine=filter==='all'||filter==='mine', showVocab=filter==='all'||filter==='vocab', showColloc=filter==='all'||filter==='colloc', showGrammar=filter==='all'||filter==='grammar';
+  const showMine=filter==='all'||filter==='mine', showVocab=filter==='all'||filter==='vocab', showColloc=filter==='all'||filter==='colloc', showGrammar=filter==='all'||filter==='grammar', showTopic=filter==='all'||filter==='topic';
   const mine=S.decks.map((d,i)=>{ const n=S.cards.filter(c=>c.deck_id===d.id).length;
     const name=noDiacritics(d.name+' '+(d.lang||'')+' bo cua minh').toLowerCase();
     return `<div class="card listitem" data-act="open-deck" data-id="${d.id}" data-flt="lib" data-name="${esc(name)}">
       <div class="thumb" style="background:${d.color||DECK_TINT[i%DECK_TINT.length]}">${ic('heart')}</div>
       <div class="grow"><b>${esc(d.name)}</b><div class="muted">${d.lang?esc(d.lang)+' · ':''}${n} từ</div></div>
       <span class="muted">›</span></div>`; }).join('');
-  const vocab=LIBRARY.filter(t=>!isColloc(t)), colloc=LIBRARY.filter(isColloc);
+  const vocab=LIBRARY.filter(t=>!isColloc(t)&&!isTopic(t)), colloc=LIBRARY.filter(isColloc), topics=LIBRARY.filter(isTopic);
   const chip=(v,label)=>`<div class="chip ${filter===v?'on':''}" data-act="lib-filter" data-v="${v}">${label}</div>`;
   return `<div class="row" style="margin-bottom:4px"><h2 class="title grow" style="margin:0">Học từ vựng</h2>
       <button class="btn sm" data-act="new-deck">${ic('plus','sm')} Bộ mới</button></div>
@@ -974,11 +976,13 @@ function viewLibrary(){
       ${chip('all','Tất cả')}
       ${S.decks.length?chip('mine','Của mình 💗'):''}
       ${chip('vocab','Từ vựng B2')}
+      ${topics.length?chip('topic','Chủ đề 🌷'):''}
       ${chip('colloc','Collocation 🧩')}
       ${GRAMMAR.length?chip('grammar','Ngữ pháp 📖'):''}
     </div>
     ${ showMine && S.decks.length?`<div class="lib-sec"><div class="label" style="margin-top:2px">Bộ từ của mình 💗</div>${mine}</div>`:'' }
     ${ showVocab?`<div class="lib-sec"><div class="label">Từ vựng B2 (từ đơn)</div>${vocab.map((t,i)=>topicRow(t,i)).join('')}</div>`:'' }
+    ${ showTopic && topics.length?`<div class="lib-sec"><div class="label">Chủ đề 🌷 (từ vựng theo chủ đề)</div>${topics.map((t,i)=>topicRow(t,i)).join('')}</div>`:'' }
     ${ showColloc?`<div class="lib-sec"><div class="label">Collocation TOEIC 🧩 (cụm từ)</div>${colloc.map((t,i)=>topicRow(t,i)).join('')}</div>`:'' }
     ${ showGrammar && GRAMMAR.length?`<div class="lib-sec"><div class="label" style="color:var(--accent)">Ngữ pháp 📖 (thì · cách dùng · luyện tập)</div>${grammarSections()}</div>`:'' }
     <div class="empty" id="lib-empty" style="display:none">${ic('search','lg')}<div>Không tìm thấy chủ đề nào khớp.<br>Thử từ khoá khác xem sao?</div></div>`; }
