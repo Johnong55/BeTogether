@@ -266,15 +266,15 @@
   .note .del{ position:absolute; top:10px; right:10px; cursor:pointer; opacity:.5; }
 
   .nav{ position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:480px; z-index:40;
-    display:flex; justify-content:space-around; background:color-mix(in srgb,var(--bg1) 86%, transparent);
-    backdrop-filter:blur(14px); border-top:1px solid var(--line); padding:9px 4px calc(9px + env(safe-area-inset-bottom)); }
-  .nav button{ background:none; border:none; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:3px;
-    font-size:10px; font-weight:800; color:var(--soft); padding:4px 9px; border-radius:12px; position:relative; }
+    display:flex; justify-content:space-around; align-items:flex-start; background:color-mix(in srgb,var(--bg1) 90%, transparent);
+    backdrop-filter:blur(14px); border-top:2px solid var(--edge); padding:12px 6px calc(10px + env(safe-area-inset-bottom)); }
+  .nav button{ background:none; border:2px solid transparent; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:3px;
+    font-size:10px; font-weight:800; color:var(--soft); padding:6px 8px; border-radius:14px; position:relative;
+    transition:transform .16s cubic-bezier(.34,1.4,.64,1), box-shadow .16s, background .16s; }
   .nav button .ic{ transition:transform .15s; }
-  .nav button.on{ color:var(--p1); }
-  .nav button.on .ic{ transform:translateY(-2px); }
-  .nav button.on.pop .ic{ animation:navpop .38s cubic-bezier(.34,1.56,.64,1); }
-  @keyframes navpop{ 0%{ transform:scale(.72) translateY(-1px);} 60%{ transform:scale(1.22) translateY(-4px);} 100%{ transform:scale(1) translateY(-2px);} }
+  .nav button.on{ color:var(--p1); background:var(--card); border-color:var(--edge); box-shadow:3px 3px 0 var(--edge); transform:translateY(-8px); }
+  .nav button.on.pop .ic{ animation:navpop .4s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes navpop{ 0%{ transform:scale(.7);} 60%{ transform:scale(1.25);} 100%{ transform:scale(1);} }
   .nav .dot{ position:absolute; top:0; right:6px; min-width:15px; height:15px; padding:0 4px; border-radius:99px;
     background:var(--p1); color:#fff; font-size:9px; display:grid; place-items:center; font-weight:800; }
 
