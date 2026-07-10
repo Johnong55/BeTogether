@@ -885,6 +885,21 @@ function viewPair(){
   </div>`; }
 
 /* ---------- HOME ---------- */
+/* Thẻ "Nhắc hôm nay" trên màn Nhà — chỉ hiện khi có lời nhắc tới hạn (hôm nay + quá hạn), tick xong trực tiếp */
+function homeReminderCard(){
+  const due=dueList(); if(!due.length) return '';
+  const rows=due.slice(0,4).map(n=>{ const over=daysDiff(n.remind_at)>0;
+    return `<div class="task"><div class="box" data-act="toggle-done" data-id="${n.id}" style="cursor:pointer" title="Đánh dấu xong">${ic('check')}</div>
+      <div class="tx grow">${esc(n.text)}</div>
+      <span class="badge" style="${over?'background:#fbe1e4;color:var(--no)':'background:#f7e6c8;color:#b07d1e'}">${esc(reminderLabel(n.remind_at,n.remind_time))}</span></div>`;
+  }).join('');
+  return `<div class="card" style="border-color:var(--p1)">
+    <div class="row" style="margin-bottom:4px"><div class="label" style="margin:0">🔔 Nhắc hôm nay</div>
+      <span class="grow"></span><span class="muted" style="cursor:pointer;font-weight:800" data-act="go" data-v="notes">Xem tất cả ›</span></div>
+    ${rows}
+    ${due.length>4?`<div class="muted" style="margin-top:6px;text-align:center">… và ${due.length-4} lời nhắc nữa</div>`:''}
+  </div>`;
+}
 function viewHome(){ const today=todayStr();
   const days=daysDiff(S.space.start_date);
   const pend=S.quizzes.filter(q=>q.to_person===S.me&&(q.status==='pending'||q.status==='picked'));
@@ -904,9 +919,6 @@ function viewHome(){ const today=todayStr();
       <div class="grow"><b>${esc(partner()||'Người ấy')} rủ bạn đấu nè! ⚔️</b><div class="muted">${S.duel.stake?'Cược: '+esc(S.duel.stake):'Vào nhận lời ngay nè'}</div></div><span class="muted">›</span></div></div>`:'' }
     ${ S.duel && S.duel.status==='active' ? `<div class="card" data-act="go" data-v="arena" style="cursor:pointer;border:1.5px solid var(--p1)"><div class="row">${ic('swords','lg')}
       <div class="grow"><b>Trận đấu đang diễn ra</b><div class="muted">Vào làm tiếp phần của bạn nào!</div></div><span class="muted">›</span></div></div>`:'' }
-    ${ dueCount()?`<div class="card" data-act="go" data-v="notes" style="cursor:pointer;border:1.5px solid var(--p2)"><div class="row">${ic('bell','lg')}
-      <div class="grow"><b>${dueCount()} lời nhắc cần làm</b><div class="muted">${esc(dueList().slice(0,2).map(n=>n.text).join(' · ')).slice(0,70)}</div></div><span class="muted">›</span></div></div>`:'' }
-
     <div class="card couple">
       <canvas id="heart-tank"></canvas>
       <div class="couple-body">
@@ -924,6 +936,8 @@ function viewHome(){ const today=todayStr();
       <div class="card"><div class="ic" style="margin-bottom:4px">${ic('trophy')}</div><div class="big">${S.space.longest||0}</div><div class="ttl">kỷ lục</div></div>
       <div class="card"><div class="ic" style="margin-bottom:4px">${ic('cards')}</div><div class="big">${LIBRARY.length}</div><div class="ttl">chủ đề</div></div>
     </div>
+
+    ${homeReminderCard()}
 
     <div class="card">
       <div class="label" style="margin-top:0">Hôm nay</div>
