@@ -171,10 +171,10 @@
   .check.on{ background:var(--p1); border-color:transparent; }
   .check .ic{ width:15px; height:15px; opacity:0; } .check.on .ic{ opacity:1; }
 
-  /* flashcard */
-  .flash-wrap{ perspective:1600px; }
-  .flash{ perspective:1200px; }
-  .flash .inner{ position:relative; min-height:220px; transition:transform .55s; transform-style:preserve-3d; }
+  /* flashcard — dễ thương: viền nét vẽ, sticker, bấm rìa để qua thẻ, bấm giữa để lật */
+  .flash-wrap{ perspective:1600px; position:relative; }
+  .flash{ perspective:1200px; cursor:pointer; }
+  .flash .inner{ position:relative; min-height:250px; transition:transform .55s; transform-style:preserve-3d; }
   .flash.flip .inner{ transform:rotateY(180deg); }
   /* lật trang sách khi qua thẻ mới: trang cũ lật về trái, trang mới rơi vào */
   .flash.turn{ animation:pageOut .42s ease-in forwards; transform-origin:left center; }
@@ -183,12 +183,26 @@
   @keyframes pageIn{ 0%{ transform:rotateY(108deg); opacity:.12; } 100%{ transform:rotateY(0); opacity:1; } }
   @media(prefers-reduced-motion:reduce){ .flash.turn,.flash.turn-in{ animation:none; } }
   .flash .face{ position:absolute; inset:0; backface-visibility:hidden; display:flex; flex-direction:column;
-    align-items:center; justify-content:center; padding:26px; border-radius:22px; text-align:center; }
-  .flash .front{ background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow); }
-  .flash .back{ background:linear-gradient(150deg,var(--p1),var(--p2)); color:#fff; transform:rotateY(180deg); box-shadow:var(--shadow); }
-  .flash .term{ font-family:'Fraunces'; font-size:30px; }
-  .flash .hint{ font-size:12.5px; color:var(--soft); margin-top:10px; }
-  .flash .ex{ font-size:14px; opacity:.92; margin-top:12px; font-style:italic; }
+    align-items:center; justify-content:center; padding:30px 42px; border-radius:22px; text-align:center; overflow:hidden; }
+  .flash .front{ background:var(--card); border:2.5px solid var(--edge); box-shadow:5px 5px 0 var(--edge); }
+  .flash .front::before{ content:""; position:absolute; inset:9px; border:2px dashed color-mix(in srgb,var(--p2) 75%, transparent); border-radius:15px; pointer-events:none; }
+  .flash .back{ background:linear-gradient(150deg,var(--p1),var(--p2)); color:#fff; transform:rotateY(180deg); border:2.5px solid var(--edge); box-shadow:5px 5px 0 var(--edge); }
+  .flash .back::before{ content:""; position:absolute; inset:9px; border:2px dashed rgba(255,255,255,.6); border-radius:15px; pointer-events:none; }
+  .flash .sticker{ position:absolute; top:11px; left:15px; font-size:21px; transform:rotate(-12deg); opacity:.92; }
+  .flash .sticker.r{ left:auto; right:15px; transform:rotate(12deg); }
+  .flash .term{ font-family:'Fraunces'; font-size:30px; position:relative; z-index:1; }
+  .flash .hint{ font-size:12px; color:var(--soft); margin-top:12px; position:relative; z-index:1; }
+  .flash .back .hint{ color:rgba(255,255,255,.85); }
+  /* nút bấm rìa 2 bên (đè lên mép thẻ) — trái/phải để qua thẻ */
+  .edge-nav{ position:absolute; top:0; bottom:0; width:24%; z-index:6; display:flex; align-items:center; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .edge-nav.left{ left:0; justify-content:flex-start; padding-left:4px; }
+  .edge-nav.right{ right:0; justify-content:flex-end; padding-right:4px; }
+  .edge-nav .chev{ width:34px; height:34px; border-radius:999px; background:var(--card); border:2px solid var(--edge);
+    box-shadow:2px 2px 0 var(--edge); display:grid; place-items:center; font-size:20px; font-weight:900; color:var(--p1); line-height:1; padding-bottom:3px; transition:transform .1s, box-shadow .1s; }
+  .edge-nav:active .chev{ transform:translate(2px,2px); box-shadow:0 0 0 var(--edge); }
+  .edge-nav.off{ opacity:0; pointer-events:none; }
+  /* doodle cặp đôi dễ thương dưới thẻ */
+  .couple-doodle{ display:block; margin:16px auto 4px; opacity:.9; }
   .progress{ height:7px; background:var(--line); border-radius:99px; overflow:hidden; margin:8px 0 16px; }
   .progress > i{ display:block; height:100%; background:linear-gradient(90deg,var(--p1),var(--accent)); border-radius:99px; transition:width .3s; }
 
@@ -1444,18 +1458,37 @@ function flashView(p){ const total=p.cards.length;
         <button class="btn ghost block" data-act="restudy">Xem lại</button>
         <button class="btn block" data-act="to-quiz">${ic('spark','sm')} Làm trắc nghiệm</button></div>
       <button class="btn soft block" style="margin-top:10px" data-act="finish-play">Xong</button></div>`; }
-  const c=p.cards[p.idx];
+  const c=p.cards[p.idx]; const canPrev=p.idx>0;
   return `<div class="screen">
     <div class="row" style="margin-bottom:8px"><button class="iconbtn" data-act="quit-play">${ic('x','sm')}</button>
       <div class="grow center" style="font-weight:800">Thẻ ${p.idx+1}/${total}</div><div style="width:38px"></div></div>
     ${progressBar(p.idx/total*100)}
-    <div class="flash-wrap" style="margin-top:6px"><div class="flash ${p.flip?'flip':''}${p.turnIn?' turn-in':''}" data-act="flip"><div class="inner">
-      <div class="face front"><div class="term" style="font-size:${fitPx(c.en)}px">${esc(c.en)}</div><div class="hint">Chạm để xem nghĩa</div></div>
-      <div class="face back"><div class="term" style="font-size:${Math.min(24,fitPx(c.vi))}px">${esc(c.vi)}</div></div></div></div></div>
-    ${flashExample(c)}
-    <div class="row" style="gap:11px;margin-top:14px">
-      <button class="btn soft block" data-act="flip">Lật thẻ</button>
-      <button class="btn block" data-act="next-card">${p.idx+1<total?'Thẻ tiếp →':'Xong'}</button></div>`; }
+    <div class="flash-wrap" style="margin-top:6px">
+      <div class="flash ${p.flip?'flip':''}${p.turnIn?' turn-in':''}" data-act="flip"><div class="inner">
+        <div class="face front"><span class="sticker">${flashSticker(p.idx)}</span><span class="sticker r">✨</span>
+          <div class="term" style="font-size:${fitPx(c.en)}px">${esc(c.en)}</div><div class="hint">chạm giữa để lật · rìa để qua thẻ</div></div>
+        <div class="face back"><span class="sticker">💡</span><span class="sticker r">💕</span>
+          <div class="term" style="font-size:${Math.min(24,fitPx(c.vi))}px">${esc(c.vi)}</div><div class="hint">chạm để lật lại</div></div>
+      </div></div>
+      <div class="edge-nav left ${canPrev?'':'off'}" ${canPrev?'data-act="prev-card"':''} title="Thẻ trước"><span class="chev">‹</span></div>
+      <div class="edge-nav right" data-act="next-card" title="${p.idx+1<total?'Thẻ tiếp':'Xong'}"><span class="chev">›</span></div>
+    </div>
+    ${coupleDoodle()}
+    <button class="btn soft block" style="margin-top:4px" data-act="speak-word">🔊 Đọc từ vựng</button>
+    ${flashExample(c)}`; }
+/* doodle cặp đôi vẽ tay dễ thương dưới thẻ */
+function coupleDoodle(){ return `<svg class="couple-doodle" width="128" height="54" viewBox="0 0 128 54" fill="none" aria-hidden="true">
+    <g stroke="var(--edge)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="40" cy="22" r="9" fill="var(--p2)"/>
+      <path d="M31 46c0-9 4-14 9-14s9 5 9 14" fill="var(--card)"/>
+      <circle cx="88" cy="22" r="9" fill="var(--p1)"/>
+      <path d="M79 46c0-9 4-14 9-14s9 5 9 14" fill="var(--card)"/>
+      <path d="M49 40c5 3 9 3 14 0M65 40c5 3 9 3 14 0"/>
+    </g>
+    <path d="M64 6c-2.4-3-7.6-2.6-7.6 1.6 0 3.2 4.4 6 7.6 8.4 3.2-2.4 7.6-5.2 7.6-8.4 0-4.2-5.2-4.6-7.6-1.6Z" fill="var(--p1)" stroke="var(--edge)" stroke-width="2"/>
+  </svg>`; }
+const FLASH_STICKERS=['🌱','⭐','🍀','🌸','📚','🔤','🧠','☕','🐣','🎈'];
+function flashSticker(i){ return FLASH_STICKERS[i%FLASH_STICKERS.length]; }
 /* Khối ví dụ AI dưới thẻ lật — cache theo từ trong S.play.exCache */
 function flashExample(c){ const ex=(S.play.exCache||{})[c.en];
   if(ex==='loading') return `<div class="card center" style="margin-top:12px"><div class="muted">${ic('spark','sm')} Đang nghĩ ví dụ…</div></div>`;
@@ -1820,7 +1853,9 @@ async function handle(act,v,id,t,e){
     case 'inbox-tab': S.inboxTab=v; render(); break;
     case 'flip': if(S.play){ S.play.flip=!S.play.flip; const fl=$('.flash'); if(fl) fl.classList.toggle('flip',S.play.flip); else render(); } break;
     case 'next-card': await nextCard(); break;
+    case 'prev-card': await prevCard(); break;
     case 'ai-example': await aiExampleForCurrent(); break;
+    case 'speak-word': { const p=S.play; if(p&&p.cards){ const c=p.cards[p.idx]; if(c) speakWord(c.en); } } break;
     case 'answer-mc': await answerMc(parseInt(v,10)); break;
     case 'check-scramble': await checkScramble(); break;
     case 'next-q': await nextQ(); break;
@@ -2007,6 +2042,10 @@ async function nextCard(){ const p=S.play; if(!p||p.turning) return;
   p.idx++; p.flip=false; p.turnIn=true; render(); p.turnIn=false;             // trang mới rơi vào
   await saveLessonProgress(p.idx,null);
 }
+async function prevCard(){ const p=S.play; if(!p||p.turning||p.idx<=0) return;
+  p.idx--; p.flip=false; p.turnIn=true; render(); p.turnIn=false;
+  await saveLessonProgress(p.idx,null);
+}
 /* Xin AI ví dụ + cách dùng cho thẻ đang xem (cache theo từ để khỏi gọi lại) */
 async function aiExampleForCurrent(){ const p=S.play; if(!p||!p.cards) return; const c=p.cards[p.idx]; if(!c) return;
   p.exCache=p.exCache||{}; const cur=p.exCache[c.en]; if(cur==='loading'||(cur&&!cur.error)) return;
@@ -2016,6 +2055,20 @@ async function aiExampleForCurrent(){ const p=S.play; if(!p||!p.cards) return; c
   }catch(e){ p.exCache[c.en]={error:true};
     toast(e.name==='AbortError' ? 'Mạng hơi chậm, bấm thử lại nha 🐢' : 'Chưa lấy được ví dụ, thử lại sau nha'); }
   render(); }
+/* Đọc từ vựng đang xem bằng giọng đọc có sẵn của trình duyệt (Web Speech API — không cần mạng/AI) */
+let _voicesWarm=false;
+function pickEnVoice(){ try{ const vs=speechSynthesis.getVoices(); return vs.find(v=>/^en[-_]/i.test(v.lang)&&/US|United States/i.test(v.name))||vs.find(v=>/^en[-_]/i.test(v.lang))||null; }catch(e){ return null; } }
+function speakWord(text){ text=(text||'').trim(); if(!text) return;
+  if(!('speechSynthesis' in window)){ toast('Máy này không hỗ trợ đọc'); return; }
+  try{
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text); u.lang='en-US'; u.rate=.9; u.pitch=1;
+    const v=pickEnVoice(); if(v) u.voice=v;
+    speechSynthesis.speak(u);
+    // iOS/Chrome: danh sách giọng nạp bất đồng bộ → nếu lần đầu chưa có, đợi rồi đọc lại
+    if(!v && !_voicesWarm){ _voicesWarm=true; speechSynthesis.onvoiceschanged=()=>{ const v2=pickEnVoice(); if(v2){ speechSynthesis.cancel(); const u2=new SpeechSynthesisUtterance(text); u2.lang='en-US'; u2.rate=.9; u2.voice=v2; speechSynthesis.speak(u2); } }; }
+  }catch(e){ toast('Không đọc được từ này'); }
+}
 async function finishStudy(){ const p=S.play; p.done=true;
   p.streakUp=await bumpStreak();
   if(p.learnKey) markLearned(p.learnKey); // học xong bộ nào → tự đánh dấu "đã học" cho mình
