@@ -265,14 +265,20 @@
   .note .body{ font-size:15px; line-height:1.5; white-space:pre-wrap; word-break:break-word; }
   .note .del{ position:absolute; top:10px; right:10px; cursor:pointer; opacity:.5; }
 
-  .nav{ position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:480px; z-index:40;
-    display:flex; justify-content:space-around; align-items:flex-start; background:color-mix(in srgb,var(--bg1) 90%, transparent);
-    backdrop-filter:blur(14px); border-top:2px solid var(--edge); padding:12px 6px calc(10px + env(safe-area-inset-bottom)); }
-  .nav button{ background:none; border:2px solid transparent; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:3px;
-    font-size:10px; font-weight:800; color:var(--soft); padding:6px 8px; border-radius:14px; position:relative;
-    transition:transform .16s cubic-bezier(.34,1.4,.64,1), box-shadow .16s, background .16s; }
+  /* thanh dưới = một KHỐI nổi (viền đậm + bóng cứng), trôi cách đáy; tab chọn màu trùng nền -> liền mạch */
+  .nav{ position:fixed; bottom:calc(12px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%);
+    width:calc(100% - 24px); max-width:452px; z-index:40; display:flex; justify-content:space-around; align-items:center;
+    background:var(--card); border:2px solid var(--edge); border-radius:20px; box-shadow:4px 4px 0 var(--edge); padding:7px 7px; }
+  .nav button{ background:none; border:none; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:3px;
+    font-size:10px; font-weight:800; color:var(--soft); padding:8px 10px; border-radius:13px; position:relative;
+    transition:background .15s, color .15s; flex:1; }
   .nav button .ic{ transition:transform .15s; }
-  .nav button.on{ color:var(--p1); background:var(--card); border-color:var(--edge); box-shadow:3px 3px 0 var(--edge); transform:translateY(-8px); }
+  /* tab chọn = lộ đúng lưới ô giấy của nền + lõm sâu -> nhìn như chìm xuống nền */
+  .nav button.on{ color:var(--p1);
+    background-color:var(--bg1);
+    background-image:linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size:9px 9px; background-position:center;
+    box-shadow:inset 2px 3px 6px color-mix(in srgb,var(--edge) 30%, transparent); }
   .nav button.on.pop .ic{ animation:navpop .4s cubic-bezier(.34,1.56,.64,1); }
   @keyframes navpop{ 0%{ transform:scale(.7);} 60%{ transform:scale(1.25);} 100%{ transform:scale(1);} }
   .nav .dot{ position:absolute; top:0; right:6px; min-width:15px; height:15px; padding:0 4px; border-radius:99px;
