@@ -741,7 +741,7 @@ async function apiPost(path, body, ms){ const ctl=new AbortController(); const t
 async function ensureDaily(sid,day){ let d=await Store.getDaily(sid,day);
   if(!d){ const idx=parseInt(day.replace(/-/g,''),10)%DAILY_QUESTIONS.length;
     let question=DAILY_QUESTIONS[idx];  // mặc định: danh sách cố định (dùng khi AI lỗi / chế độ máy)
-    if(useCloud){ try{ const r=await apiPost('/api/daily-question',{ recent:(S.dailyHistory||[]).slice(0,6).map(x=>x.question).filter(Boolean) },7000);
+    if(useCloud){ try{ const r=await apiPost('/api/daily-question',{ recent:(S.dailyHistory||[]).slice(0,6).map(x=>x.question).filter(Boolean) },15000);
         if(r&&r.question) question=r.question; }catch(e){ /* im lặng, dùng câu mặc định */ } }
     d={ id:uid(), space_id:sid, day, question, answer_a:null, answer_b:null };
     try{ await Store.saveDaily(d); }catch(e){ d=await Store.getDaily(sid,day)||d; } } return d; }
@@ -1983,9 +1983,10 @@ async function nextCard(){ const p=S.play; if(!p||p.turning) return;
 async function aiExampleForCurrent(){ const p=S.play; if(!p||!p.cards) return; const c=p.cards[p.idx]; if(!c) return;
   p.exCache=p.exCache||{}; const cur=p.exCache[c.en]; if(cur==='loading'||(cur&&!cur.error)) return;
   p.exCache[c.en]='loading'; render();
-  try{ const j=await apiPost('/api/word-example',{en:c.en,vi:c.vi},9000);
+  try{ const j=await apiPost('/api/word-example',{en:c.en,vi:c.vi},25000); // AI hay chậm 5-8s, iPhone mạng di động cần nhiều thời gian hơn
     p.exCache[c.en]={ example:j.example||'', example_vi:j.example_vi||'', usage:j.usage||'', meaning_note:j.meaning_note||'' };
-  }catch(e){ p.exCache[c.en]={error:true}; toast('Chưa lấy được ví dụ (cần deploy bản AI)'); }
+  }catch(e){ p.exCache[c.en]={error:true};
+    toast(e.name==='AbortError' ? 'Mạng hơi chậm, bấm thử lại nha 🐢' : 'Chưa lấy được ví dụ, thử lại sau nha'); }
   render(); }
 async function finishStudy(){ const p=S.play; p.done=true;
   p.streakUp=await bumpStreak();
