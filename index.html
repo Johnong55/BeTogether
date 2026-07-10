@@ -176,12 +176,6 @@
   .flash{ perspective:1200px; cursor:pointer; }
   .flash .inner{ position:relative; min-height:250px; transition:transform .55s; transform-style:preserve-3d; }
   .flash.flip .inner{ transform:rotateY(180deg); }
-  /* lật trang sách khi qua thẻ mới: trang cũ lật về trái, trang mới rơi vào */
-  .flash.turn{ animation:pageOut .42s ease-in forwards; transform-origin:left center; }
-  .flash.turn-in{ animation:pageIn .46s cubic-bezier(.2,.72,.3,1); transform-origin:left center; }
-  @keyframes pageOut{ from{ transform:rotateY(0); opacity:1; } to{ transform:rotateY(-152deg); opacity:.12; } }
-  @keyframes pageIn{ 0%{ transform:rotateY(108deg); opacity:.12; } 100%{ transform:rotateY(0); opacity:1; } }
-  @media(prefers-reduced-motion:reduce){ .flash.turn,.flash.turn-in{ animation:none; } }
   .flash .face{ position:absolute; inset:0; backface-visibility:hidden; display:flex; flex-direction:column;
     align-items:center; justify-content:center; padding:30px 42px; border-radius:22px; text-align:center; overflow:hidden; }
   .flash .front{ background:var(--card); border:2.5px solid var(--edge); box-shadow:5px 5px 0 var(--edge); }
@@ -538,6 +532,13 @@ const Store = {
     const db=L.ensure(d.space_id); const a=db[d.space_id].daily; const i=a.findIndex(x=>x.day===d.day); if(i>=0)a[i]=d; else a.push(d); L.save(db); },
   async listDaily(sid){ if(useCloud){ const {data,error}=await sb.from('daily').select('*').eq('space_id',sid).order('day',{ascending:false}); if(error) throw error; return data||[]; }
     return (L.sp(sid)?.daily||[]).slice().sort((a,b)=>(a.day<b.day?1:-1)); },
+  /* ví dụ AI theo từ — cache TOÀN CỤC (khoá = từ, viết thường) để khỏi gọi AI lại, đỡ tốn token */
+  async getWordExample(word){ const w=(word||'').trim().toLowerCase(); if(!w) return null;
+    if(useCloud){ const {data,error}=await sb.from('word_examples').select('*').eq('word',w).maybeSingle(); if(error) throw error; return data; }
+    try{ return (JSON.parse(localStorage.getItem('loveapp_wordex')||'{}'))[w]||null; }catch(e){ return null; } },
+  async saveWordExample(row){ const w=(row.word||'').trim().toLowerCase(); if(!w) return; row=Object.assign({},row,{word:w});
+    if(useCloud){ const {error}=await sb.from('word_examples').upsert(row,{onConflict:'word'}); if(error) throw error; return; }
+    try{ const o=JSON.parse(localStorage.getItem('loveapp_wordex')||'{}'); o[w]=row; localStorage.setItem('loveapp_wordex',JSON.stringify(o)); }catch(e){} },
 };
 
 /* ===================== STATE ===================== */
@@ -1464,7 +1465,7 @@ function flashView(p){ const total=p.cards.length;
       <div class="grow center" style="font-weight:800">Thẻ ${p.idx+1}/${total}</div><div style="width:38px"></div></div>
     ${progressBar(p.idx/total*100)}
     <div class="flash-wrap" style="margin-top:6px">
-      <div class="flash ${p.flip?'flip':''}${p.turnIn?' turn-in':''}" data-act="flip"><div class="inner">
+      <div class="flash ${p.flip?'flip':''}" data-act="flip"><div class="inner">
         <div class="face front"><span class="sticker">${flashSticker(p.idx)}</span><span class="sticker r">✨</span>
           <div class="term" style="font-size:${fitPx(c.en)}px">${esc(c.en)}</div><div class="hint">chạm giữa để lật · rìa để qua thẻ</div></div>
         <div class="face back"><span class="sticker">💡</span><span class="sticker r">💕</span>
@@ -2033,25 +2034,31 @@ async function checkScramble(){ const p=S.play; if(!p||p.phase!=='ask') return; 
 async function nextQ(){ const p=S.play; if(!p) return;
   if(p.idx+1<p.questions.length){ p.idx++; p.phase='ask'; p.chosen=null; p.answerGiven=''; render(); }
   else await finishStudy(); }
-async function nextCard(){ const p=S.play; if(!p||p.turning) return;
+async function nextCard(){ const p=S.play; if(!p) return;
   if(p.idx+1>=p.cards.length){ await finishStudy(); return; }
-  const fl=$('.flash');
-  if(fl && !matchMedia('(prefers-reduced-motion:reduce)').matches){
-    p.turning=true; fl.classList.remove('flip'); fl.classList.add('turn');   // lật trang cũ đi
-    await new Promise(r=>setTimeout(r,410)); p.turning=false; }
-  p.idx++; p.flip=false; p.turnIn=true; render(); p.turnIn=false;             // trang mới rơi vào
+  p.idx++; p.flip=false; render();          // đổi thẻ ngay, không animation lật trang
   await saveLessonProgress(p.idx,null);
 }
-async function prevCard(){ const p=S.play; if(!p||p.turning||p.idx<=0) return;
-  p.idx--; p.flip=false; p.turnIn=true; render(); p.turnIn=false;
+async function prevCard(){ const p=S.play; if(!p||p.idx<=0) return;
+  p.idx--; p.flip=false; render();
   await saveLessonProgress(p.idx,null);
 }
 /* Xin AI ví dụ + cách dùng cho thẻ đang xem (cache theo từ để khỏi gọi lại) */
 async function aiExampleForCurrent(){ const p=S.play; if(!p||!p.cards) return; const c=p.cards[p.idx]; if(!c) return;
   p.exCache=p.exCache||{}; const cur=p.exCache[c.en]; if(cur==='loading'||(cur&&!cur.error)) return;
   p.exCache[c.en]='loading'; render();
+  // 1) Thử lấy từ DB trước — nếu đã có ai đó xin ví dụ cho từ này thì dùng lại, KHỎI tốn token
+  try{ const cached=await Store.getWordExample(c.en);
+    if(cached && (cached.example||cached.usage)){
+      p.exCache[c.en]={ example:cached.example||'', example_vi:cached.example_vi||'', usage:cached.usage||'', meaning_note:cached.meaning_note||'' };
+      render(); return; }
+  }catch(e){ /* bảng chưa tạo hoặc lỗi mạng -> bỏ qua, gọi AI */ }
+  // 2) Chưa có -> gọi AI rồi LƯU vào DB cho lần sau
   try{ const j=await apiPost('/api/word-example',{en:c.en,vi:c.vi},25000); // AI hay chậm 5-8s, iPhone mạng di động cần nhiều thời gian hơn
-    p.exCache[c.en]={ example:j.example||'', example_vi:j.example_vi||'', usage:j.usage||'', meaning_note:j.meaning_note||'' };
+    const data={ example:j.example||'', example_vi:j.example_vi||'', usage:j.usage||'', meaning_note:j.meaning_note||'' };
+    p.exCache[c.en]=data;
+    try{ await Store.saveWordExample({ word:c.en, vi:c.vi||'', example:data.example, example_vi:data.example_vi, usage:data.usage, meaning_note:data.meaning_note, created_at:new Date().toISOString() }); }
+    catch(e){ /* bảng word_examples chưa chạy SQL -> vẫn dùng được, chỉ là lần sau gọi lại */ }
   }catch(e){ p.exCache[c.en]={error:true};
     toast(e.name==='AbortError' ? 'Mạng hơi chậm, bấm thử lại nha 🐢' : 'Chưa lấy được ví dụ, thử lại sau nha'); }
   render(); }
