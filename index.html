@@ -147,6 +147,11 @@
 
   .listitem{ display:flex; align-items:center; gap:13px; cursor:pointer; }
   .thumb{ width:46px; height:46px; border-radius:13px; display:grid; place-items:center; flex:none; color:var(--ink); }
+  .lrn{ width:30px; height:30px; border-radius:999px; border:1.6px solid var(--line); background:var(--card); color:var(--soft); font-weight:900; font-size:14px; line-height:1; display:grid; place-items:center; flex:none; cursor:pointer; transition:.15s; }
+  .lrn:hover{ border-color:var(--p1); }
+  .lrn.on{ background:linear-gradient(135deg,#3ecf6a,#22a85a); border-color:transparent; color:#fff; box-shadow:0 2px 8px rgba(40,167,90,.28); }
+  .listitem.learned .thumb{ opacity:.5; }
+  .listitem.learned>.grow>b{ color:var(--soft); }
   .badge{ background:var(--chip); color:var(--p1); font-weight:800; font-size:11.5px; padding:3px 9px; border-radius:999px; }
   .status{ font-size:11px; font-weight:800; padding:3px 9px; border-radius:999px; }
   .status.pending{ background:#f6ecdb; color:#b78327; }
@@ -934,11 +939,37 @@ const unitWord=(t)=> isColloc(t) ? 'cụm' : 'từ';
 function topicSearchName(t){
   return noDiacritics(t.name+' '+(t.vi||'')+' '+(isTopic(t)?'chu de theo nhom':isColloc(t)?'collocation toeic cum':'tu vung b2 don')).toLowerCase();
 }
-function topicRow(t,i){
-  return `<div class="card listitem" data-act="open-topic" data-id="${t.no}" data-flt="lib" data-name="${esc(topicSearchName(t))}">
+/* ----- Đánh dấu "đã học" (theo từng người, lưu ở spaces.learned_a/b, fallback localStorage) ----- */
+function localLearnedKey(){ return 'loveapp_learned_'+((S.space&&S.space.id)||'')+'_'+S.me; }
+function learnedList(person){ person=person||S.me;
+  const v=S.space&&S.space['learned_'+person];
+  if(Array.isArray(v)) return v;
+  if(person===S.me){ try{ return JSON.parse(localStorage.getItem(localLearnedKey())||'[]'); }catch(e){} }
+  return [];
+}
+function isLearned(key,person){ return !!key && learnedList(person).includes(key); }
+async function toggleLearned(key){ if(!key||!S.space) return;
+  const cur=learnedList(S.me).slice(); const i=cur.indexOf(key); const was=i>=0;
+  if(was) cur.splice(i,1); else cur.push(key);
+  S.space['learned_'+S.me]=cur;
+  try{ localStorage.setItem(localLearnedKey(),JSON.stringify(cur)); }catch(e){}
+  render();
+  try{ await Store.updateSpace(S.space.id,{['learned_'+S.me]:cur}); toast(was?'Đã bỏ đánh dấu':'Đã đánh dấu học rồi ✓'); }
+  catch(e){ toast((was?'Đã bỏ đánh dấu':'Đã đánh dấu')+' (máy này) — nhờ chạy SQL cột learned_a/b để đồng bộ 2 máy'); }
+}
+async function markLearned(key){ if(!key||!S.space||isLearned(key)) return;
+  const cur=learnedList(S.me).slice(); cur.push(key); S.space['learned_'+S.me]=cur;
+  try{ localStorage.setItem(localLearnedKey(),JSON.stringify(cur)); }catch(e){}
+  try{ await Store.updateSpace(S.space.id,{['learned_'+S.me]:cur}); }catch(e){} }
+function lrnBtn(key){ const on=isLearned(key);
+  return `<button class="lrn ${on?'on':''}" data-act="toggle-learned" data-key="${esc(key)}" title="${on?'Đã học — bấm để bỏ':'Bấm khi đã học xong'}">${on?'✓':''}</button>`; }
+function partnerLearnedMark(key){ return isLearned(key,other(S.me))?`<span title="${esc(partner()||'Người ấy')} đã học" style="font-size:13px">💗</span>`:''; }
+
+function topicRow(t,i){ const key='t:'+t.no, on=isLearned(key);
+  return `<div class="card listitem${on?' learned':''}" data-act="open-topic" data-id="${t.no}" data-flt="lib" data-name="${esc(topicSearchName(t))}" data-lkey="${key}" data-learned="${on?1:0}">
     <div class="thumb" style="background:${DECK_TINT[i%DECK_TINT.length]};font-family:'Fraunces';font-weight:600;color:var(--p1)">${topicTag(t)}</div>
-    <div class="grow"><b>${esc(t.name)}</b><div class="muted">${esc(t.vi||'')} · ${t.words.length} ${unitWord(t)}</div></div>
-    <span class="muted">›</span></div>`;
+    <div class="grow"><b>${esc(t.name)}</b><div class="muted">${esc(t.vi||'')} · ${t.words.length} ${unitWord(t)} ${partnerLearnedMark(key)}</div></div>
+    ${lrnBtn(key)}<span class="muted">›</span></div>`;
 }
 function grammarRow(g,i){
   const nm=noDiacritics(g.name+' '+g.en+' ngu phap grammar '+(g.tag||'')).toLowerCase();
@@ -958,10 +989,11 @@ function viewLibrary(){
   const showMine=filter==='all'||filter==='mine', showVocab=filter==='all'||filter==='vocab', showColloc=filter==='all'||filter==='colloc', showGrammar=filter==='all'||filter==='grammar', showTopic=filter==='all'||filter==='topic';
   const mine=S.decks.map((d,i)=>{ const n=S.cards.filter(c=>c.deck_id===d.id).length;
     const name=noDiacritics(d.name+' '+(d.lang||'')+' bo cua minh').toLowerCase();
-    return `<div class="card listitem" data-act="open-deck" data-id="${d.id}" data-flt="lib" data-name="${esc(name)}">
+    const key='d:'+d.id, on=isLearned(key);
+    return `<div class="card listitem${on?' learned':''}" data-act="open-deck" data-id="${d.id}" data-flt="lib" data-name="${esc(name)}" data-lkey="${key}" data-learned="${on?1:0}">
       <div class="thumb" style="background:${d.color||DECK_TINT[i%DECK_TINT.length]}">${ic('heart')}</div>
-      <div class="grow"><b>${esc(d.name)}</b><div class="muted">${d.lang?esc(d.lang)+' · ':''}${n} từ</div></div>
-      <span class="muted">›</span></div>`; }).join('');
+      <div class="grow"><b>${esc(d.name)}</b><div class="muted">${d.lang?esc(d.lang)+' · ':''}${n} từ ${partnerLearnedMark(key)}</div></div>
+      ${lrnBtn(key)}<span class="muted">›</span></div>`; }).join('');
   const vocab=LIBRARY.filter(t=>!isColloc(t)&&!isTopic(t)), colloc=LIBRARY.filter(isColloc), topics=LIBRARY.filter(isTopic);
   const chip=(v,label)=>`<div class="chip ${filter===v?'on':''}" data-act="lib-filter" data-v="${v}">${label}</div>`;
   return `<div class="row" style="margin-bottom:4px"><h2 class="title grow" style="margin:0">Học từ vựng</h2>
@@ -980,6 +1012,11 @@ function viewLibrary(){
       ${chip('colloc','Collocation 🧩')}
       ${GRAMMAR.length?chip('grammar','Ngữ pháp 📖'):''}
     </div>
+    ${ (()=>{ const lf=S.tmp.learnFilter||'all'; const nLearned=learnedList(S.me).length;
+      if(!nLearned) return '';
+      const lchip=(v,label)=>`<div class="chip ${lf===v?'on':''}" data-act="lib-learnfilter" data-v="${v}">${label}</div>`;
+      return `<div class="chips" style="margin:-4px 0 14px">${lchip('all','Tất cả')}${lchip('unlearned','Chưa học')}${lchip('learned','Đã học ✓')}</div>`;
+    })() }
     ${ showMine && S.decks.length?`<div class="lib-sec"><div class="label" style="margin-top:2px">Bộ từ của mình 💗</div>${mine}</div>`:'' }
     ${ showVocab?`<div class="lib-sec"><div class="label">Từ vựng B2 (từ đơn)</div>${vocab.map((t,i)=>topicRow(t,i)).join('')}</div>`:'' }
     ${ showTopic && topics.length?`<div class="lib-sec"><div class="label">Chủ đề 🌷 (từ vựng theo chủ đề)</div>${topics.map((t,i)=>topicRow(t,i)).join('')}</div>`:'' }
@@ -999,7 +1036,10 @@ function viewTopic(){ const t=topicByNo(S.sub);
     <div class="row" style="gap:10px;margin-bottom:8px">
       <button class="btn ghost block" data-act="send-topic" data-id="${t.no}">${ic('send','sm')} Gửi ${esc(partner()||'người ấy')}</button>
       <button class="btn ghost block" data-act="duel-from" data-v="t:${t.no}">${ic('swords','sm')} Rủ đấu</button></div>
-    <p class="sub-h" style="margin-top:12px">Học <b>thẻ lật</b> để nhớ trước, rồi <b>trắc nghiệm</b> để kiểm tra — đủ cả ${t.words.length} ${unitWord(t)}.</p>
+    ${ (()=>{ const key='t:'+t.no, on=isLearned(key), pon=isLearned(key,other(S.me));
+      return `<button class="btn ${on?'':'soft'} block" data-act="toggle-learned" data-key="${key}" style="margin-bottom:6px${on?';background:linear-gradient(135deg,#3ecf6a,#22a85a)':''}">${on?'✓ Đã học rồi — bấm để bỏ':'Đánh dấu đã học ✓'}</button>`
+        + (pon?`<p class="sub-h" style="margin:0 0 4px;text-align:center">💗 ${esc(partner()||'Người ấy')} đã học chủ đề này rồi</p>`:''); })() }
+    <p class="sub-h" style="margin-top:8px">Học <b>thẻ lật</b> để nhớ trước, rồi <b>trắc nghiệm</b> để kiểm tra — đủ cả ${t.words.length} ${unitWord(t)}.</p>
     <div class="card" style="padding-top:10px">
       <div class="row" style="border:none;padding:4px 0 8px"><span class="ic" style="color:var(--soft)">${ic('search','sm')}</span>
         <input data-filter="tw" placeholder="Xem trước từ vựng..." style="border:none;padding:6px 4px;box-shadow:none"/></div>
@@ -1665,13 +1705,18 @@ document.addEventListener('input',(e)=>{ const f=e.target.dataset.filter; if(!f)
 /* Lọc chủ đề tab Học — bỏ dấu để gõ không cần dấu vẫn tìm thấy (vd "hop dong") */
 function applyLibFilter(){
   const q=noDiacritics((S.tmp.libQuery||'').trim()).toLowerCase();
+  const lf=S.tmp.learnFilter||'all';
   let anyGlobal=false;
   document.querySelectorAll('.lib-sec').forEach(sec=>{
     let any=false;
     sec.querySelectorAll('[data-flt="lib"]').forEach(row=>{
-      const show=!q||row.dataset.name.includes(q); row.style.display=show?'':'none'; if(show) any=true; });
+      let show=!q||row.dataset.name.includes(q);
+      if(show && lf!=='all'){ const lk=row.dataset.lkey;
+        if(!lk) show=false; // dòng không đánh dấu được (ngữ pháp) ẩn khi lọc theo tiến độ
+        else { const learned=row.dataset.learned==='1'; show = lf==='learned'?learned:!learned; } }
+      row.style.display=show?'':'none'; if(show) any=true; });
     sec.style.display=any?'':'none'; if(any) anyGlobal=true; });
-  const empty=$('#lib-empty'); if(empty) empty.style.display=(q&&!anyGlobal)?'':'none';
+  const empty=$('#lib-empty'); if(empty) empty.style.display=(!anyGlobal && (q||lf!=='all'))?'':'none';
 }
 
 document.addEventListener('keydown',(e)=>{ if(e.key!=='Enter') return;
@@ -1702,13 +1747,15 @@ async function handle(act,v,id,t,e){
     case 'stop': break;
 
     case 'lib-filter': S.tmp.libFilter=v; render(); break;
+    case 'lib-learnfilter': S.tmp.learnFilter=v; render(); break;
+    case 'toggle-learned': await toggleLearned(t.dataset.key); break;
     case 'open-topic': S.sub=id; S.view='library'; render(); scrollTo(0,0); break;
     case 'open-grammar': S.sub='g:'+id; S.view='library'; render(); scrollTo(0,0); break;
     case 'grammar-practice': startGrammarPractice(id); break;
     case 'send-grammar': await sendGrammar(id); break;
     case 'check-grammar': await checkGrammar(); break;
     case 'grammar-mc': grammarMc(parseInt(v,10)); break;
-    case 'study-topic': { const tt=topicByNo(id); if(tt) startStudy(tt.words,{mode:t.dataset.mode||'quiz',src:'lib',title:tt.name,back:'library'}); } break;
+    case 'study-topic': { const tt=topicByNo(id); if(tt) startStudy(tt.words,{mode:t.dataset.mode||'quiz',src:'lib',title:tt.name,back:'library',learnKey:'t:'+id}); } break;
     case 'send-topic': await sendTopic(id); break;
 
     /* bộ từ của mình */
@@ -1723,7 +1770,7 @@ async function handle(act,v,id,t,e){
     case 'save-card': await saveCard(t.dataset.deck,t.dataset.id); break;
     case 'del-card': await Store.deleteCard(S.space.id,id); await loadAll(); render(); break;
     case 'study-deck': { const dd=S.decks.find(x=>x.id===id); if(dd){ const ws=S.cards.filter(c=>c.deck_id===id).map(c=>({en:c.front,vi:c.back}));
-        startStudy(ws,{mode:t.dataset.mode||'quiz',src:'lib',title:dd.name,back:'library'}); } } break;
+        startStudy(ws,{mode:t.dataset.mode||'quiz',src:'lib',title:dd.name,back:'library',learnKey:'d:'+id}); } } break;
     case 'send-deck': await sendDeck(id); break;
 
     /* đấu trường */
@@ -1883,7 +1930,7 @@ function startStudy(words,opts){ opts=opts||{}; const mode=opts.mode||'quiz';
   const questions = mode==='quiz'? (prog && prog.questions && prog.questions.length ? prog.questions : buildQuestions(norm)) : [];
   const idx = prog ? Math.max(0, prog.idx||0) : 0;
   const alreadyDone = mode==='quiz' && prog && idx>=questions.length;
-  S.play={ mode, src:opts.src||'lib', quiz:opts.quiz||null, title:opts.title||'Học', back:opts.back||'library',
+  S.play={ mode, src:opts.src||'lib', quiz:opts.quiz||null, title:opts.title||'Học', back:opts.back||'library', learnKey:opts.learnKey||null,
     words:norm, idx: alreadyDone?Math.max(0,questions.length-1):(mode==='flash'?Math.min(idx,cards.length-1):idx),
     score:(prog&&prog.score)||0, done:alreadyDone, streakUp:false, flip:false,
     cards, questions,
@@ -1942,6 +1989,7 @@ async function aiExampleForCurrent(){ const p=S.play; if(!p||!p.cards) return; c
   render(); }
 async function finishStudy(){ const p=S.play; p.done=true;
   p.streakUp=await bumpStreak();
+  if(p.learnKey) markLearned(p.learnKey); // học xong bộ nào → tự đánh dấu "đã học" cho mình
   if(p.quiz && p.src==='lesson'){
     const q=p.quiz; let changed=false;
     if((p.mode==='quiz'||p.mode==='grammar') && q.to_person===S.me && q.status!=='answered'){
