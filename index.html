@@ -1026,9 +1026,14 @@ async function markLearned(key){ if(!key||!S.space||isLearned(key)) return;
   const cur=learnedList(S.me).slice(); cur.push(key); S.space['learned_'+S.me]=cur;
   try{ localStorage.setItem(localLearnedKey(),JSON.stringify(cur)); }catch(e){}
   try{ await Store.updateSpace(S.space.id,{['learned_'+S.me]:cur}); }catch(e){} }
-function lrnBtn(key){ const on=isLearned(key);
-  return `<button class="lrn ${on?'on':''}" data-act="toggle-learned" data-key="${esc(key)}" title="${on?'Đã học — bấm để bỏ':'Bấm khi đã học xong'}">${on?'✓':''}</button>`; }
+/* Dấu "đã học" TĨNH (tự đánh dấu khi học xong — không bấm tay nữa) */
+function lrnBtn(key){ return isLearned(key)?`<span class="lrn on" title="Đã học rồi" style="pointer-events:none">✓</span>`:''; }
 function partnerLearnedMark(key){ return isLearned(key,other(S.me))?`<span title="${esc(partner()||'Người ấy')} đã học" style="font-size:13px">💗</span>`:''; }
+/* Khớp tên bài dò -> mã chủ đề/bộ (để tự đánh dấu "đã học" khi làm xong bài người ấy gửi) */
+function learnKeyForTitle(title){ if(!title) return null;
+  const t=LIBRARY.find(x=>x.name===title); if(t) return 't:'+t.no;
+  const d=(S.decks||[]).find(x=>x.name===title); if(d) return 'd:'+d.id;
+  return null; }
 
 function topicRow(t,i){ const key='t:'+t.no, on=isLearned(key);
   return `<div class="card listitem${on?' learned':''}" data-act="open-topic" data-id="${t.no}" data-flt="lib" data-name="${esc(topicSearchName(t))}" data-lkey="${key}" data-learned="${on?1:0}">
@@ -1102,9 +1107,11 @@ function viewTopic(){ const t=topicByNo(S.sub);
       <button class="btn ghost block" data-act="send-topic" data-id="${t.no}">${ic('send','sm')} Gửi ${esc(partner()||'người ấy')}</button>
       <button class="btn ghost block" data-act="duel-from" data-v="t:${t.no}">${ic('swords','sm')} Rủ đấu</button></div>
     ${ (()=>{ const key='t:'+t.no, on=isLearned(key), pon=isLearned(key,other(S.me));
-      return `<button class="btn ${on?'':'soft'} block" data-act="toggle-learned" data-key="${key}" style="margin-bottom:6px${on?';background:linear-gradient(135deg,#3ecf6a,#22a85a)':''}">${on?'✓ Đã học rồi — bấm để bỏ':'Đánh dấu đã học ✓'}</button>`
-        + (pon?`<p class="sub-h" style="margin:0 0 4px;text-align:center">💗 ${esc(partner()||'Người ấy')} đã học chủ đề này rồi</p>`:''); })() }
-    <p class="sub-h" style="margin-top:8px">Học <b>thẻ lật</b> để nhớ trước, rồi <b>trắc nghiệm</b> để kiểm tra — đủ cả ${t.words.length} ${unitWord(t)}.</p>
+      let s='';
+      if(on) s+=`<div class="card center" style="border-color:#22a85a;color:#22a85a;font-weight:800;margin-bottom:6px">✓ Bạn đã học chủ đề này</div>`;
+      if(pon) s+=`<p class="sub-h" style="margin:0 0 4px;text-align:center">💗 ${esc(partner()||'Người ấy')} đã học chủ đề này rồi</p>`;
+      return s; })() }
+    <p class="sub-h" style="margin-top:8px">Học xong (thẻ lật hoặc trắc nghiệm) sẽ <b>tự đánh dấu "đã học"</b> — đủ cả ${t.words.length} ${unitWord(t)}.</p>
     <div class="card" style="padding-top:10px">
       <div class="row" style="border:none;padding:4px 0 8px"><span class="ic" style="color:var(--soft)">${ic('search','sm')}</span>
         <input data-filter="tw" placeholder="Xem trước từ vựng..." style="border:none;padding:6px 4px;box-shadow:none"/></div>
@@ -1832,7 +1839,6 @@ async function handle(act,v,id,t,e){
 
     case 'lib-filter': S.tmp.libFilter=v; render(); break;
     case 'lib-learnfilter': S.tmp.learnFilter=v; render(); break;
-    case 'toggle-learned': await toggleLearned(t.dataset.key); break;
     case 'open-topic': saveScrollNow(); S.sub=id; S.view='library'; render(); scrollTo(0,0); break;
     case 'open-grammar': saveScrollNow(); S.sub='g:'+id; S.view='library'; render(); scrollTo(0,0); break;
     case 'grammar-practice': startGrammarPractice(id); break;
@@ -2106,7 +2112,9 @@ async function finishStudy(){ const p=S.play; p.done=true;
     if((p.mode==='quiz'||p.mode==='grammar') && q.to_person===S.me && q.status!=='answered'){
       q.status='answered'; q.score=p.score; q.total=p.questions.length; q.answered_at=new Date().toISOString(); changed=true; }
     if(q.progress){ q.progress=null; changed=true; }
-    if(changed) await saveQuizSafe(q); }
+    if(changed) await saveQuizSafe(q);
+    const lk=learnKeyForTitle(q.title); if(lk) markLearned(lk); // làm xong bài người ấy gửi -> tự đánh dấu chủ đề/bộ tương ứng
+  }
   render(); celebrate(); }
 async function noteSave(){ const text=($('#m_note')?.value||'').trim(); if(!text){ toast('Viết gì đó đã nha'); return; }
   const remind_at=($('#m_remind')?.value||'')||null;
