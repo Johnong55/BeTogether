@@ -522,6 +522,8 @@ const Store = {
   async savePushSub(s){ if(useCloud){ const {error}=await sb.from('push_subscriptions').upsert(s,{onConflict:'endpoint'}); if(error) throw error; return; }
     const db=L.ensure(s.space_id); db[s.space_id].pushSubs=db[s.space_id].pushSubs||[];
     const a=db[s.space_id].pushSubs; const i=a.findIndex(x=>x.endpoint===s.endpoint); if(i>=0)a[i]=s; else a.push(s); L.save(db); },
+  async deletePushSubsFor(spaceId,person){ if(useCloud){ await sb.from('push_subscriptions').delete().eq('space_id',spaceId).eq('person',person); return; }
+    const db=L.ensure(spaceId); db[spaceId].pushSubs=(db[spaceId].pushSubs||[]).filter(x=>x.person!==person); L.save(db); },
   /* duels */
   async listDuels(sid){ if(useCloud){ const {data,error}=await sb.from('duels').select('*').eq('space_id',sid).order('created_at',{ascending:false}); if(error) throw error; return data||[]; }
     return ((L.sp(sid)||{}).duels||[]).slice().sort((a,b)=>(a.created_at<b.created_at?1:-1)); },
@@ -2154,9 +2156,15 @@ async function enableNotif(){ if(!('Notification' in window)){ toast('Máy này 
     let pushed=false;
     if('serviceWorker' in navigator && 'PushManager' in window && VAPID_PUBLIC_KEY){
       try{ const reg=await navigator.serviceWorker.ready;
+        const want=urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
         let sub=await reg.pushManager.getSubscription();
-        if(!sub) sub=await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY) });
+        // Nếu đã có sub nhưng đăng ký bằng khoá VAPID KHÁC (đã đổi key) -> huỷ để đăng ký lại bằng khoá mới
+        if(sub){ const have=new Uint8Array(sub.options&&sub.options.applicationServerKey||[]);
+          const same=have.length===want.length && have.every((b,i)=>b===want[i]);
+          if(!same){ try{ await sub.unsubscribe(); }catch(e){} sub=null; } }
+        if(!sub) sub=await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:want });
         const j=sub.toJSON();
+        try{ await Store.deletePushSubsFor(S.space.id,S.me); }catch(e){} // dọn sub cũ của mình (khoá cũ) khỏi DB
         await Store.savePushSub({ id:uid(), space_id:S.space.id, person:S.me, endpoint:j.endpoint, p256dh:j.keys.p256dh, auth:j.keys.auth, created_at:new Date().toISOString() });
         pushed=true;
       }catch(e){}
