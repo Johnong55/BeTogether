@@ -6,7 +6,7 @@ main = "src/index.js"
 compatibility_date = "2024-11-01"
 
 [triggers]
-crons = ["*/5 * * * *"]
+crons = ["* * * * *"]  # mỗi 1 phút — giảm trễ thông báo (Cloudflare cron là best-effort, có thể lệch 1-2 phút)
 
 [vars]
 SUPABASE_URL = "https://vklsqexomaconbzoufmu.supabase.co"
