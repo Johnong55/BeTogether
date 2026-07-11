@@ -1,0 +1,2 @@
+# VPS chạy Linux — ép LF cho mọi file để .env/systemd/khoá không bị dính ký tự \r (CRLF)
+* text eol=lf
