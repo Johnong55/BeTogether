@@ -592,6 +592,21 @@ function drawHeartShape(ctx,x,y,r,col,rot){
 const Heart_COLS=['#e7a3b4','#d97a92','#f2b3c4','#ef9ab0','#f6c9d5','#e58aa4'];
 const HeartTank={
   cv:null, ctx:null, dpr:1, w:0, h:0, parts:[], gx:0, gy:0.32, t:0, running:false, raf:null, motionOn:false, listening:false, G:0.32, lastO:0,
+  sprites:[], _nimg:0, _imgKey:null,
+  /* Vẽ SẴN mỗi ảnh avatar thành 1 "sprite" hình tim (clip 1 lần) -> mỗi frame chỉ drawImage, nhẹ máy */
+  makeSprite(img){ const Q=4, W=16*Q, H=15*Q; const c=document.createElement('canvas'); c.width=W; c.height=H;
+    const cx=c.getContext('2d'); cx.scale(Q,Q); cx.translate(8,8);
+    cx.beginPath(); cx.moveTo(0,-3);
+    cx.bezierCurveTo(0,-5,-3.2,-6.2,-5.2,-4.2); cx.bezierCurveTo(-8,-1.4,-5.6,3,0,7);
+    cx.bezierCurveTo(5.6,3,8,-1.4,5.2,-4.2); cx.bezierCurveTo(3.2,-6.2,0,-5,0,-3); cx.closePath();
+    cx.save(); cx.clip(); try{ cx.drawImage(img,-8,-8,16,16); }catch(e){} cx.restore();
+    cx.lineWidth=0.7; cx.strokeStyle='rgba(255,255,255,.7)'; cx.stroke();
+    return c; },
+  /* Nạp ảnh 2 đứa (avatar_a/b). Thay đổi ảnh -> nạp lại. Không có ảnh -> tim hồng như cũ. */
+  loadImages(){ const srcs=[avatarUrl('a'), avatarUrl('b')].filter(Boolean); const key=srcs.join('|');
+    if(key===this._imgKey) return; this._imgKey=key; this.sprites=[]; this._nimg=srcs.length;
+    srcs.forEach((src,idx)=>{ const im=new Image(); im.onload=()=>{ try{ HeartTank.sprites[idx]=HeartTank.makeSprite(im); }catch(e){} }; im.src=src; });
+    if(this.parts.length) this.parts.forEach((p,i)=>{ p.imgIdx = this._nimg ? (i%this._nimg) : -1; }); },
   /* Đọc thẳng vector trọng lực: hướng "xuống" thật của thế giới -> tim luôn dồn đúng đáy,
      nghiêng/xoay kiểu gì cũng đúng (khắc phục lỗi phải lật ngược mới thấy tim). */
   onMotion(e){ const a=e.accelerationIncludingGravity; if(!a||a.x==null) return;
@@ -604,7 +619,8 @@ const HeartTank={
   attach(){ if(this.listening) return; window.addEventListener('devicemotion',this.onMotion,true); this.listening=true; },
   ensure(cv){ if(!cv) return; this.cv=cv; this.ctx=cv.getContext('2d');
     this.resize();
-    if(!this.parts.length) this.seed(44);
+    this.loadImages();
+    if(!this.parts.length) this.seed(55);
     // Android/desktop: gắn cảm biến luôn (không cần xin quyền)
     const D=window.DeviceMotionEvent;
     if(D && typeof D.requestPermission!=='function'){ this.attach(); this.motionOn=true; }
@@ -615,9 +631,10 @@ const HeartTank={
     this.ctx.setTransform(this.dpr,0,0,this.dpr,0,0);
     for(const p of this.parts){ p.x=Math.min(w-p.r,Math.max(p.r,p.x)); p.y=Math.min(h-p.r,Math.max(p.r,p.y)); } },
   seed(n){ this.parts=[]; const w=this.w,h=this.h;
-    for(let i=0;i<n;i++){ const r=7.5+Math.random()*3.5;
+    for(let i=0;i<n;i++){ const r=6+Math.random()*2.4;   // nhỏ hơn để chứa đủ 55 tim ảnh
       this.parts.push({ x:r+Math.random()*(w-2*r), y:r+Math.random()*(h-2*r), vx:0, vy:0, r,
-        col:Heart_COLS[i%Heart_COLS.length], rot:(Math.random()-0.5)*0.5, vr:(Math.random()-0.5)*0.02 }); } },
+        col:Heart_COLS[i%Heart_COLS.length], rot:(Math.random()-0.5)*0.5, vr:(Math.random()-0.5)*0.02,
+        imgIdx: this._nimg ? (i%this._nimg) : -1 }); } },
   loop(){ if(!this.running) return;
     const ctx=this.ctx,w=this.w,h=this.h,P=this.parts;
     const now=(window.performance?performance.now():Date.now());
@@ -645,7 +662,9 @@ const HeartTank={
     // đóng băng tim gần như đứng yên (giữ nguyên vị trí đủ lâu) -> hết rung lấn cấn khi chạm nhau
     for(const p of P){ if(Math.hypot(p.x-p._px,p.y-p._py)<0.12){ p.sleep=(p.sleep||0)+1; if(p.sleep>16){ p.asleep=true; p.vx=0; p.vy=0; } } else { p.sleep=0; p.asleep=false; } }
     ctx.clearRect(0,0,w,h);
-    for(const p of P) drawHeartShape(ctx,p.x,p.y,p.r,p.col,p.rot);
+    for(const p of P){ const sp=(p.imgIdx>=0)?this.sprites[p.imgIdx]:null;
+      if(sp){ ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot||0); const f=(p.r/9)/4; ctx.scale(f,f); ctx.drawImage(sp,-32,-32); ctx.restore(); }
+      else drawHeartShape(ctx,p.x,p.y,p.r,p.col,p.rot); }
     this.raf=requestAnimationFrame(()=>this.loop()); },
   stop(){ this.running=false; if(this.raf) cancelAnimationFrame(this.raf); this.raf=null; },
 };
