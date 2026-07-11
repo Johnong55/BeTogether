@@ -721,7 +721,27 @@ window.addEventListener('popstate', ()=>{
 async function loadAll(){ if(!S.space) return; const sid=S.space.id;
   const [q,n,d,c,du]=await Promise.all([Store.listQuizzes(sid),Store.listNotes(sid),Store.listDecks(sid),Store.listCards(sid),Store.listDuels(sid)]);
   S.quizzes=q; S.notes=n; S.decks=d; S.cards=c; applyDuels(du);
+  await backfillLearnedOnce();
   S.dailyToday=await ensureDaily(sid,todayStr()); maybeNotify(); }
+/* Đồng bộ 1 lần: đánh dấu "đã học" cho các BÀI DÒ đã hoàn thành TỪ TRƯỚC (status='answered')
+   — khớp tên bài -> chủ đề/bộ, đánh dấu cho người đã làm (to_person). Chạy 1 lần/phiên, idempotent. */
+let _backfillDone=false;
+async function backfillLearnedOnce(){
+  if(_backfillDone || !S.space || !Array.isArray(S.quizzes)) return; _backfillDone=true;
+  const cur={ a:learnedList('a').slice(), b:learnedList('b').slice() };
+  const add={ a:[], b:[] };
+  S.quizzes.forEach(qz=>{ if(qz.status!=='answered') return;
+    const p=qz.to_person; if(p!=='a'&&p!=='b') return;
+    const k=learnKeyForTitle(qz.title); if(!k) return;
+    if(!cur[p].includes(k) && !add[p].includes(k)) add[p].push(k); });
+  if(!add.a.length && !add.b.length) return;
+  const patch={};
+  ['a','b'].forEach(p=>{ if(add[p].length){ const merged=cur[p].concat(add[p]); patch['learned_'+p]=merged; if(S.space) S.space['learned_'+p]=merged; } });
+  try{ if(patch['learned_'+S.me]) localStorage.setItem(localLearnedKey(), JSON.stringify(patch['learned_'+S.me])); }catch(e){}
+  try{ await Store.updateSpace(S.space.id, patch); }catch(e){}
+  const total=add.a.length+add.b.length;
+  if(total) toast('Đã đồng bộ '+total+' bài học trước đây ✓');
+}
 let duelInited=false;
 function applyDuels(list){
   S.duelHistory=list.filter(x=>x.status==='done');
