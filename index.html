@@ -603,7 +603,8 @@ const HeartTank={
     cx.lineWidth=0.7; cx.strokeStyle='rgba(255,255,255,.7)'; cx.stroke();
     return c; },
   /* Nạp ảnh 2 đứa (avatar_a/b). Thay đổi ảnh -> nạp lại. Không có ảnh -> tim hồng như cũ. */
-  loadImages(){ const srcs=[avatarUrl('a'), avatarUrl('b')].filter(Boolean); const key=srcs.join('|');
+  loadImages(){ const hp=(S.space&&Array.isArray(S.space.heart_photos))?S.space.heart_photos.filter(Boolean):[];
+    const srcs=hp.length?hp:[avatarUrl('a'), avatarUrl('b')].filter(Boolean); const key=srcs.join('|');
     if(key===this._imgKey) return; this._imgKey=key; this.sprites=[]; this._nimg=srcs.length;
     srcs.forEach((src,idx)=>{ const im=new Image(); im.onload=()=>{ try{ HeartTank.sprites[idx]=HeartTank.makeSprite(im); }catch(e){} }; im.src=src; });
     if(this.parts.length) this.parts.forEach((p,i)=>{ p.imgIdx = this._nimg ? (i%this._nimg) : -1; }); },
@@ -631,7 +632,7 @@ const HeartTank={
     this.ctx.setTransform(this.dpr,0,0,this.dpr,0,0);
     for(const p of this.parts){ p.x=Math.min(w-p.r,Math.max(p.r,p.x)); p.y=Math.min(h-p.r,Math.max(p.r,p.y)); } },
   seed(n){ this.parts=[]; const w=this.w,h=this.h;
-    for(let i=0;i<n;i++){ const r=6+Math.random()*2.4;   // nhỏ hơn để chứa đủ 55 tim ảnh
+    for(let i=0;i<n;i++){ const r=9+Math.random()*3.2;   // to hơn cho dễ nhìn ảnh
       this.parts.push({ x:r+Math.random()*(w-2*r), y:r+Math.random()*(h-2*r), vx:0, vy:0, r,
         col:Heart_COLS[i%Heart_COLS.length], rot:(Math.random()-0.5)*0.5, vr:(Math.random()-0.5)*0.02,
         imgIdx: this._nimg ? (i%this._nimg) : -1 }); } },
@@ -1761,6 +1762,15 @@ function viewSettings(){
         <button class="btn sm" data-act="avatar-pick">${ic('edit','sm')} ${avatarUrl(S.me)?'Đổi':'Thêm'}</button></div>
       ${ avatarUrl(S.me)?`<button class="btn soft block sm" style="margin-top:10px" data-act="avatar-remove">${ic('trash','sm')} Bỏ ảnh</button>`:'' }
       <button class="btn soft block sm" style="margin-top:10px" data-act="logout">${ic('logout','sm')} Đăng xuất</button></div>
+    ${ (()=>{ const hp=(S.space&&Array.isArray(S.space.heart_photos))?S.space.heart_photos:[];
+      return `<div class="card"><div class="label" style="margin-top:0">Ảnh cho trái tim 💕</div>
+      <p class="sub-h" style="margin:0 0 10px">Ảnh hiện trong đàn tim ở màn Nhà (nghiêng máy để đổ). Chưa thêm ảnh thì tự dùng ảnh đại diện của hai đứa.</p>
+      <div class="row" style="flex-wrap:wrap;gap:9px">
+        ${hp.map((u,i)=>`<div style="position:relative;line-height:0">
+          <img src="${esc(u)}" style="width:54px;height:54px;border-radius:13px;border:2px solid var(--edge);object-fit:cover"/>
+          <span data-act="heart-photo-remove" data-id="${i}" title="Bỏ ảnh" style="position:absolute;top:-7px;right:-7px;width:21px;height:21px;border-radius:999px;background:var(--no);color:#fff;display:grid;place-items:center;font-size:13px;font-weight:800;cursor:pointer;border:2px solid var(--card)">×</span></div>`).join('')}
+        ${hp.length<12?`<button class="btn soft" data-act="heart-photo-pick" style="width:54px;height:54px;padding:0;font-size:24px;border-radius:13px">＋</button>`:''}
+      </div></div>`; })() }
     <button class="btn danger block" data-act="leave">Rời khỏi phòng này</button>
     <p class="muted center" style="margin-top:14px">${useCloud?'Đồng bộ qua mạng đang bật':'Chế độ thử (chỉ máy này)'} · v2.0</p>`; }
 
@@ -1955,6 +1965,8 @@ async function handle(act,v,id,t,e){
     case 'd-reply-send': await dailyReplySave(v); break;
     case 'avatar-pick': chooseAvatar(); break;
     case 'avatar-remove': await removeAvatar(); break;
+    case 'heart-photo-pick': chooseHeartPhoto(); break;
+    case 'heart-photo-remove': await removeHeartPhoto(parseInt(id,10)); break;
 
     case 'copy-code': navigator.clipboard?.writeText(S.space.id).then(()=>toast('Đã chép mã'),()=>toast(S.space.id)); break;
     case 'save-start': { const sd=$('#s_start').value; await Store.updateSpace(S.space.id,{start_date:sd}); S.space.start_date=sd; render(); toast('Đã lưu ngày'); } break;
@@ -2238,6 +2250,30 @@ function compressAndSaveAvatar(file){
 }
 async function removeAvatar(){ try{ await Store.updateSpace(S.space.id,{['avatar_'+S.me]:null});
   S.space['avatar_'+S.me]=null; render(); toast('Đã bỏ ảnh đại diện'); }catch(e){ toast('Chưa bỏ được ảnh'); } }
+/* ---- Ảnh riêng cho ly tim (mảng data URL trong spaces.heart_photos) ---- */
+function heartPhotos(){ return (S.space&&Array.isArray(S.space.heart_photos))?S.space.heart_photos:[]; }
+function chooseHeartPhoto(){ const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+  inp.onchange=()=>{ const f=inp.files&&inp.files[0]; if(f) addHeartPhoto(f); }; inp.click(); }
+function addHeartPhoto(file){
+  if(file.size>12*1024*1024){ toast('Ảnh hơi lớn, chọn ảnh nhỏ hơn nha'); return; }
+  if(heartPhotos().length>=12){ toast('Tối đa 12 ảnh cho trái tim nha'); return; }
+  const rd=new FileReader();
+  rd.onload=()=>{ const img=new Image();
+    img.onload=async ()=>{ try{
+      const SZ=220, cv=document.createElement('canvas'); cv.width=SZ; cv.height=SZ; const ctx=cv.getContext('2d');
+      const scale=Math.max(SZ/img.width, SZ/img.height), w=img.width*scale, h=img.height*scale;
+      ctx.drawImage(img,(SZ-w)/2,(SZ-h)/2,w,h);
+      const url=cv.toDataURL('image/jpeg',0.7);
+      const arr=heartPhotos().concat([url]);
+      await Store.updateSpace(S.space.id,{heart_photos:arr});
+      S.space.heart_photos=arr; HeartTank._imgKey=null; render(); toast('Đã thêm ảnh vào trái tim 💕');
+    }catch(e){ console.error(e); toast('Chưa lưu được — nhớ chạy SQL cột heart_photos nha'); } };
+    img.onerror=()=>toast('Không đọc được ảnh này'); img.src=rd.result; };
+  rd.onerror=()=>toast('Không đọc được ảnh này'); rd.readAsDataURL(file);
+}
+async function removeHeartPhoto(idx){ const cur=heartPhotos().slice(); if(idx<0||idx>=cur.length) return; cur.splice(idx,1);
+  try{ await Store.updateSpace(S.space.id,{heart_photos:cur}); S.space.heart_photos=cur; HeartTank._imgKey=null; render(); toast('Đã bỏ ảnh'); }
+  catch(e){ toast('Chưa bỏ được ảnh'); } }
 
 window.addEventListener('resize',()=>{ const c=$('#confetti'); c.width=innerWidth; c.height=innerHeight; });
 boot();

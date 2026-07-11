@@ -160,6 +160,7 @@ alter table notes   add column if not exists remind_time text;
 alter table notes   add column if not exists notified_at timestamptz;
 alter table spaces  add column if not exists learned_a jsonb default '[]'::jsonb; -- chủ đề/bộ người A đã đánh dấu "đã học" (mảng key: t:<no> hoặc d:<deckId>)
 alter table spaces  add column if not exists learned_b jsonb default '[]'::jsonb; -- tương tự cho người B
+alter table spaces  add column if not exists heart_photos jsonb default '[]'::jsonb; -- ảnh cặp đôi hiển thị trong "ly tim" ở màn Nhà (mảng data URL JPEG nén)
 
 -- Cache ví dụ AI theo TỪ (toàn cục, không theo phòng) để khỏi gọi AI lại tốn token
 create table if not exists word_examples (
