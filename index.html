@@ -2252,24 +2252,31 @@ async function removeAvatar(){ try{ await Store.updateSpace(S.space.id,{['avatar
   S.space['avatar_'+S.me]=null; render(); toast('Đã bỏ ảnh đại diện'); }catch(e){ toast('Chưa bỏ được ảnh'); } }
 /* ---- Ảnh riêng cho ly tim (mảng data URL trong spaces.heart_photos) ---- */
 function heartPhotos(){ return (S.space&&Array.isArray(S.space.heart_photos))?S.space.heart_photos:[]; }
-function chooseHeartPhoto(){ const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
-  inp.onchange=()=>{ const f=inp.files&&inp.files[0]; if(f) addHeartPhoto(f); }; inp.click(); }
-function addHeartPhoto(file){
-  if(file.size>12*1024*1024){ toast('Ảnh hơi lớn, chọn ảnh nhỏ hơn nha'); return; }
-  if(heartPhotos().length>=12){ toast('Tối đa 12 ảnh cho trái tim nha'); return; }
+function chooseHeartPhoto(){ const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.multiple=true;
+  inp.onchange=()=>{ const fs=inp.files?[...inp.files]:[]; if(fs.length) addHeartPhotos(fs); }; inp.click(); }
+/* Nén 1 ảnh -> data URL (Promise). Trả null nếu ảnh lỗi/quá lớn. */
+function compressPhoto(file){ return new Promise((resolve)=>{
+  if(!file || file.size>12*1024*1024){ resolve(null); return; }
   const rd=new FileReader();
   rd.onload=()=>{ const img=new Image();
-    img.onload=async ()=>{ try{
-      const SZ=220, cv=document.createElement('canvas'); cv.width=SZ; cv.height=SZ; const ctx=cv.getContext('2d');
+    img.onload=()=>{ try{ const SZ=220, cv=document.createElement('canvas'); cv.width=SZ; cv.height=SZ; const ctx=cv.getContext('2d');
       const scale=Math.max(SZ/img.width, SZ/img.height), w=img.width*scale, h=img.height*scale;
-      ctx.drawImage(img,(SZ-w)/2,(SZ-h)/2,w,h);
-      const url=cv.toDataURL('image/jpeg',0.7);
-      const arr=heartPhotos().concat([url]);
-      await Store.updateSpace(S.space.id,{heart_photos:arr});
-      S.space.heart_photos=arr; HeartTank._imgKey=null; render(); toast('Đã thêm ảnh vào trái tim 💕');
-    }catch(e){ console.error(e); toast('Chưa lưu được — nhớ chạy SQL cột heart_photos nha'); } };
-    img.onerror=()=>toast('Không đọc được ảnh này'); img.src=rd.result; };
-  rd.onerror=()=>toast('Không đọc được ảnh này'); rd.readAsDataURL(file);
+      ctx.drawImage(img,(SZ-w)/2,(SZ-h)/2,w,h); resolve(cv.toDataURL('image/jpeg',0.7)); }catch(e){ resolve(null); } };
+    img.onerror=()=>resolve(null); img.src=rd.result; };
+  rd.onerror=()=>resolve(null); rd.readAsDataURL(file);
+}); }
+/* Thêm NHIỀU ảnh cùng lúc cho ly tim */
+async function addHeartPhotos(files){
+  const room=12-heartPhotos().length;
+  if(room<=0){ toast('Tối đa 12 ảnh cho trái tim nha'); return; }
+  const pick=files.slice(0,room), skipped=files.length-pick.length;
+  toast('Đang thêm '+pick.length+' ảnh…');
+  const urls=[]; for(const f of pick){ const u=await compressPhoto(f); if(u) urls.push(u); }
+  if(!urls.length){ toast('Không đọc được ảnh nào'); return; }
+  const arr=heartPhotos().concat(urls);
+  try{ await Store.updateSpace(S.space.id,{heart_photos:arr}); S.space.heart_photos=arr; HeartTank._imgKey=null; render();
+    toast('Đã thêm '+urls.length+' ảnh 💕'+(skipped>0?' (bỏ '+skipped+' ảnh vượt mức 12)':'')); }
+  catch(e){ console.error(e); toast('Chưa lưu được — nhớ chạy SQL cột heart_photos nha'); }
 }
 async function removeHeartPhoto(idx){ const cur=heartPhotos().slice(); if(idx<0||idx>=cur.length) return; cur.splice(idx,1);
   try{ await Store.updateSpace(S.space.id,{heart_photos:cur}); S.space.heart_photos=cur; HeartTank._imgKey=null; render(); toast('Đã bỏ ảnh'); }
