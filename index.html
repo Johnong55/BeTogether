@@ -696,6 +696,28 @@ async function boot(){
 }
 function applyTheme(){ document.documentElement.setAttribute('data-theme',(S.space&&S.space.theme)||'blush'); }
 
+/* ===== Điều hướng: nút BACK của điện thoại lùi TRONG app (không thoát) + NHỚ vị trí cuộn ===== */
+const _scrollMem={};
+function _locKey(){ return (S.view||'')+'|'+(S.sub||''); }
+function saveScrollNow(){ try{ _scrollMem[_locKey()]=window.scrollY||document.documentElement.scrollTop||0; }catch(e){} }
+function restoreScrollSoon(){ const y=_scrollMem[_locKey()]||0; requestAnimationFrame(()=>requestAnimationFrame(()=>window.scrollTo(0,y))); }
+let _backExitAt=0;
+function appGoBackOneLevel(){
+  if(document.querySelector('.overlay')){ closeModal(); return true; }        // đóng popup
+  if(S.play){ const b=S.play.back||'home'; S.play=null; S.view=b; render(); restoreScrollSoon(); return true; } // thoát học/thi
+  if(S.duelPlay){ S.duelPlay=null; render(); return true; }
+  if(S.sub){ S.sub=null; render(); restoreScrollSoon(); return true; }        // chi tiết -> danh sách + khôi phục cuộn
+  if(S.view && !['home','auth','pair'].includes(S.view)){ S.view='home'; S.sub=null; render(); restoreScrollSoon(); return true; } // tab khác -> Nhà
+  return false;
+}
+function armBack(){ try{ history.pushState({app:1},''); }catch(e){} }
+window.addEventListener('popstate', ()=>{
+  if(appGoBackOneLevel()){ armBack(); return; }              // đã lùi 1 cấp trong app -> giữ "bẫy" cho lần sau
+  const now=Date.now();                                       // đang ở gốc (Nhà/đăng nhập)
+  if(now-_backExitAt<2000){ history.back(); return; }         // bấm back 2 lần trong 2s -> cho thoát thật
+  _backExitAt=now; armBack(); toast('Bấm lần nữa để thoát');
+});
+
 async function loadAll(){ if(!S.space) return; const sid=S.space.id;
   const [q,n,d,c,du]=await Promise.all([Store.listQuizzes(sid),Store.listNotes(sid),Store.listDecks(sid),Store.listCards(sid),Store.listDuels(sid)]);
   S.quizzes=q; S.notes=n; S.decks=d; S.cards=c; applyDuels(du);
@@ -1792,7 +1814,7 @@ document.addEventListener('keydown',(e)=>{ if(e.key!=='Enter') return;
 
 async function handle(act,v,id,t,e){
   switch(act){
-    case 'go': S.view=v; S.sub=null; S.tmp.dReactOpen=null; S.tmp.dReplyOpen=null; if(v!=='compose')S.compose=null; render(); scrollTo(0,0);
+    case 'go': saveScrollNow(); S.view=v; S.sub=null; S.tmp.dReactOpen=null; S.tmp.dReplyOpen=null; if(v!=='compose')S.compose=null; render(); restoreScrollSoon();
       if(v==='daily') loadDailyHistory(); break;
     case 'atab': S.authTab=v; render(); break;
     case 'do-register': await doRegister(); break;
@@ -1811,8 +1833,8 @@ async function handle(act,v,id,t,e){
     case 'lib-filter': S.tmp.libFilter=v; render(); break;
     case 'lib-learnfilter': S.tmp.learnFilter=v; render(); break;
     case 'toggle-learned': await toggleLearned(t.dataset.key); break;
-    case 'open-topic': S.sub=id; S.view='library'; render(); scrollTo(0,0); break;
-    case 'open-grammar': S.sub='g:'+id; S.view='library'; render(); scrollTo(0,0); break;
+    case 'open-topic': saveScrollNow(); S.sub=id; S.view='library'; render(); scrollTo(0,0); break;
+    case 'open-grammar': saveScrollNow(); S.sub='g:'+id; S.view='library'; render(); scrollTo(0,0); break;
     case 'grammar-practice': startGrammarPractice(id); break;
     case 'send-grammar': await sendGrammar(id); break;
     case 'check-grammar': await checkGrammar(); break;
@@ -1821,7 +1843,7 @@ async function handle(act,v,id,t,e){
     case 'send-topic': await sendTopic(id); break;
 
     /* bộ từ của mình */
-    case 'open-deck': S.sub=id; S.view='library'; render(); scrollTo(0,0); break;
+    case 'open-deck': saveScrollNow(); S.sub=id; S.view='library'; render(); scrollTo(0,0); break;
     case 'new-deck': openDeckModal(); break;
     case 'save-deck-modal': await saveDeckModal(); break;
     case 'del-deck': if(confirm('Xoá bộ từ này và toàn bộ từ bên trong?')){ await Store.deleteDeck(S.space.id,id); await loadAll(); S.sub=null; render(); toast('Đã xoá bộ'); } break;
@@ -2160,6 +2182,7 @@ async function removeAvatar(){ try{ await Store.updateSpace(S.space.id,{['avatar
 
 window.addEventListener('resize',()=>{ const c=$('#confetti'); c.width=innerWidth; c.height=innerHeight; });
 boot();
+armBack();  // gắn "bẫy" history để nút back của điện thoại lùi trong app thay vì thoát ngay
 </script>
 </body>
 </html>
