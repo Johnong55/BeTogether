@@ -1,0 +1,14 @@
+{
+  "name": "cungnhau-push-service",
+  "version": "1.0.0",
+  "description": "Push notification service chạy trên VPS cho app 'cùng nhau' — thay cron Cloudflare hay trễ.",
+  "type": "module",
+  "main": "push-service.js",
+  "scripts": {
+    "start": "node push-service.js"
+  },
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "web-push": "^3.6.7"
+  }
+}

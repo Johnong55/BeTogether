@@ -1,0 +1,17 @@
+[Unit]
+Description=cung nhau - push notification service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/cungnhau-push
+EnvironmentFile=/opt/cungnhau-push/.env
+ExecStart=/usr/bin/node push-service.js
+Restart=always
+RestartSec=5
+# Chạy nền, tự khởi động lại nếu lỗi/reboot. Đổi User nếu không muốn chạy bằng root.
+User=root
+
+[Install]
+WantedBy=multi-user.target
