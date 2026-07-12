@@ -138,10 +138,11 @@
   .couple-body{ position:relative; z-index:1; }
   .couple .days{ font-family:'Fraunces'; font-size:46px; line-height:1; color:var(--p1);
     text-shadow:0 2px 14px color-mix(in srgb,var(--card) 78%, transparent); }
-  .couple .cap{ color:var(--soft); font-weight:700; margin-top:2px; text-shadow:0 1px 6px color-mix(in srgb,var(--card) 85%, transparent); }
-  /* Viên nổi (chip) sau tên 2 người — luôn đọc được dù tim/ảnh phía dưới màu gì (tối/sáng),
-     không phụ thuộc đoán màu chữ theo ảnh (ảnh do người dùng tự up, màu bất kỳ). */
-  .couple .nm{ display:inline-block; font-weight:800; margin-top:10px; padding:5px 14px; border-radius:999px;
+  /* Viên nổi (chip) cho caption + tên 2 người — luôn đọc được dù tim/ảnh phía dưới màu gì
+     (tối/sáng), không phụ thuộc đoán màu chữ theo ảnh (ảnh do người dùng tự up, màu bất kỳ). */
+  .couple .cap{ display:inline-block; color:var(--soft); font-weight:700; font-size:12px; margin-top:6px;
+    padding:3px 12px; border-radius:999px; background:var(--card); border:1.5px solid var(--edge); box-shadow:1.5px 1.5px 0 var(--edge); }
+  .couple .nm{ display:inline-block; font-weight:800; margin-top:8px; padding:5px 14px; border-radius:999px;
     background:var(--card); color:var(--ink); border:2px solid var(--edge); box-shadow:2px 2px 0 var(--edge); }
 
   .stat{ display:flex; gap:11px; margin-bottom:15px; }

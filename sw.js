@@ -1,5 +1,5 @@
 // Service worker cho "cùng nhau" — giúp cài như app + mở nhanh/đỡ trắng màn khi mạng chập chờn.
-const CACHE = 'cungnhau-v45';
+const CACHE = 'cungnhau-v46';
 const SHELL = [
   './',
   './library.js',
