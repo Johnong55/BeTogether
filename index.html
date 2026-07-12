@@ -139,10 +139,14 @@
   .couple .days{ font-family:'Fraunces'; font-size:46px; line-height:1; color:var(--p1);
     text-shadow:0 2px 14px color-mix(in srgb,var(--card) 78%, transparent); }
   /* Viên nổi (chip) cho caption + tên 2 người — luôn đọc được dù tim/ảnh phía dưới màu gì
-     (tối/sáng), không phụ thuộc đoán màu chữ theo ảnh (ảnh do người dùng tự up, màu bất kỳ). */
-  .couple .cap{ display:inline-block; color:var(--soft); font-weight:700; font-size:12px; margin-top:6px;
+     (tối/sáng), không phụ thuộc đoán màu chữ theo ảnh (ảnh do người dùng tự up, màu bất kỳ).
+     display:block + width:fit-content + margin auto -> mỗi viên tự xuống dòng riêng, xếp
+     dọc gọn (không nằm chung hàng như inline-block khi đủ chỗ ngang). */
+  .couple .cap{ display:block; width:-webkit-fit-content; width:fit-content; margin:6px auto 0;
+    color:var(--soft); font-weight:700; font-size:12px;
     padding:3px 12px; border-radius:999px; background:var(--card); border:1.5px solid var(--edge); box-shadow:1.5px 1.5px 0 var(--edge); }
-  .couple .nm{ display:inline-block; font-weight:800; margin-top:8px; padding:5px 14px; border-radius:999px;
+  .couple .nm{ display:block; width:-webkit-fit-content; width:fit-content; margin:8px auto 0;
+    font-weight:800; padding:5px 14px; border-radius:999px;
     background:var(--card); color:var(--ink); border:2px solid var(--edge); box-shadow:2px 2px 0 var(--edge); }
 
   .stat{ display:flex; gap:11px; margin-bottom:15px; }
