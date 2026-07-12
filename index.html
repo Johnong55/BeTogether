@@ -138,8 +138,11 @@
   .couple-body{ position:relative; z-index:1; }
   .couple .days{ font-family:'Fraunces'; font-size:46px; line-height:1; color:var(--p1);
     text-shadow:0 2px 14px color-mix(in srgb,var(--card) 78%, transparent); }
-  .couple .cap{ color:var(--soft); font-weight:700; margin-top:2px; }
-  .couple .nm{ font-weight:800; margin-top:8px; }
+  .couple .cap{ color:var(--soft); font-weight:700; margin-top:2px; text-shadow:0 1px 6px color-mix(in srgb,var(--card) 85%, transparent); }
+  /* Viên nổi (chip) sau tên 2 người — luôn đọc được dù tim/ảnh phía dưới màu gì (tối/sáng),
+     không phụ thuộc đoán màu chữ theo ảnh (ảnh do người dùng tự up, màu bất kỳ). */
+  .couple .nm{ display:inline-block; font-weight:800; margin-top:10px; padding:5px 14px; border-radius:999px;
+    background:var(--card); color:var(--ink); border:2px solid var(--edge); box-shadow:2px 2px 0 var(--edge); }
 
   .stat{ display:flex; gap:11px; margin-bottom:15px; }
   .stat .card{ flex:1; text-align:center; margin:0; padding:14px 8px; }
@@ -639,7 +642,7 @@ const HeartTank={
     this.ctx.setTransform(this.dpr,0,0,this.dpr,0,0);
     for(const p of this.parts){ p.x=Math.min(w-p.r,Math.max(p.r,p.x)); p.y=Math.min(h-p.r,Math.max(p.r,p.y)); } },
   seed(n){ this.parts=[]; const w=this.w,h=this.h;
-    for(let i=0;i<n;i++){ const r=10.5+Math.random()*4;  // to hơn xíu nữa cho dễ nhìn ảnh
+    for(let i=0;i<n;i++){ const r=12.5+Math.random()*4.5; // to hơn xíu nữa cho dễ nhìn ảnh
       this.parts.push({ x:r+Math.random()*(w-2*r), y:r+Math.random()*(h-2*r), vx:0, vy:0, r,
         col:Heart_COLS[i%Heart_COLS.length], rot:(Math.random()-0.5)*0.5, vr:(Math.random()-0.5)*0.02,
         imgIdx: this._nimg ? (i%this._nimg) : -1 }); } },
