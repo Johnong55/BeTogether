@@ -441,6 +441,26 @@ const DAILY_QUESTIONS = [
   "Buổi sáng lý tưởng bên nhau của bạn là gì?",
   "Bạn muốn nói lời cảm ơn vì điều gì hôm nay?",
   "Hôm nay bạn tự hào về đối phương vì điều gì?",
+  "Nếu hai đứa có một ngày nghỉ bất ngờ, bạn muốn làm gì cùng nhau?",
+  "Câu nói nào của đối phương bạn nhớ mãi không quên?",
+  "Điều gì ở đối phương khiến bạn thấy yên tâm nhất?",
+  "Bạn muốn cùng nhau đi du lịch ở đâu một lần trong đời?",
+  "Khoảnh khắc nào bạn biết mình thật sự thích người ấy?",
+  "Bạn học được điều gì về bản thân từ mối quan hệ này?",
+  "Nếu được tặng nhau một món quà không giới hạn, bạn tặng gì?",
+  "Điều gì ở đối phương khiến bạn cười mỗi khi nghĩ tới?",
+  "Bạn muốn hai đứa cùng vượt qua thử thách nào trong năm nay?",
+  "Một câu chuyện vui hai đứa hay nhắc lại là gì?",
+  "Bạn thấy hai đứa hợp nhau nhất ở điểm nào?",
+  "Điều gì khiến bạn tin tưởng đối phương tuyệt đối?",
+  "Nếu được quay lại buổi hẹn đầu tiên, bạn muốn thay đổi gì?",
+  "Bạn muốn đối phương biết điều gì mà chưa từng nói ra?",
+  "Ai trong hai đứa lãng mạn hơn, và theo cách nào?",
+  "Điều gì khiến bạn cảm thấy được thấu hiểu nhất?",
+  "Bạn muốn cùng nhau xây dựng thói quen nào mỗi tuần?",
+  "Món quà nhỏ nào từ đối phương khiến bạn nhớ mãi?",
+  "Nếu viết một lời nhắn giấu trong túi áo người ấy, bạn viết gì?",
+  "Bạn nghĩ điều gì làm cho tình yêu của hai đứa đặc biệt?",
 ];
 
 /* ===================== HELPERS ===================== */
@@ -860,10 +880,15 @@ async function apiPost(path, body, ms){ const ctl=new AbortController(); const t
   }catch(e){ clearTimeout(t); throw e; } }
 
 async function ensureDaily(sid,day){ let d=await Store.getDaily(sid,day);
-  if(!d){ const idx=parseInt(day.replace(/-/g,''),10)%DAILY_QUESTIONS.length;
-    let question=DAILY_QUESTIONS[idx];  // mặc định: danh sách cố định (dùng khi AI lỗi / chế độ máy)
-    if(useCloud){ try{ const r=await apiPost('/api/daily-question',{ recent:(S.dailyHistory||[]).slice(0,6).map(x=>x.question).filter(Boolean) },15000);
-        if(r&&r.question) question=r.question; }catch(e){ /* im lặng, dùng câu mặc định */ } }
+  if(!d){
+    // Lấy lịch sử câu hỏi THẬT qua DB (không dùng S.dailyHistory — nó chỉ nạp khi mở tab Câu hỏi,
+    // nên lúc ensureDaily chạy ở boot thì luôn rỗng → trước đây AI/fallback không hề biết né trùng).
+    let recentQs=[]; try{ recentQs=(await Store.listDaily(sid)).slice(0,30).map(x=>x.question).filter(Boolean); }catch(e){}
+    const unseen=DAILY_QUESTIONS.filter(q=>!recentQs.includes(q));
+    const pool=unseen.length?unseen:DAILY_QUESTIONS; // chỉ quay vòng khi đã hỏi hết sạch danh sách
+    let question=pool[parseInt(day.replace(/-/g,''),10)%pool.length]; // mặc định: ưu tiên câu CHƯA hỏi gần đây (dùng khi AI lỗi / chế độ máy)
+    if(useCloud){ try{ const r=await apiPost('/api/daily-question',{ recent:recentQs.slice(0,10) },15000);
+        if(r&&r.question) question=r.question; }catch(e){ /* im lặng, dùng câu fallback đã chọn ở trên */ } }
     d={ id:uid(), space_id:sid, day, question, answer_a:null, answer_b:null };
     try{ await Store.saveDaily(d); }catch(e){ d=await Store.getDaily(sid,day)||d; } } return d; }
 /* Nạp nhật ký câu hỏi các ngày (chỉ khi mở màn câu hỏi, không nằm trong poll 5s) */
