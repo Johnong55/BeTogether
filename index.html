@@ -322,6 +322,23 @@
   .emoji-grid button.on{ background:var(--chip); box-shadow:inset 0 0 0 2px var(--p2); }
   .emoji-empty{ text-align:center; color:var(--soft); padding:30px 10px; font-weight:700; }
 
+  /* ===== Đấu — Hangman đoán từ (mỗi người 1 hình riêng, cùng từ) ===== */
+  .hangman-wrap{ display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .hangman-fig{ width:118px; height:118px; }
+  .hangman-fig .fixed{ stroke:var(--soft); stroke-width:3; fill:none; stroke-linecap:round; }
+  .hangman-fig .part{ stroke:var(--no); stroke-width:3.5; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+  .hangman-fig .part.head{ fill:none; }
+  .hangman-hint{ color:var(--soft); font-weight:700; font-size:13px; margin-top:2px; text-align:center; }
+  .hangman-blanks{ font-family:'Fraunces'; font-size:26px; letter-spacing:6px; font-weight:800; color:var(--p1); margin:6px 0 2px; word-break:break-all; text-align:center; }
+  .hangman-wrong{ font-size:12px; font-weight:800; color:var(--no); margin-bottom:8px; }
+  .hangman-kb{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; width:100%; margin-top:4px; }
+  .hangman-kb button{ padding:10px 0; font-size:14px; font-weight:800; border-radius:10px; border:2px solid var(--edge);
+    background:var(--card); color:var(--ink); box-shadow:2px 2px 0 var(--edge); cursor:pointer; }
+  .hangman-kb button:active{ transform:translate(1px,1px); box-shadow:1px 1px 0 var(--edge); }
+  .hangman-kb button:disabled{ cursor:default; }
+  .hangman-kb button.correct{ background:linear-gradient(135deg,var(--ok),#8fc4ac); color:#fff; border-color:var(--ok); }
+  .hangman-kb button.wrong{ background:#f1c7ce; color:var(--no); border-color:#f1c7ce; opacity:.7; }
+
   /* notes */
   .note{ border-radius:18px; padding:14px; margin-bottom:14px; box-shadow:4px 4px 0 var(--edge); border:2px solid var(--edge); position:relative; }
   .note .meta{ display:flex; align-items:center; gap:7px; font-size:11.5px; font-weight:800; opacity:.7; margin-bottom:6px; }
@@ -455,6 +472,15 @@ function buildQuestions(words, cap){
     const dis = shuffle(Array.from(new Set(src.filter(v=>v && v!==w.vi)))).slice(0,3);
     return { kind:'mc', en:w.en, vi:w.vi, options:shuffle([w.vi, ...dis]) };
   });
+}
+/* Từ đơn (chỉ chữ cái, ≥3 ký tự) để chơi Hangman — lọc trước khi gọi hàm này */
+function hangmanEligible(words){
+  const norm = words.map(w=>({ en:(w.en||w.front||'').trim(), vi:(w.vi||w.back||'').trim() })).filter(w=>w.en&&w.vi);
+  return norm.filter(w=>/^[a-zA-Z]{3,}$/.test(w.en));
+}
+function buildHangmanQuestions(eligible, cap){
+  const pool = shuffle(eligible).slice(0, cap||eligible.length);
+  return pool.map(w=>({ kind:'hangman', en:w.en.toLowerCase(), vi:w.vi }));
 }
 const DAILY_QUESTIONS = [
   "Khoảnh khắc nào hôm nay khiến bạn nghĩ đến người ấy?",
@@ -1330,13 +1356,15 @@ function wordsOfSource(src){
 function viewArena(){
   const du=S.duel;
   if(du && du.status==='waiting'){
+    const duGame = (du.questions&&du.questions[0]&&du.questions[0].kind==='hangman') ? 'hangman' : 'quiz';
+    const gameLabel = duGame==='hangman' ? ' · 🎪 Hangman' : '';
     if(du.challenger===S.me) return `
       <h2 class="title">Rủ đấu ⚔️</h2>
       <div class="card couple center">
-        <div style="font-size:46px;animation:flick 2.4s ease-in-out infinite;display:inline-block">⚔️</div>
+        <div style="font-size:46px;animation:flick 2.4s ease-in-out infinite;display:inline-block">${duGame==='hangman'?'🎪':'⚔️'}</div>
         <b style="display:block;margin-top:6px">Đã gửi lời rủ đấu!</b>
         <div class="muted">Đợi ${esc(partner()||'người ấy')} nhận lời là bắt đầu liền…</div>
-        <div class="muted" style="margin-top:8px">${esc(du.title||'')} · ${(du.questions||[]).length} câu</div>
+        <div class="muted" style="margin-top:8px">${esc(du.title||'')} · ${(du.questions||[]).length} câu${gameLabel}</div>
         ${du.stake?`<div style="margin-top:8px;font-style:italic">Nếu bạn thắng: “${esc(du.stake)}”</div>`:''}
       </div>
       <button class="btn danger block" data-act="duel-cancel">Huỷ trận</button>`;
@@ -1345,7 +1373,7 @@ function viewArena(){
       <div class="card" style="border:1.5px solid var(--p1)">
         <div class="row">${ic('swords','lg')}<div class="grow">
           <b>${esc(partner()||'Người ấy')} rủ bạn đấu nè!</b>
-          <div class="muted">${esc(du.title||'')} · ${(du.questions||[]).length} câu — hai đứa làm CÙNG bộ câu hỏi</div>
+          <div class="muted">${esc(du.title||'')} · ${(du.questions||[]).length} câu${gameLabel} — hai đứa làm CÙNG bộ câu hỏi</div>
           ${du.stake?`<div style="font-style:italic;margin-top:4px">Nếu ${esc(partner()||'người ấy')} thắng: “${esc(du.stake)}”</div>`:''}
         </div></div>
         <label class="fld" style="margin-top:12px"><span class="lab">Cược lại nè — nếu BẠN thắng, người ấy phải…? (không bắt buộc)</span>
@@ -1361,14 +1389,19 @@ function viewArena(){
 }
 function duelCreateView(){
   const srcs=duelSources(); const pre=S.tmp.duelSrc||(srcs[0]&&srcs[0].v);
+  const game=S.tmp.duelGame||'quiz';
   const hist=(S.duelHistory||[]).slice(0,6);
   return `<h2 class="title">Rủ đấu ⚔️</h2>
     <p class="sub-h">Hai đứa làm <b>cùng một bộ câu hỏi</b> — ai đúng nhiều hơn thắng. Cược gì đó cho vui nè, người nhận lời cũng được cược lại đó 😏</p>
     <div class="card">
+      <label class="fld"><span class="lab">Kiểu chơi</span>
+        <div class="seg"><button type="button" class="${game==='quiz'?'on':''}" data-act="duel-game" data-v="quiz">Trắc nghiệm</button>
+          <button type="button" class="${game==='hangman'?'on':''}" data-act="duel-game" data-v="hangman">Hangman 🎪</button></div></label>
       <label class="fld"><span class="lab">Chọn bộ từ</span>
         <select id="du_src">${srcs.map(o=>`<option value="${esc(o.v)}" ${o.v===pre?'selected':''}>${esc(o.label)}</option>`).join('')}</select></label>
-      <label class="fld"><span class="lab">Số câu</span>
-        <select id="du_n"><option value="10">10 câu (nhanh gọn)</option><option value="20">20 câu</option><option value="all">Tất cả</option></select></label>
+      ${game==='hangman'?`<p class="muted" style="margin:-4px 0 12px;font-size:12.5px">Hangman cần từ đơn (không phải cụm) — nếu bộ từ toàn cụm sẽ báo chọn bộ khác nha.</p>`:''}
+      <label class="fld"><span class="lab">Số ${game==='hangman'?'từ':'câu'}</span>
+        <select id="du_n"><option value="10">10 ${game==='hangman'?'từ':'câu'} (nhanh gọn)</option><option value="20">20 ${game==='hangman'?'từ':'câu'}</option><option value="all">Tất cả</option></select></label>
       <label class="fld"><span class="lab">Nếu bạn thắng, người ấy phải…? (không bắt buộc)</span>
         <input id="du_stake" placeholder="vd: rửa chén 1 tuần 🍽️"/></label>
       <button class="btn block" data-act="duel-create">${ic('swords','sm')} Rủ ${esc(partner()||'người ấy')} đấu</button>
@@ -1430,13 +1463,14 @@ function duelPlayView(du){
       <button class="btn danger block sm" data-act="duel-cancel-active">Huỷ trận (nếu chờ lâu quá)</button>`;
   }
   const q=qs[p.idx], fb=p.phase==='feedback';
+  const icon = q.kind==='hangman' ? '🎪' : '⚔️';
   return `<div class="row" style="margin-bottom:2px"><button class="iconbtn" data-act="go" data-v="home">${ic('x','sm')}</button>
-      <div class="grow center" style="font-weight:800">⚔️ Câu ${p.idx+1}/${total}</div><div style="width:38px"></div></div>
+      <div class="grow center" style="font-weight:800">${icon} Câu ${p.idx+1}/${total}</div><div style="width:38px"></div></div>
     <div class="row" style="margin:6px 2px 2px"><span class="muted grow">Bạn: ${p.score} đúng</span>
       <span class="muted" id="opp-txt">${esc(partner()||'Người ấy')}: ${op}/${total}</span></div>
     ${progressBar(op/total*100,{id:'opp-fill',style:'background:linear-gradient(90deg,var(--accent),var(--p2))'})}
     ${progressBar(p.idx/total*100)}
-    ${ q.kind==='mc' ? duelMcBody(q,p,fb) : duelScrBody(q,p,fb) }`;
+    ${ q.kind==='mc' ? duelMcBody(q,p,fb) : q.kind==='hangman' ? duelHangmanBody(q,p,fb) : duelScrBody(q,p,fb) }`;
 }
 function duelMcBody(q,p,fb){
   return `<div class="card center" style="padding:24px 16px">
@@ -1458,6 +1492,38 @@ function duelScrBody(q,p,fb){
       <div style="font-family:'Fraunces';font-size:26px;letter-spacing:4px">${esc(letters)}</div></div>
     <input id="dsc_input" placeholder="Gõ từ..." autocapitalize="none" autocomplete="off" autocorrect="off" spellcheck="false" ${fb?'disabled':''} value="${esc(p.answerGiven||'')}" style="text-align:center;font-size:18px"/>
     ${ fb ? duelFeedback(p,q) : `<button class="btn block" style="margin-top:12px" data-act="d-check-scramble">Kiểm tra</button>` }`;
+}
+const HANGMAN_MAX_WRONG=6;
+/* Hình người treo cổ vẽ dần theo số lần đoán sai (0-6 nét) */
+function hangmanSvg(wrong){
+  const parts=[
+    wrong>=1?'<circle class="part head" cx="75" cy="32" r="10"/>':'',
+    wrong>=2?'<line class="part" x1="75" y1="42" x2="75" y2="75"/>':'',
+    wrong>=3?'<line class="part" x1="75" y1="50" x2="58" y2="65"/>':'',
+    wrong>=4?'<line class="part" x1="75" y1="50" x2="92" y2="65"/>':'',
+    wrong>=5?'<line class="part" x1="75" y1="75" x2="60" y2="98"/>':'',
+    wrong>=6?'<line class="part" x1="75" y1="75" x2="90" y2="98"/>':'',
+  ].join('');
+  return `<svg class="hangman-fig" viewBox="0 0 100 120">
+    <line class="fixed" x1="10" y1="110" x2="55" y2="110"/>
+    <line class="fixed" x1="25" y1="110" x2="25" y2="10"/>
+    <line class="fixed" x1="25" y1="10" x2="75" y2="10"/>
+    <line class="fixed" x1="75" y1="10" x2="75" y2="22"/>
+    ${parts}</svg>`;
+}
+function duelHangmanBody(q,p,fb){
+  const guessed=p.guessed||new Set(); const wrong=p.wrongCount||0;
+  const blanks=q.en.split('').map(ch=> (fb||guessed.has(ch)) ? ch.toUpperCase() : '_').join(' ');
+  const letters='abcdefghijklmnopqrstuvwxyz'.split('');
+  const kb=letters.map(l=>{ const used=guessed.has(l); const isOk=used&&q.en.includes(l); const isBad=used&&!isOk;
+    return `<button class="${isOk?'correct':isBad?'wrong':''}" ${used||fb?'disabled':''} data-act="d-guess-letter" data-v="${l}">${l.toUpperCase()}</button>`; }).join('');
+  return `<div class="card hangman-wrap" style="padding:18px 16px">
+      ${hangmanSvg(wrong)}
+      <div class="hangman-hint">Gợi ý: ${esc(q.vi)}</div>
+      <div class="hangman-blanks">${blanks}</div>
+      <div class="hangman-wrong">Sai: ${wrong}/${HANGMAN_MAX_WRONG}</div>
+      <div class="hangman-kb">${kb}</div></div>
+    ${ fb?duelFeedback(p,q):'' }`;
 }
 function duelFeedback(p,q){ const ok=p.lastCorrect;
   return `<div class="card center" style="background:${ok?'var(--chip)':'#fdeef0'};margin-top:12px">
@@ -1507,16 +1573,27 @@ function duelResultView(du){
 /* ----- logic đấu ----- */
 function initDuelPlay(du){ const qs=du.questions||[]; const prog=du['progress_'+S.me]||0;
   S.duelPlay={ id:du.id, idx:Math.min(prog,qs.length), score:du['score_'+S.me]||0, phase:'ask',
-    chosen:null, answerGiven:'', lastCorrect:null, doneLocal: !!du['done_'+S.me] || prog>=qs.length }; }
+    chosen:null, answerGiven:'', lastCorrect:null, guessed:new Set(), wrongCount:0,
+    doneLocal: !!du['done_'+S.me] || prog>=qs.length }; }
 async function createDuel(){
   if(S.duel && (S.duel.status==='waiting'||S.duel.status==='active')){ toast('Đang có trận chưa xong mà'); return; }
   const src=$('#du_src')?.value, nv=$('#du_n')?.value||'10', stake=($('#du_stake')?.value||'').trim();
+  const game=S.tmp.duelGame||'quiz';
   const s=wordsOfSource(src); if(!s){ toast('Chọn bộ từ đã nha'); return; }
-  const cap = nv==='all'? undefined : Math.min(parseInt(nv,10)||10, s.words.length);
+  let questions;
+  if(game==='hangman'){
+    const eligible=hangmanEligible(s.words);
+    if(!eligible.length){ toast('Bộ từ này không có từ đơn (chỉ chữ cái, không cụm) để chơi Hangman — chọn bộ khác nha'); return; }
+    const cap = nv==='all'? eligible.length : Math.min(parseInt(nv,10)||10, eligible.length);
+    questions = buildHangmanQuestions(eligible,cap);
+  } else {
+    const cap = nv==='all'? undefined : Math.min(parseInt(nv,10)||10, s.words.length);
+    questions = buildQuestions(s.words,cap);
+  }
   const duel={ id:uid(), space_id:S.space.id, challenger:S.me, status:'waiting', stake, title:s.title,
-    questions:buildQuestions(s.words,cap), score_a:0, score_b:0, progress_a:0, progress_b:0,
+    questions, score_a:0, score_b:0, progress_a:0, progress_b:0,
     done_a:false, done_b:false, created_at:new Date().toISOString(), joined_at:null, finished_at:null };
-  await Store.saveDuel(duel); S.duel=duel; S.duelPlay=null; S.tmp.duelSrc=null; render(); toast('Đã gửi lời rủ đấu ⚔️'); }
+  await Store.saveDuel(duel); S.duel=duel; S.duelPlay=null; S.tmp.duelSrc=null; S.tmp.duelGame=null; render(); toast('Đã gửi lời rủ đấu ⚔️'); }
 async function joinDuel(id){ const du=S.duel; if(!du||du.id!==id) return;
   const stake2=($('#du_stake2')?.value||'').trim();
   const patch={status:'active',joined_at:new Date().toISOString()}; if(stake2) patch.stake_acceptor=stake2;
@@ -1533,8 +1610,20 @@ function dCheckScramble(){ const p=S.duelPlay, du=S.duel; if(!p||p.phase!=='ask'
   const q=du.questions[p.idx]; const val=($('#dsc_input')?.value||'').trim(); if(!val){ toast('Gõ từ đã nha'); return; }
   p.answerGiven=val; p.lastCorrect=(val.toLowerCase()===q.en.toLowerCase()); if(p.lastCorrect)p.score++;
   p.phase='feedback'; persistDuelProgress(); render(); }
+function guessLetter(letter){ const p=S.duelPlay, du=S.duel; if(!p||p.phase!=='ask') return;
+  const q=du.questions[p.idx]; letter=(letter||'').toLowerCase(); if(!letter) return;
+  p.guessed=p.guessed||new Set(); if(p.guessed.has(letter)) return;
+  p.guessed.add(letter);
+  if(q.en.includes(letter)){
+    const solved=q.en.split('').every(ch=>p.guessed.has(ch));
+    if(solved){ p.lastCorrect=true; p.score++; p.phase='feedback'; persistDuelProgress(); }
+  } else {
+    p.wrongCount=(p.wrongCount||0)+1;
+    if(p.wrongCount>=HANGMAN_MAX_WRONG){ p.lastCorrect=false; p.phase='feedback'; persistDuelProgress(); }
+  }
+  render(); }
 async function dNext(){ const p=S.duelPlay, du=S.duel; if(!p||!du) return;
-  if(p.idx+1<(du.questions||[]).length){ p.idx++; p.phase='ask'; p.chosen=null; p.answerGiven=''; render(); return; }
+  if(p.idx+1<(du.questions||[]).length){ p.idx++; p.phase='ask'; p.chosen=null; p.answerGiven=''; p.guessed=new Set(); p.wrongCount=0; render(); return; }
   p.doneLocal=true; const patch={}; patch['done_'+S.me]=true; Object.assign(du,patch);
   await Store.updateDuel(du.id,S.space.id,patch);
   await bumpStreak();
@@ -2051,6 +2140,7 @@ async function handle(act,v,id,t,e){
 
     /* đấu trường */
     case 'duel-from': S.tmp.duelSrc=v; S.view='arena'; S.sub=null; render(); scrollTo(0,0); break;
+    case 'duel-game': S.tmp.duelGame=v; render(); break;
     case 'duel-create': await createDuel(); break;
     case 'duel-join': await joinDuel(id); break;
     case 'duel-decline': if(confirm('Từ chối lời rủ đấu này?')){ await Store.updateDuel(id,S.space.id,{status:'cancelled'}); S.duel=null; render(); } break;
@@ -2058,6 +2148,7 @@ async function handle(act,v,id,t,e){
     case 'duel-cancel-active': if(confirm('Huỷ trận đang diễn ra? (cả hai sẽ mất kết quả)')){ await Store.updateDuel(S.duel.id,S.space.id,{status:'cancelled'}); S.duel=null; S.duelPlay=null; render(); } break;
     case 'd-answer-mc': dAnswerMc(parseInt(v,10)); break;
     case 'd-check-scramble': dCheckScramble(); break;
+    case 'd-guess-letter': guessLetter(v); break;
     case 'd-next': await dNext(); break;
     case 'duel-seen': markDuelSeen(id); S.duel=null; S.duelPlay=null; render(); break;
     case 'study-lesson': { const q=S.quizzes.find(x=>x.id===id); if(q){
