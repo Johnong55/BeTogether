@@ -183,12 +183,18 @@
   .check .ic{ width:15px; height:15px; opacity:0; } .check.on .ic{ opacity:1; }
 
   /* flashcard — dễ thương: viền nét vẽ, sticker, bấm rìa để qua thẻ, bấm giữa để lật */
-  .flash-wrap{ perspective:1600px; position:relative; }
-  .flash{ perspective:1200px; cursor:pointer; }
-  .flash .inner{ position:relative; min-height:250px; transition:transform .5s var(--ease-soft); transform-style:preserve-3d; }
+  /* Thẻ lật 3D: iOS Safari CẦN tiền tố -webkit- cho backface-visibility/transform-style/perspective,
+     nếu không sẽ hiện lỗi 2 mặt chồng lên nhau (chữ ngược đè lên chữ xuôi). Chrome/Android ít bị vì
+     tự suy ra được dù thiếu tiền tố, Safari thì không. `overflow:hidden` trên .face cũng là tổ hợp
+     lỗi biết trước của WebKit (làm backface-visibility bị vô hiệu) nên đã bỏ — không cần thiết vì
+     border-radius của chính .face đã đủ, các phần tử con đều nằm gọn trong viền. */
+  .flash-wrap{ perspective:1600px; -webkit-perspective:1600px; position:relative; }
+  .flash{ perspective:1200px; -webkit-perspective:1200px; cursor:pointer; }
+  .flash .inner{ position:relative; min-height:250px; transition:transform .5s var(--ease-soft);
+    transform-style:preserve-3d; -webkit-transform-style:preserve-3d; }
   .flash.flip .inner{ transform:rotateY(180deg); }
-  .flash .face{ position:absolute; inset:0; backface-visibility:hidden; display:flex; flex-direction:column;
-    align-items:center; justify-content:center; padding:30px 42px; border-radius:22px; text-align:center; overflow:hidden; }
+  .flash .face{ position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; padding:30px 42px; border-radius:22px; text-align:center; }
   .flash .front{ background:var(--card); border:2.5px solid var(--edge); box-shadow:5px 5px 0 var(--edge); }
   .flash .front::before{ content:""; position:absolute; inset:9px; border:2px dashed color-mix(in srgb,var(--p2) 75%, transparent); border-radius:15px; pointer-events:none; }
   .flash .back{ background:linear-gradient(150deg,var(--p1),var(--p2)); color:#fff; transform:rotateY(180deg); border:2.5px solid var(--edge); box-shadow:5px 5px 0 var(--edge); }
