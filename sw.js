@@ -1,9 +1,10 @@
 // Service worker cho "cùng nhau" — giúp cài như app + mở nhanh/đỡ trắng màn khi mạng chập chờn.
-const CACHE = 'cungnhau-v50';
+const CACHE = 'cungnhau-v51';
 const SHELL = [
   './',
   './library.js',
   './grammar.js',
+  './emoji.js',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',

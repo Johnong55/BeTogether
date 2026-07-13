@@ -250,14 +250,6 @@
 
   /* react + trả lời kiểu Messenger */
   .answer-card{ position:relative; }
-  .react-bar{ position:absolute; top:-22px; right:10px; display:flex; gap:2px; padding:5px 8px; z-index:6;
-    background:var(--card); border:1px solid var(--line); border-radius:999px; box-shadow:0 10px 28px rgba(120,80,90,.24);
-    transform-origin:bottom right; animation:reactPop .26s cubic-bezier(.34,1.56,.64,1); }
-  @keyframes reactPop{ from{ transform:scale(.4) translateY(10px); opacity:0; } to{ transform:none; opacity:1; } }
-  .react-bar button{ border:none; background:none; font-size:25px; line-height:1; padding:2px 4px; cursor:pointer;
-    border-radius:50%; transition:transform .14s; }
-  .react-bar button:hover,.react-bar button:active{ transform:scale(1.4) translateY(-4px); }
-  .react-bar button.on{ background:var(--chip); }
   .react-badge{ display:inline-flex; align-items:center; gap:3px; margin-left:6px; padding:2px 8px 2px 5px;
     background:var(--card); border:1px solid var(--line); border-radius:999px; font-size:13px; font-weight:800;
     color:var(--soft); box-shadow:var(--shadow-sm); }
@@ -284,6 +276,38 @@
     cursor:pointer; color:var(--p1); background:none; transition:transform .12s; }
   .reply-send:active{ transform:scale(.88); }
   .reply-send .ic{ width:21px; height:21px; }
+
+  /* ===== Bộ chọn cảm xúc (emoji picker) kiểu Messenger, khớp tông ấm/pastel ===== */
+  .emoji-sheet{ padding:0; overflow:hidden; display:flex; flex-direction:column; max-height:82vh; }
+  .emoji-head{ display:flex; align-items:center; gap:10px; padding:16px 18px 10px; }
+  .emoji-head b{ font-family:'Fraunces'; font-size:18px; color:var(--p1); }
+  .emoji-head .grab{ position:absolute; top:8px; left:50%; transform:translateX(-50%); width:38px; height:4px; border-radius:99px; background:var(--line); }
+  .emoji-search{ margin:0 18px 10px; display:flex; align-items:center; gap:8px; background:var(--chip);
+    border:1px solid var(--line); border-radius:22px; padding:2px 6px 2px 14px; }
+  .emoji-search .ic{ width:18px; height:18px; color:var(--soft); flex:none; }
+  .emoji-search input{ flex:1; border:none; background:none; box-shadow:none !important; padding:10px 0; font-size:15px; color:var(--ink); }
+  .emoji-quick{ display:flex; gap:6px; padding:0 18px 10px; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .emoji-quick::-webkit-scrollbar{ display:none; }
+  .emoji-quick button{ flex:none; width:44px; height:44px; border-radius:50%; border:1px solid var(--line); background:var(--card);
+    font-size:24px; line-height:1; cursor:pointer; transition:transform .12s; display:grid; place-items:center; }
+  .emoji-quick button:active{ transform:scale(.85); }
+  .emoji-quick button.on{ background:var(--chip); border-color:var(--p2); }
+  .emoji-tabs{ display:flex; gap:2px; padding:6px 12px; border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+    overflow-x:auto; background:var(--bg1); position:sticky; top:0; z-index:2; }
+  .emoji-tabs::-webkit-scrollbar{ display:none; }
+  .emoji-tabs button{ flex:none; width:38px; height:38px; border:none; background:none; border-radius:11px; font-size:20px;
+    line-height:1; cursor:pointer; opacity:.55; display:grid; place-items:center; transition:all .14s; }
+  .emoji-tabs button.on{ opacity:1; background:var(--chip); }
+  .emoji-scroll{ overflow-y:auto; -webkit-overflow-scrolling:touch; padding:4px 12px 20px; flex:1; }
+  .emoji-sec-title{ font-size:12px; font-weight:800; color:var(--soft); text-transform:uppercase; letter-spacing:.4px;
+    padding:14px 6px 6px; position:sticky; top:0; background:var(--bg1); }
+  .emoji-grid{ display:grid; grid-template-columns:repeat(8,1fr); gap:2px; }
+  @media(max-width:400px){ .emoji-grid{ grid-template-columns:repeat(7,1fr); } }
+  .emoji-grid button{ aspect-ratio:1; border:none; background:none; font-size:25px; line-height:1; cursor:pointer;
+    border-radius:12px; transition:transform .1s, background .1s; display:grid; place-items:center; }
+  .emoji-grid button:active{ transform:scale(.8); }
+  .emoji-grid button.on{ background:var(--chip); box-shadow:inset 0 0 0 2px var(--p2); }
+  .emoji-empty{ text-align:center; color:var(--soft); padding:30px 10px; font-weight:700; }
 
   /* notes */
   .note{ border-radius:18px; padding:14px; margin-bottom:14px; box-shadow:4px 4px 0 var(--edge); border:2px solid var(--edge); position:relative; }
@@ -349,6 +373,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="library.js"></script>
 <script src="grammar.js"></script>
+<script src="emoji.js"></script>
 <script>
 /* =================================================================
    CẤU HÌNH — dán thông tin Supabase để BẬT đồng bộ qua mạng.
@@ -1712,7 +1737,45 @@ function avatarEl(person, size, ring){ const url=avatarUrl(person), nm=(nameOf(p
 }
 
 /* ---------- DAILY ---------- */
-const REACT_EMOJI=['❤️','😂','😮','😢','👏','🔥'];
+/* Cảm xúc hay dùng: gần đây (lưu máy) + mặc định, để react 1 chạm không cần cuộn */
+const REACT_DEFAULTS=['❤️','😍','🥰','😂','😮','😢','👏','🔥','👍','🎉'];
+function emojiRecent(){ try{ return JSON.parse(localStorage.getItem('loveapp_emoji_recent')||'[]'); }catch(e){ return []; } }
+function emojiPushRecent(em){ let a=emojiRecent().filter(x=>x!==em); a.unshift(em); a=a.slice(0,16);
+  try{ localStorage.setItem('loveapp_emoji_recent', JSON.stringify(a)); }catch(e){} }
+function emojiQuickList(){ const seen=new Set(); const out=[];
+  for(const em of [...emojiRecent(), ...REACT_DEFAULTS]){ if(!seen.has(em)){ seen.add(em); out.push(em); } if(out.length>=12) break; }
+  return out; }
+/* Bộ chọn cảm xúc đầy đủ (emoji.js): mở dạng bottom-sheet kiểu Messenger */
+function openEmojiPicker(who){ if(!window.EMOJI_GROUPS){ toast('Bộ cảm xúc đang tải…'); return; }
+  S.tmp.emojiFor=who; S.tmp.dReactOpen=null; S.tmp.dReplyOpen=null;
+  const cur=(S.dailyToday||{})['reaction_'+who]||'';
+  const groups=window.EMOJI_GROUPS;
+  const tabs=groups.map((g,i)=>`<button data-act="emoji-cat" data-v="${g.k}" class="${i===0?'on':''}" title="${esc(g.label)}">${g.icon}</button>`).join('');
+  const quick=emojiQuickList().map(em=>`<button class="${em===cur?'on':''}" data-act="emoji-pick" data-v="${em}">${em}</button>`).join('');
+  const sheet=`<div class="sheet emoji-sheet" data-act="stop">
+    <div class="grab"></div>
+    <div class="emoji-head"><b>Thả cảm xúc</b><div class="grow"></div>
+      <button class="iconbtn" data-act="close-modal">${ic('x','sm')}</button></div>
+    <div class="emoji-search">${ic('search')}<input id="emoji_q" autocomplete="off" placeholder="Tìm cảm xúc (vd: tim, cười, hoa…)"/></div>
+    <div class="emoji-quick">${quick}</div>
+    <div class="emoji-tabs" id="emoji_tabs">${tabs}</div>
+    <div class="emoji-scroll" id="emoji_scroll">${emojiSectionsHTML(cur)}</div>
+  </div>`;
+  const ov=document.createElement('div'); ov.className='overlay'; ov.dataset.act='close-modal';
+  ov.innerHTML=sheet; document.body.appendChild(ov);
+  setTimeout(()=>$('#emoji_q')?.focus(),60);
+}
+/* Toàn bộ emoji chia theo nhóm (khi không tìm kiếm) */
+function emojiSectionsHTML(cur){ return window.EMOJI_GROUPS.map(g=>
+  `<div class="emoji-sec" data-cat="${g.k}"><div class="emoji-sec-title">${esc(g.label)}</div>
+    <div class="emoji-grid">${g.list.map(it=>`<button class="${it[0]===cur?'on':''}" data-act="emoji-pick" data-v="${it[0]}">${it[0]}</button>`).join('')}</div></div>`).join(''); }
+/* Kết quả tìm kiếm (gõ tiếng Anh hoặc tiếng Việt không dấu) */
+function emojiSearchHTML(q, cur){ q=noDiacritics(q.trim().toLowerCase()); if(!q) return emojiSectionsHTML(cur);
+  const vi=window.EMOJI_VI||{}; const hits=[]; const seen=new Set();
+  for(const g of window.EMOJI_GROUPS) for(const it of g.list){ const em=it[0]; if(seen.has(em)) continue;
+    const hay=(it[1]+' '+(vi[em]||'')); if(hay.indexOf(q)>=0){ seen.add(em); hits.push(em); if(hits.length>=120) break; } }
+  if(!hits.length) return `<div class="emoji-empty">Không tìm thấy cảm xúc nào 🥲<br>Thử từ khác nha</div>`;
+  return `<div class="emoji-grid" style="margin-top:8px">${hits.map(em=>`<button class="${em===cur?'on':''}" data-act="emoji-pick" data-v="${em}">${em}</button>`).join('')}</div>`; }
 function dReactBadge(who){ const r=(S.dailyToday||{})['reaction_'+who]; return r?`<span class="react-badge">${r}</span>`:''; }
 /* bong bóng lời nhắn kiểu comment (ai nhắn = other(who)) */
 function dReplyBubble(who){ const r=(S.dailyToday||{})['reply_'+who]; if(!r) return '';
@@ -1721,20 +1784,17 @@ function dReplyBubble(who){ const r=(S.dailyToday||{})['reply_'+who]; if(!r) ret
     <div class="bub"><b>${esc(author)}</b>${esc(r)}</div></div>`; }
 /* thẻ 1 câu trả lời — mine=true là của mình (không react được), false là của người ấy (react/nhắn) */
 function dAnswerCard(who, text, mine){
-  const reactOpen = S.tmp.dReactOpen===who, replyOpen = S.tmp.dReplyOpen===who;
+  const replyOpen = S.tmp.dReplyOpen===who;
   const myReact = (S.dailyToday||{})['reaction_'+who];
-  const bar = reactOpen ? `<div class="react-bar">${REACT_EMOJI.map(em=>
-      `<button class="${myReact===em?'on':''}" data-act="daily-react" data-v="${who}|${em}">${em}</button>`).join('')}</div>` : '';
   const actions = mine
     ? `<div class="cmt-actions"><button data-act="edit-daily">${ic('edit','sm')} Sửa câu trả lời</button></div>`
     : `<div class="cmt-actions">
-        <button class="${myReact?'hot':''}" data-act="d-react-toggle" data-v="${who}">${myReact||'🙂'} Cảm xúc</button>
+        <button class="${myReact?'hot':''}" data-act="d-react-open" data-v="${who}">${myReact||'🙂'} Cảm xúc</button>
         <button data-act="d-reply-toggle" data-v="${who}">💬 Trả lời</button></div>`;
   const replyBox = replyOpen ? `<div class="reply-box">${avatarEl(S.me)}
       <div class="reply-pill"><input id="d_reply_input" autocomplete="off" placeholder="Viết trả lời cho ${esc(partner()||'người ấy')}…" value="${esc((S.dailyToday||{})['reply_'+who]||'')}"/>
         <button class="reply-send" data-act="d-reply-send" data-v="${who}">${ic('send')}</button></div></div>` : '';
   return `<div class="card answer-card${mine?'':' longpressable'}" ${mine?'':`data-longpress="daily-react" data-who="${who}"`}>
-    ${bar}
     <div class="row" style="border:none;padding:0">
       <div class="grow muted" style="font-weight:800;color:${mine?'var(--p1)':'var(--accent)'}">${esc(nameOf(who))} trả lời</div>
       ${dReactBadge(who)}</div>
@@ -1874,7 +1934,7 @@ document.addEventListener('pointerdown',(e)=>{ const el=e.target.closest('[data-
   lpTimer=setTimeout(()=>{ lpTimer=null; el.classList.remove('lp-active'); lpEl=null;
     if(navigator.vibrate){ try{ navigator.vibrate(12); }catch(err){} }
     const kind=el.dataset.longpress;
-    if(kind==='daily-react'){ S.tmp.dReactOpen=el.dataset.who; S.tmp.dReplyOpen=null; render(); }
+    if(kind==='daily-react'){ openEmojiPicker(el.dataset.who); }
     else if(kind==='duel-stake'){ openDuelStakeModal(el.dataset.id); }
   }, 480); });
 document.addEventListener('pointerup', lpCancel);
@@ -1887,12 +1947,11 @@ document.addEventListener('click', async (e)=>{ const t=e.target.closest('[data-
   try{ await handle(t.dataset.act, t.dataset.v, t.dataset.id, t, e); }
   catch(err){ console.error(err); toast(err && err.message ? ('Lỗi: '+err.message) : 'Có lỗi rồi, thử lại nha'); } });
 
-/* Bấm ra ngoài -> đóng thanh cảm xúc đang mở (chạy sau handler chính nên emoji vẫn nhận) */
-document.addEventListener('click',(e)=>{ if(!S.tmp.dReactOpen) return;
-  if(e.target.closest('.react-bar')||e.target.closest('[data-act="d-react-toggle"]')||e.target.closest('[data-longpress]')) return;
-  S.tmp.dReactOpen=null; render(); });
-
-document.addEventListener('input',(e)=>{ const f=e.target.dataset.filter; if(!f) return;
+document.addEventListener('input',(e)=>{
+  if(e.target.id==='emoji_q'){ const cur=(S.dailyToday||{})['reaction_'+S.tmp.emojiFor]||'';
+    const sc=$('#emoji_scroll'); if(sc){ sc.innerHTML=emojiSearchHTML(e.target.value, cur); sc.scrollTop=0; }
+    return; }
+  const f=e.target.dataset.filter; if(!f) return;
   if(f==='lib'){ S.tmp.libQuery=e.target.value; applyLibFilter(); return; }
   const q=(e.target.value||'').trim().toLowerCase();
   document.querySelectorAll(`[data-flt="${f}"]`).forEach(el=>{ el.style.display=el.dataset.name.includes(q)?'':'none'; }); });
@@ -2008,8 +2067,10 @@ async function handle(act,v,id,t,e){
 
     case 'save-daily': await saveDaily(); break;
     case 'edit-daily': { const d=S.dailyToday; S.tmp.dAns=(S.me==='a'?d.answer_a:d.answer_b)||''; if(S.me==='a')d.answer_a=null; else d.answer_b=null; render(); } break;
-    case 'daily-react': { const i=v.indexOf('|'); await dailyReact(v.slice(0,i), v.slice(i+1)); } break;
-    case 'd-react-toggle': S.tmp.dReactOpen = S.tmp.dReactOpen===v?null:v; S.tmp.dReplyOpen=null; render(); break;
+    case 'd-react-open': openEmojiPicker(v); break;
+    case 'emoji-pick': { const who=S.tmp.emojiFor; closeModal(); await dailyReact(who, v); } break;
+    case 'emoji-cat': { const sec=document.querySelector(`.emoji-sec[data-cat="${v}"]`); if(sec) sec.scrollIntoView({behavior:'smooth',block:'start'});
+      document.querySelectorAll('#emoji_tabs button').forEach(b=>b.classList.toggle('on', b.dataset.v===v)); const q=$('#emoji_q'); if(q&&q.value){ q.value=''; const sc=$('#emoji_scroll'); if(sc){ sc.innerHTML=emojiSectionsHTML((S.dailyToday||{})['reaction_'+S.tmp.emojiFor]||''); const s2=document.querySelector(`.emoji-sec[data-cat="${v}"]`); if(s2) s2.scrollIntoView({block:'start'}); } } } break;
     case 'd-reply-toggle': S.tmp.dReplyOpen = S.tmp.dReplyOpen===v?null:v; S.tmp.dReactOpen=null; render(); setTimeout(()=>$('#d_reply_input')?.focus(),40); break;
     case 'd-reply-send': await dailyReplySave(v); break;
     case 'avatar-pick': chooseAvatar(); break;
@@ -2271,7 +2332,8 @@ async function saveDailySafe(patch){ const d=S.dailyToday; if(!d) return;
   catch(e){ try{ await Store.saveDaily({ id:d.id, space_id:d.space_id, day:d.day, question:d.question, answer_a:d.answer_a, answer_b:d.answer_b });
       toast('Đã lưu tạm — nhờ chạy SQL cột reaction/reply để lưu lâu dài nha'); }catch(e2){} } }
 async function dailyReact(who,emoji){ const d=S.dailyToday; if(!d) return; const key='reaction_'+who;
-  const val=(d[key]===emoji)?null:emoji; S.tmp.dReactOpen=null; await saveDailySafe({[key]:val}); render(); }
+  const val=(d[key]===emoji)?null:emoji; S.tmp.dReactOpen=null;
+  if(val) emojiPushRecent(val); await saveDailySafe({[key]:val}); render(); }
 async function dailyReplySave(who){ const d=S.dailyToday; if(!d) return;
   const val=($('#d_reply_input')?.value||'').trim(); S.tmp.dReplyOpen=null;
   await saveDailySafe({['reply_'+who]:val||null}); render(); toast(val?'Đã gửi 💬':'Đã xoá lời nhắn'); }
