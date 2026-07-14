@@ -1121,7 +1121,8 @@ function applyDuels(list){
 }
 
 let pollT, duelPollT, pollTick=0;
-function startPolling(){ clearInterval(duelPollT); duelPollT=setInterval(duelTick, 2500);
+function startPolling(){ clearInterval(duelPollT); duelPollT=setInterval(duelTick, 1400);
+  subscribeDuels(); // realtime đẩy tức thì (nếu bảng duels đã bật replication); poll ở trên là mạng lưới dự phòng
   if(Store.mode!=='cloud') return; clearInterval(pollT); pollTick=0;
   pollT=setInterval(async ()=>{ if(document.hidden) return; const ae=document.activeElement;
     maybeSyncClock();
@@ -1135,11 +1136,29 @@ function startPolling(){ clearInterval(duelPollT); duelPollT=setInterval(duelTic
       if(JSON.stringify([S.decks,S.cards,S.quizzes,S.notes,S.dailyToday,S.space,S.duel])!==before) render();
     }catch(e){} }, 5000); }
 
-/* poll nhanh cho trận đấu (gần trực tiếp) */
+/* ===== REALTIME cho bảng duels — để máy nhận thấy từ mới NGAY, không chờ vòng poll (đỡ "đơ") =====
+   Supabase đẩy qua websocket khi duels đổi -> gọi duelTick() ngay (refetch + render). Nếu bảng CHƯA
+   bật replication (chưa chạy SQL) thì channel vẫn subscribe nhưng không có event -> poll 1.4s ở trên
+   vẫn lo, app không hề hỏng. Debounce nhẹ để 1 loạt event không gọi duelTick dồn dập. */
+let duelRtCh=null, duelRtSpace=null, duelRtDeb=null;
+function subscribeDuels(){
+  if(!useCloud || !sb || !S.space) return;
+  if(duelRtCh && duelRtSpace===S.space.id) return; // đã subscribe đúng phòng rồi
+  if(duelRtCh){ try{ sb.removeChannel(duelRtCh); }catch(e){} duelRtCh=null; }
+  duelRtSpace=S.space.id;
+  duelRtCh=sb.channel('duels-'+S.space.id)
+    .on('postgres_changes',{event:'*',schema:'public',table:'duels',filter:'space_id=eq.'+S.space.id},
+      ()=>{ clearTimeout(duelRtDeb); duelRtDeb=setTimeout(()=>{ duelTick(); }, 60); })
+    .subscribe();
+}
+/* poll nhanh cho trận đấu (gần trực tiếp) + realtime đẩy tức thì ở trên */
+let duelTicking=false;
 async function duelTick(){
   if(document.hidden || !S.space) return;
   const watching = S.view==='arena' || (S.duel && (S.duel.status==='waiting'||S.duel.status==='active'));
   if(!watching) return;
+  if(duelTicking) return; // tránh 2 lần fetch chồng nhau (poll + realtime cùng lúc)
+  duelTicking=true;
   maybeSyncClock(); // giữ đồng hồ server tươi trong lúc đấu (nhất là nối từ có đếm ngược)
   try{
     const list=await Store.listDuels(S.space.id);
@@ -1170,6 +1189,7 @@ async function duelTick(){
       if(f) f.style.width=(op/total*100)+'%';
     }
   }catch(e){}
+  finally{ duelTicking=false; }
 }
 
 /* Gọi API AI (Cloudflare Pages Function) — có timeout, tự ném lỗi để nơi gọi fallback */
