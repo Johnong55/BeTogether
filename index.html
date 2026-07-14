@@ -349,6 +349,16 @@
   .cw-num{ position:absolute; top:0.5px; left:1.5px; font-size:6.5px; font-weight:700; color:var(--soft); line-height:1; }
   .cw-cell.filled .cw-num{ color:rgba(255,255,255,.85); }
 
+  /* ===== Đấu — Nối từ (luân phiên lượt thật, đếm ngược 10s/lượt) ===== */
+  .chain-list{ max-height:280px; overflow-y:auto; }
+  .chain-item{ display:flex; align-items:center; gap:10px; padding:7px 2px; border-top:1px solid var(--line); }
+  .chain-item:first-child{ border-top:none; }
+  .chain-item b{ text-transform:uppercase; letter-spacing:1px; font-family:'Fraunces'; font-size:16px; }
+  .chain-turn{ text-align:center; padding:20px 16px; }
+  .chain-turn.warn{ border-color:var(--no) !important; }
+  .chain-countdown{ font-size:36px; font-weight:800; color:var(--p1); font-variant-numeric:tabular-nums; }
+  .chain-turn.warn .chain-countdown{ color:var(--no); }
+
   /* notes */
   .note{ border-radius:18px; padding:14px; margin-bottom:14px; box-shadow:4px 4px 0 var(--edge); border:2px solid var(--edge); position:relative; }
   .note .meta{ display:flex; align-items:center; gap:7px; font-size:11.5px; font-weight:800; opacity:.7; margin-bottom:6px; }
@@ -1005,6 +1015,7 @@ async function duelTick(){
   try{
     const list=await Store.listDuels(S.space.id);
     const prev=S.duel, prevStatus=prev&&prev.status, prevOppDone=prev&&prev['done_'+other(S.me)], prevId=prev&&prev.id;
+    const prevChainLen=(prev&&prev.questions||[]).length;
     applyDuels(list);
     const cur=S.duel;
     // cả hai đã xong nhưng chưa ai chốt -> chốt trận
@@ -1012,7 +1023,9 @@ async function duelTick(){
       await Store.updateDuel(cur.id,S.space.id,{status:'done',finished_at:new Date().toISOString()});
       cur.status='done'; S.duelHistory=[cur,...S.duelHistory];
     }
-    const changed = (!!prev!==!!cur) || (cur&&prevId!==cur.id) || (cur&&prevStatus!==cur.status) || (cur&&prevOppDone!==cur['done_'+other(S.me)]);
+    // nối từ: đối thủ vừa gửi từ mới (đổi lượt) -> phải vẽ lại toàn màn, không chỉ cập nhật tiến độ như quiz
+    const chainChanged = cur && prevId===cur.id && isChainDuel(cur) && (cur.questions||[]).length!==prevChainLen;
+    const changed = (!!prev!==!!cur) || (cur&&prevId!==cur.id) || (cur&&prevStatus!==cur.status) || (cur&&prevOppDone!==cur['done_'+other(S.me)]) || chainChanged;
     if(changed){
       if(prevStatus && !cur && S.view==='arena'){ toast('Trận đấu đã kết thúc/huỷ'); }
       if(S.view==='arena' || !document.activeElement || !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) render();
@@ -1090,6 +1103,7 @@ function render(){ const app=$('#app');
   if(anim) app.querySelectorAll('.screen').forEach(el=>el.classList.add(anim));
   if(S.view==='library' && !S.sub) applyLibFilter();
   if(S.view==='home' && !S.play) mountHeartTank(); else HeartTank.stop();
+  if(S.view==='arena' && S.duel && S.duel.status==='active' && isChainDuel(S.duel)) startChainTimer(); else stopChainTimer();
   hideLoading(); mountLotties();
 }
 
@@ -1448,16 +1462,17 @@ function viewArena(){
   const du=S.duel;
   if(du && du.status==='waiting'){
     const dqKind = du.questions&&du.questions[0]&&du.questions[0].kind;
-    const duGame = dqKind==='hangman'?'hangman':dqKind==='crossword'?'crossword':'quiz';
-    const gameIcon = duGame==='hangman'?'🎪':duGame==='crossword'?'🧩':'⚔️';
-    const gameLabel = duGame==='hangman' ? ' · 🎪 Hangman' : duGame==='crossword' ? ' · 🧩 Ô chữ' : '';
+    const duGame = dqKind==='hangman'?'hangman':dqKind==='crossword'?'crossword':dqKind==='chain'?'chain':'quiz';
+    const gameIcon = duGame==='hangman'?'🎪':duGame==='crossword'?'🧩':duGame==='chain'?'🔗':'⚔️';
+    const gameLabel = duGame==='hangman' ? ' · 🎪 Hangman' : duGame==='crossword' ? ' · 🧩 Ô chữ' : duGame==='chain' ? ' · 🔗 Nối từ' : '';
+    const countLine = duGame==='chain' ? `Từ mở đầu: <b>${esc((du.questions[0]||{}).word||'').toUpperCase()}</b>${gameLabel}` : `${(du.questions||[]).length} câu${gameLabel}`;
     if(du.challenger===S.me) return `
       <h2 class="title">Rủ đấu ⚔️</h2>
       <div class="card couple center">
         <div style="font-size:46px;animation:flick 2.4s ease-in-out infinite;display:inline-block">${gameIcon}</div>
         <b style="display:block;margin-top:6px">Đã gửi lời rủ đấu!</b>
         <div class="muted">Đợi ${esc(partner()||'người ấy')} nhận lời là bắt đầu liền…</div>
-        <div class="muted" style="margin-top:8px">${esc(du.title||'')} · ${(du.questions||[]).length} câu${gameLabel}</div>
+        <div class="muted" style="margin-top:8px">${esc(du.title||'')} · ${countLine}</div>
         ${du.stake?`<div style="margin-top:8px;font-style:italic">Nếu bạn thắng: “${esc(du.stake)}”</div>`:''}
       </div>
       <button class="btn danger block" data-act="duel-cancel">Huỷ trận</button>`;
@@ -1466,7 +1481,7 @@ function viewArena(){
       <div class="card" style="border:1.5px solid var(--p1)">
         <div class="row">${ic('swords','lg')}<div class="grow">
           <b>${esc(partner()||'Người ấy')} rủ bạn đấu nè!</b>
-          <div class="muted">${esc(du.title||'')} · ${(du.questions||[]).length} câu${gameLabel} — hai đứa làm CÙNG bộ câu hỏi</div>
+          <div class="muted">${esc(du.title||'')} · ${countLine}${duGame==='chain'?' — tới lượt ai đó là gõ tiếp từ':' — hai đứa làm CÙNG bộ câu hỏi'}</div>
           ${du.stake?`<div style="font-style:italic;margin-top:4px">Nếu ${esc(partner()||'người ấy')} thắng: “${esc(du.stake)}”</div>`:''}
         </div></div>
         <label class="fld" style="margin-top:12px"><span class="lab">Cược lại nè — nếu BẠN thắng, người ấy phải…? (không bắt buộc)</span>
@@ -1490,12 +1505,14 @@ function duelCreateView(){
       <label class="fld"><span class="lab">Kiểu chơi</span>
         <div class="seg"><button type="button" class="${game==='quiz'?'on':''}" data-act="duel-game" data-v="quiz">Trắc nghiệm</button>
           <button type="button" class="${game==='hangman'?'on':''}" data-act="duel-game" data-v="hangman">Hangman 🎪</button>
-          <button type="button" class="${game==='crossword'?'on':''}" data-act="duel-game" data-v="crossword">Ô chữ 🧩</button></div></label>
+          <button type="button" class="${game==='crossword'?'on':''}" data-act="duel-game" data-v="crossword">Ô chữ 🧩</button></div>
+        <div class="seg" style="margin-top:8px"><button type="button" class="${game==='chain'?'on':''}" data-act="duel-game" data-v="chain" style="flex:none;padding-left:16px;padding-right:16px">Nối từ 🔗</button></div></label>
       <label class="fld"><span class="lab">Chọn bộ từ</span>
         <select id="du_src">${srcs.map(o=>`<option value="${esc(o.v)}" ${o.v===pre?'selected':''}>${esc(o.label)}</option>`).join('')}</select></label>
-      ${game!=='quiz'?`<p class="muted" style="margin:-4px 0 12px;font-size:12.5px">${game==='hangman'?'Hangman':'Ô chữ'} cần từ đơn (không phải cụm) — nếu bộ từ toàn cụm sẽ báo chọn bộ khác nha.</p>`:''}
-      <label class="fld"><span class="lab">Số ${game==='quiz'?'câu':'từ'}</span>
-        <select id="du_n"><option value="10">10 ${game==='quiz'?'câu':'từ'} (nhanh gọn)</option><option value="20">20 ${game==='quiz'?'câu':'từ'}</option><option value="all">Tất cả</option></select></label>
+      ${game==='chain'?`<p class="muted" style="margin:-4px 0 12px;font-size:12.5px">Chọn 1 từ ngẫu nhiên trong bộ này làm từ mở đầu. Sau đó hai đứa <b>thay phiên gõ từ tiếp theo</b> (bắt đầu bằng chữ cái cuối từ trước, không lặp từ, không cần nằm trong bộ từ) — mỗi lượt có <b>${CHAIN_TURN_SEC}s</b>, hết giờ hoặc bí từ là thua nha!</p>`
+      :game!=='quiz'?`<p class="muted" style="margin:-4px 0 12px;font-size:12.5px">${game==='hangman'?'Hangman':'Ô chữ'} cần từ đơn (không phải cụm) — nếu bộ từ toàn cụm sẽ báo chọn bộ khác nha.</p>`:''}
+      ${game!=='chain'?`<label class="fld"><span class="lab">Số ${game==='quiz'?'câu':'từ'}</span>
+        <select id="du_n"><option value="10">10 ${game==='quiz'?'câu':'từ'} (nhanh gọn)</option><option value="20">20 ${game==='quiz'?'câu':'từ'}</option><option value="all">Tất cả</option></select></label>`:''}
       <label class="fld"><span class="lab">Nếu bạn thắng, người ấy phải…? (không bắt buộc)</span>
         <input id="du_stake" placeholder="vd: rửa chén 1 tuần 🍽️"/></label>
       <button class="btn block" data-act="duel-create">${ic('swords','sm')} Rủ ${esc(partner()||'người ấy')} đấu</button>
@@ -1545,6 +1562,7 @@ function duelPlayView(du){
     return duelClashView();
   }
   if(!S.duelPlay || S.duelPlay.id!==du.id) initDuelPlay(du);
+  if(isChainDuel(du)) return duelChainBody(du);
   const p=S.duelPlay, qs=du.questions||[], total=qs.length||1;
   const op=du['progress_'+other(S.me)]||0;
   if(p.doneLocal){
@@ -1565,6 +1583,26 @@ function duelPlayView(du){
     ${progressBar(op/total*100,{id:'opp-fill',style:'background:linear-gradient(90deg,var(--accent),var(--p2))'})}
     ${progressBar(p.idx/total*100)}
     ${ q.kind==='mc' ? duelMcBody(q,p,fb) : q.kind==='hangman' ? duelHangmanBody(q,p,fb) : q.kind==='crossword' ? duelCrosswordBody(q,p,fb) : duelScrBody(q,p,fb) }`;
+}
+function duelChainBody(du){
+  const chain=du.questions||[]; const turn=chainTurn(du); const myTurn=turn===S.me;
+  const remain=Math.max(0,Math.ceil(chainRemainSec(du)));
+  const last=chain[chain.length-1], lastChar=last.word[last.word.length-1].toUpperCase();
+  return `<div class="row" style="margin-bottom:8px"><button class="iconbtn" data-act="go" data-v="home">${ic('x','sm')}</button>
+      <div class="grow center" style="font-weight:800">🔗 Nối từ · ${chain.length} từ</div><div style="width:38px"></div></div>
+    <div class="card chain-list">${chain.slice().reverse().map((c,ri)=>{ const i=chain.length-1-ri;
+        return `<div class="chain-item">${avatarEl(c.by,26)}<b class="grow">${esc(c.word)}</b>
+          <span class="muted" style="font-size:11px">${i===0?'Từ mở đầu':(c.by===S.me?'Bạn':esc(partner()||'Người ấy'))}</span></div>`; }).join('')}</div>
+    <div class="card chain-turn${remain<=3?' warn':''}" id="chain-turn-box" style="margin-top:12px">
+      <div class="chain-countdown" id="chain-countdown">${remain}s</div>
+      ${myTurn
+        ? `<div class="muted" style="margin-top:4px;font-weight:700">Tới lượt bạn! Gõ từ bắt đầu bằng chữ "${lastChar}"</div>`
+        : `<div class="muted" style="margin-top:4px">Đợi ${esc(partner()||'người ấy')} nối từ…</div>`}
+    </div>
+    ${ myTurn ? `
+    <input id="dchain_input" placeholder="Từ bắt đầu bằng ${lastChar}..." autocapitalize="none" autocomplete="off" autocorrect="off" spellcheck="false" style="text-align:center;font-size:18px;margin-top:12px"/>
+    <button class="btn block" style="margin-top:10px" data-act="d-chain-send">Gửi từ ⚡</button>` : '' }
+    <button class="btn ghost block sm" style="margin-top:12px" data-act="duel-cancel-active">Huỷ trận (nếu chờ lâu quá)</button>`;
 }
 function duelMcBody(q,p,fb){
   return `<div class="card center" style="padding:24px 16px">
@@ -1635,6 +1673,7 @@ function duelFeedback(p,q){ const ok=p.lastCorrect;
     <button class="btn block" data-act="d-next">${p.idx+1<((S.duel&&S.duel.questions)||[]).length?'Câu tiếp':'Hoàn thành ⚔️'}</button>`;
 }
 function duelResultView(du){
+  const isChain=isChainDuel(du);
   const total=(du.questions||[]).length;
   const my=S.me==='a'?(du.score_a||0):(du.score_b||0), their=S.me==='a'?(du.score_b||0):(du.score_a||0);
   const tie=my===their, iWin=my>their;
@@ -1665,11 +1704,11 @@ function duelResultView(du){
   return `<div class="center" style="padding-top:12px">
       ${anim}
       <h2 class="title" style="margin:8px 0 2px">${tie?'Hòa nhau!':(iWin?'Bạn thắng rồi!':esc(partner()||'Người ấy')+' thắng!')}</h2>
-      <p class="muted">${esc(du.title||'')} · ${total} câu</p></div>
-    <div class="stat">
+      <p class="muted">${isChain?`Nối được ${total} từ`:`${esc(du.title||'')} · ${total} câu`}</p></div>
+    ${isChain?'':`<div class="stat">
       <div class="card"><div class="big">${my}</div><div class="ttl">Bạn</div></div>
       <div class="card"><div class="big">${their}</div><div class="ttl">${esc(partner()||'Người ấy')}</div></div>
-    </div>
+    </div>`}
     ${stakeCard}
     <button class="btn block" style="margin-top:16px" data-act="duel-seen" data-id="${du.id}">Biết rồi 💕</button>`;
 }
@@ -1694,6 +1733,11 @@ async function createDuel(){
     if(eligible.length<2){ toast('Bộ từ này không đủ từ đơn (cần ít nhất 2) để giải ô chữ — chọn bộ khác nha'); return; }
     const cap = nv==='all'? eligible.length : Math.min(parseInt(nv,10)||10, eligible.length);
     questions = buildCrosswordQuestions(eligible,cap);
+  } else if(game==='chain'){
+    const eligible=hangmanEligible(s.words);
+    if(!eligible.length){ toast('Bộ từ này không có từ đơn để bắt đầu Nối từ — chọn bộ khác nha'); return; }
+    const starter=shuffle(eligible)[0];
+    questions = [{ kind:'chain', word:starter.en.toLowerCase(), by:S.me, at:new Date().toISOString() }];
   } else {
     const cap = nv==='all'? undefined : Math.min(parseInt(nv,10)||10, s.words.length);
     questions = buildQuestions(s.words,cap);
@@ -1711,6 +1755,49 @@ async function joinDuel(id){ const du=S.duel; if(!du||du.id!==id) return;
 function persistDuelProgress(){ const p=S.duelPlay, du=S.duel; if(!p||!du) return;
   const patch={}; patch['score_'+S.me]=p.score; patch['progress_'+S.me]=p.idx+1;
   Object.assign(du,patch); Store.updateDuel(du.id,S.space.id,patch).catch(()=>{}); }
+
+/* ----- Nối từ: luân phiên lượt thật (không phải "cùng đề độc lập" như các mode khác) ----- */
+const CHAIN_TURN_SEC=10;
+function isChainDuel(du){ return !!(du && du.questions && du.questions[0] && du.questions[0].kind==='chain'); }
+function chainTurn(du){ const chain=du.questions||[]; return chain.length%2===1 ? other(du.challenger) : du.challenger; }
+function chainLastAt(du){ const chain=du.questions||[];
+  return new Date(chain.length ? chain[chain.length-1].at : (du.joined_at||du.created_at)).getTime(); }
+function chainRemainSec(du){ return CHAIN_TURN_SEC-(Date.now()-chainLastAt(du))/1000; }
+let chainTimerT=null;
+function startChainTimer(){ if(chainTimerT) return;
+  chainTimerT=setInterval(()=>{
+    const du=S.duel;
+    if(!du || du.status!=='active' || !isChainDuel(du) || S.view!=='arena'){ stopChainTimer(); return; }
+    const remain=Math.max(0,Math.ceil(chainRemainSec(du)));
+    const el=$('#chain-countdown'); if(el) el.textContent=remain+'s';
+    const box=$('#chain-turn-box'); if(box) box.classList.toggle('warn', remain<=3);
+    if(remain<=0) handleChainTimeout();
+  }, 1000); }
+function stopChainTimer(){ if(chainTimerT){ clearInterval(chainTimerT); chainTimerT=null; } }
+/* Hết giờ (bất kỳ máy nào phát hiện trước cũng tự chốt được, ghi cùng 1 kết quả nên vô hại nếu cả 2 cùng chạy) */
+async function handleChainTimeout(){ const du=S.duel; if(!du||du.status!=='active'||!isChainDuel(du)) return;
+  stopChainTimer(); const loser=chainTurn(du);
+  const patch={ status:'done', finished_at:new Date().toISOString() };
+  patch['score_'+loser]=0; patch['score_'+other(loser)]=1;
+  try{ await Store.updateDuel(du.id,S.space.id,patch); }catch(e){}
+  Object.assign(du,patch); S.duelHistory=[du,...(S.duelHistory||[]).filter(x=>x.id!==du.id)]; render(); }
+/* null = hợp lệ, string = lý do từ chối (hiện bằng toast, KHÔNG tính thua — vẫn còn giờ để gõ lại) */
+function validateChainWord(word,du){ word=(word||'').trim().toLowerCase();
+  if(!word) return 'Gõ từ đã nha';
+  if(!/^[a-zA-Z]+$/.test(word)) return 'Chỉ gõ chữ cái tiếng Anh thôi (không dấu, không số)';
+  const chain=du.questions||[];
+  if(chain.some(c=>c.word===word)) return 'Từ này dùng rồi, đổi từ khác nha';
+  const last=chain[chain.length-1].word, lastChar=last[last.length-1];
+  if(word[0]!==lastChar) return `Từ phải bắt đầu bằng chữ "${lastChar.toUpperCase()}" nha`;
+  return null; }
+async function sendChainWord(){ const du=S.duel; if(!du||du.status!=='active'||!isChainDuel(du)) return;
+  if(chainTurn(du)!==S.me) return;
+  const val=($('#dchain_input')?.value||'').trim();
+  const err=validateChainWord(val,du); if(err){ toast(err); return; }
+  const chain=[...(du.questions||[]), { kind:'chain', word:val.toLowerCase(), by:S.me, at:new Date().toISOString() }];
+  du.questions=chain;
+  try{ await Store.updateDuel(du.id,S.space.id,{questions:chain}); }catch(e){ toast('Gửi từ lỗi rồi, thử lại nha'); return; }
+  render(); }
 function dAnswerMc(i){ const p=S.duelPlay, du=S.duel; if(!p||p.phase!=='ask') return;
   const q=du.questions[p.idx]; p.chosen=i; p.lastCorrect=(q.options[i]===q.vi); if(p.lastCorrect)p.score++;
   p.phase='feedback'; persistDuelProgress(); render(); }
@@ -2202,6 +2289,7 @@ document.addEventListener('keydown',(e)=>{ if(e.key!=='Enter') return;
   else if(e.target.id==='gr_input'){ e.preventDefault(); handle('check-grammar'); }
   else if(e.target.id==='dsc_input'){ e.preventDefault(); handle('d-check-scramble'); }
   else if(e.target.id==='dcw_input'){ e.preventDefault(); handle('d-check-crossword'); }
+  else if(e.target.id==='dchain_input'){ e.preventDefault(); handle('d-chain-send'); }
   else if(e.target.id==='d_reply_input'){ e.preventDefault(); handle('d-reply-send',S.tmp.dReplyOpen); }
   else if(e.target.id==='qa_front'){ e.preventDefault(); $('#qa_back')?.focus(); }
   else if(e.target.id==='qa_back'){ e.preventDefault(); handle('quick-add',null,e.target.dataset.deck); }
@@ -2263,6 +2351,7 @@ async function handle(act,v,id,t,e){
     case 'd-check-scramble': dCheckScramble(); break;
     case 'd-guess-letter': guessLetter(v); break;
     case 'd-check-crossword': dCheckCrossword(); break;
+    case 'd-chain-send': await sendChainWord(); break;
     case 'd-next': await dNext(); break;
     case 'duel-seen': markDuelSeen(id); S.duel=null; S.duelPlay=null; render(); break;
     case 'study-lesson': { const q=S.quizzes.find(x=>x.id===id); if(q){
