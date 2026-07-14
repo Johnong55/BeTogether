@@ -848,6 +848,11 @@ const S = { user:null, space:null, me:null, view:'auth', sub:null,
   play:null, compose:null, inboxTab:'in', authTab:'login', tmp:{} };
 function duelSeenIds(){ try{ return JSON.parse(localStorage.getItem('loveapp_duel_seen')||'[]'); }catch(e){ return []; } }
 function markDuelSeen(id){ try{ const a=duelSeenIds(); a.unshift(id); localStorage.setItem('loveapp_duel_seen',JSON.stringify(a.slice(0,30))); }catch(e){} }
+/* Animation "đấm kiếm" chỉ nên phát 1 LẦN DUY NHẤT lúc trận thật sự bắt đầu — lưu localStorage (không chỉ
+   S.tmp trong bộ nhớ) để mở lại app/tải lại trang giữa ván (đặc biệt hay gặp ở Nối từ, trận kéo dài) không
+   bị phát lại, tránh ăn mất thời gian đếm ngược của người chơi. */
+function clashSeenIds(){ try{ return JSON.parse(localStorage.getItem('loveapp_duel_clash_seen')||'[]'); }catch(e){ return []; } }
+function markClashSeen(id){ try{ const a=clashSeenIds(); a.unshift(id); localStorage.setItem('loveapp_duel_clash_seen',JSON.stringify(a.slice(0,30))); }catch(e){} }
 
 const nameOf = (p)=> !S.space?'':(p==='a'?S.space.person_a:S.space.person_b);
 const meName = ()=> nameOf(S.me);
@@ -1643,9 +1648,9 @@ function duelClashView(){
   </div>`;
 }
 function duelPlayView(du){
-  if(!S.tmp.duelClashDone) S.tmp.duelClashDone=new Set();
+  if(!S.tmp.duelClashDone) S.tmp.duelClashDone=new Set(clashSeenIds());
   if(!S.tmp.duelClashDone.has(du.id)){
-    S.tmp.duelClashDone.add(du.id);
+    S.tmp.duelClashDone.add(du.id); markClashSeen(du.id);
     if(navigator.vibrate){ try{ navigator.vibrate([15,40,15]); }catch(e){} }
     setTimeout(()=>{ if(S.view==='arena' && S.duel && S.duel.id===du.id) render(); }, 1500);
     return duelClashView();
@@ -1675,19 +1680,21 @@ function duelPlayView(du){
     ${ q.kind==='mc' ? duelMcBody(q,p,fb) : q.kind==='hangman' ? duelHangmanBody(q,p,fb) : duelScrBody(q,p,fb) }`;
 }
 function duelChainBody(du){
+  ensureChainSeen(du); // tới lượt mình mà chưa "xem" -> đánh dấu ngay, đồng hồ bắt đầu đếm đúng từ đây
   const chain=du.questions||[]; const turn=chainTurn(du); const myTurn=turn===S.me;
-  const remain=Math.max(0,Math.ceil(chainRemainSec(du)));
+  const remainRaw=chainRemainSec(du);
+  const remain = remainRaw==null ? null : Math.max(0,Math.ceil(remainRaw));
   const last=chain[chain.length-1], lastChar=last.word[last.word.length-1].toUpperCase();
   return `<div class="row" style="margin-bottom:8px"><button class="iconbtn" data-act="go" data-v="home">${ic('x','sm')}</button>
       <div class="grow center" style="font-weight:800">🔗 Nối từ · ${chain.length} từ</div><div style="width:38px"></div></div>
     <div class="card chain-list">${chain.slice().reverse().map((c,ri)=>{ const i=chain.length-1-ri;
         return `<div class="chain-item">${avatarEl(c.by,26)}<b class="grow">${esc(c.word)}</b>
           <span class="muted" style="font-size:11px">${i===0?'Từ mở đầu':(c.by===S.me?'Bạn':esc(partner()||'Người ấy'))}</span></div>`; }).join('')}</div>
-    <div class="card chain-turn${remain<=3?' warn':''}" id="chain-turn-box" style="margin-top:12px">
-      <div class="chain-countdown" id="chain-countdown">${remain}s</div>
+    <div class="card chain-turn${remain!=null&&remain<=3?' warn':''}" id="chain-turn-box" style="margin-top:12px">
+      <div class="chain-countdown" id="chain-countdown">${remain==null?'—':remain+'s'}</div>
       ${myTurn
         ? `<div class="muted" style="margin-top:4px;font-weight:700">Tới lượt bạn! Gõ từ bắt đầu bằng chữ "${lastChar}"</div>`
-        : `<div class="muted" style="margin-top:4px">Đợi ${esc(partner()||'người ấy')} nối từ…</div>`}
+        : `<div class="muted" style="margin-top:4px">${remain==null?`Đợi ${esc(partner()||'người ấy')} mở app xem lượt…`:`Đợi ${esc(partner()||'người ấy')} nối từ…`}</div>`}
     </div>
     ${ myTurn ? `
     <input id="dchain_input" placeholder="Từ bắt đầu bằng ${lastChar}..." autocapitalize="none" autocomplete="off" autocorrect="off" spellcheck="false" style="text-align:center;font-size:18px;margin-top:12px"/>
@@ -1854,16 +1861,29 @@ function popcount(mask){ mask=mask||0; let c=0; while(mask){ c+=mask&1; mask>>>=
 const CHAIN_TURN_SEC=10;
 function isChainDuel(du){ return !!(du && du.questions && du.questions[0] && du.questions[0].kind==='chain'); }
 function chainTurn(du){ const chain=du.questions||[]; return chain.length%2===1 ? other(du.challenger) : du.challenger; }
-function chainLastAt(du){ const chain=du.questions||[];
-  return new Date(chain.length ? chain[chain.length-1].at : (du.joined_at||du.created_at)).getTime(); }
-function chainRemainSec(du){ return CHAIN_TURN_SEC-(Date.now()-chainLastAt(du))/1000; }
+/* Mốc bắt đầu đếm giờ của lượt hiện tại = lúc người TỚI LƯỢT thực sự NHÌN THẤY màn hình (seenAt),
+   KHÔNG phải lúc đối phương gửi xong (at) — tránh trừ oan thời gian animation/mở app trễ vào 10s của họ.
+   null = người tới lượt CHƯA mở màn hình này lần nào -> chưa bắt đầu đếm, chờ. */
+function chainLastAt(du){ const chain=du.questions||[]; if(!chain.length) return null;
+  const last=chain[chain.length-1]; return last.seenAt ? new Date(last.seenAt).getTime() : null; }
+function chainRemainSec(du){ const t=chainLastAt(du); return t==null ? null : CHAIN_TURN_SEC-(Date.now()-t)/1000; }
+/* Gọi mỗi lần vẽ màn nối từ: nếu ĐANG tới lượt mình mà lượt này chưa ai "xem" -> đánh dấu NGAY (optimistic,
+   set cục bộ trước khi lưu) để đồng hồ bắt đầu đếm đúng từ lúc mình thực sự thấy màn hình, không sớm hơn. */
+function ensureChainSeen(du){ const chain=du.questions||[]; if(!chain.length) return;
+  const last=chain[chain.length-1];
+  if(last.seenAt || chainTurn(du)!==S.me) return;
+  last.seenAt=new Date().toISOString();
+  Store.updateDuel(du.id,S.space.id,{questions:chain}).catch(()=>{}); }
 let chainTimerT=null;
 function startChainTimer(){ if(chainTimerT) return;
   chainTimerT=setInterval(()=>{
     const du=S.duel;
     if(!du || du.status!=='active' || !isChainDuel(du) || S.view!=='arena'){ stopChainTimer(); return; }
-    const remain=Math.max(0,Math.ceil(chainRemainSec(du)));
-    const el=$('#chain-countdown'); if(el) el.textContent=remain+'s';
+    const remainRaw=chainRemainSec(du);
+    const el=$('#chain-countdown');
+    if(remainRaw==null){ if(el) el.textContent='—'; return; }
+    const remain=Math.max(0,Math.ceil(remainRaw));
+    if(el) el.textContent=remain+'s';
     const box=$('#chain-turn-box'); if(box) box.classList.toggle('warn', remain<=3);
     if(remain<=0) handleChainTimeout();
   }, 1000); }
