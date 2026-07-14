@@ -1884,13 +1884,31 @@ function validateChainWord(word,du){ word=(word||'').trim().toLowerCase();
   const last=chain[chain.length-1].word, lastChar=last[last.length-1];
   if(word[0]!==lastChar) return `Từ phải bắt đầu bằng chữ "${lastChar.toUpperCase()}" nha`;
   return null; }
-async function sendChainWord(){ const du=S.duel; if(!du||du.status!=='active'||!isChainDuel(du)) return;
-  if(chainTurn(du)!==S.me) return;
+/* true=có thật, false=chắc chắn không có, null=không kiểm tra được (mất mạng/API lỗi) — dictionaryapi.dev free, có CORS, không cần key */
+async function dictWordExists(word){
+  try{ const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),4000);
+    const res=await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`,{signal:ctrl.signal});
+    clearTimeout(t);
+    if(res.status===404) return false;
+    return res.ok ? true : null;
+  }catch(e){ return null; } }
+async function sendChainWord(){ const du=S.duel, p=S.duelPlay; if(!du||du.status!=='active'||!isChainDuel(du)) return;
+  if(chainTurn(du)!==S.me || (p&&p.chainSending)) return;
   const val=($('#dchain_input')?.value||'').trim();
   const err=validateChainWord(val,du); if(err){ toast(err); return; }
+  if(p) p.chainSending=true;
+  const inp=$('#dchain_input'), btn=$('[data-act="d-chain-send"]');
+  if(inp) inp.disabled=true; if(btn){ btn.disabled=true; btn.textContent='Đang tra từ điển…'; }
+  const exists=await dictWordExists(val.toLowerCase());
+  if(p) p.chainSending=false;
+  if(exists===false){
+    if(inp) inp.disabled=false; if(btn){ btn.disabled=false; btn.textContent='Gửi từ ⚡'; }
+    toast(`"${val.toUpperCase()}" không phải từ tiếng Anh thật, thử từ khác nha`); return; }
+  if(exists===null) toast('Không tra được từ điển (mất mạng?) — tạm chấp nhận nha');
   const chain=[...(du.questions||[]), { kind:'chain', word:val.toLowerCase(), by:S.me, at:new Date().toISOString() }];
   du.questions=chain;
-  try{ await Store.updateDuel(du.id,S.space.id,{questions:chain}); }catch(e){ toast('Gửi từ lỗi rồi, thử lại nha'); return; }
+  try{ await Store.updateDuel(du.id,S.space.id,{questions:chain}); }
+  catch(e){ toast('Gửi từ lỗi rồi, thử lại nha'); if(inp) inp.disabled=false; if(btn){ btn.disabled=false; btn.textContent='Gửi từ ⚡'; } return; }
   render(); }
 function dAnswerMc(i){ const p=S.duelPlay, du=S.duel; if(!p||p.phase!=='ask') return;
   const q=du.questions[p.idx]; p.chosen=i; p.lastCorrect=(q.options[i]===q.vi); if(p.lastCorrect)p.score++;
