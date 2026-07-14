@@ -1858,7 +1858,11 @@ function setToBitmask(set){ let mask=0; for(const i of set){ if(i<31) mask|=(1<<
 function popcount(mask){ mask=mask||0; let c=0; while(mask){ c+=mask&1; mask>>>=1; } return c; }
 
 /* ----- Nối từ: luân phiên lượt thật (không phải "cùng đề độc lập" như các mode khác) ----- */
-const CHAIN_TURN_SEC=10;
+const CHAIN_TURN_SEC=15;
+/* Khoảng đệm sau khi hết giờ mới THỰC SỰ tính thua — bù thời gian gọi dictionaryapi.dev (tối đa ~4s do
+   AbortController timeout trong dictWordExists) để người gửi từ SÁT giây cuối không bị máy khác (đối
+   phương/chính mình) phát hiện "hết giờ" ngay giữa lúc đang chờ API trả lời rồi báo thua oan. */
+const CHAIN_GRACE_SEC=5;
 function isChainDuel(du){ return !!(du && du.questions && du.questions[0] && du.questions[0].kind==='chain'); }
 function chainTurn(du){ const chain=du.questions||[]; return chain.length%2===1 ? other(du.challenger) : du.challenger; }
 /* Mốc bắt đầu đếm giờ của lượt hiện tại = lúc người TỚI LƯỢT thực sự NHÌN THẤY màn hình (seenAt),
@@ -1885,7 +1889,7 @@ function startChainTimer(){ if(chainTimerT) return;
     const remain=Math.max(0,Math.ceil(remainRaw));
     if(el) el.textContent=remain+'s';
     const box=$('#chain-turn-box'); if(box) box.classList.toggle('warn', remain<=3);
-    if(remain<=0) handleChainTimeout();
+    if(remainRaw<=-CHAIN_GRACE_SEC) handleChainTimeout(); // dùng remainRaw thô (chưa clamp) + trừ khoảng đệm
   }, 1000); }
 function stopChainTimer(){ if(chainTimerT){ clearInterval(chainTimerT); chainTimerT=null; } }
 /* Hết giờ (bất kỳ máy nào phát hiện trước cũng tự chốt được, ghi cùng 1 kết quả nên vô hại nếu cả 2 cùng chạy) */
