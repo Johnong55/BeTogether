@@ -741,6 +741,40 @@ function progressBar(pct,opts){ opts=opts||{}; const id=opts.id?` id="${opts.id}
 /* ===================== STORE (cloud / máy) ===================== */
 const useCloud = !!(SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase);
 const sb = useCloud ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+/* ===== ĐỒNG BỘ GIỜ VỚI SERVER — chống 2 máy lệch đồng hồ hệ thống làm đếm ngược nối từ SAI =====
+   Bản chất bug: mốc giờ của lượt (seenAt) do MÁY tới lượt tự ghi bằng đồng hồ máy đó, còn máy kia
+   lại trừ bằng Date.now() của CHÍNH NÓ. Hai máy lệch giờ (máy ảo/emulator/điện thoại chưa đồng bộ NTP)
+   -> cùng 1 seenAt ra 2 con số đếm ngược khác nhau (vd 1s vs 6s), thậm chí xử THUA OAN sớm.
+   Fix: mỗi máy tự đo offset = giờ_server - giờ_máy (qua header Date của Supabase, bù nửa RTT), rồi
+   serverNow() thay cho Date.now() ở MỌI mốc giờ nối từ -> cả 2 máy quy về CÙNG 1 đồng hồ (của server).
+   Không cần cột/bảng/SQL mới. Nếu đo lỗi (mất mạng) -> offset=0 = y hệt hành vi cũ (fallback êm). */
+let clockOffset=0, clockSynced=false, lastClockSyncAt=0;
+function serverNow(){ return Date.now()+clockOffset; }
+async function syncClock(){
+  if(!useCloud) return;
+  lastClockSyncAt=Date.now();
+  let best=null; // chọn lần đo có RTT nhỏ nhất (chính xác nhất)
+  // PHẢI là request REST có xác thực ĐẦY ĐỦ (apikey + Bearer) tới bảng thật thì Supabase mới lộ header
+  // 'date' qua CORS (HEAD/endpoint gốc KHÔNG lộ). Query siêu nhẹ: 1 id của spaces (~20 byte).
+  const H={apikey:SUPABASE_ANON_KEY, Authorization:'Bearer '+SUPABASE_ANON_KEY};
+  for(let i=0;i<3;i++){
+    try{
+      const t0=Date.now();
+      const res=await fetch(SUPABASE_URL+'/rest/v1/spaces?select=id&limit=1',{cache:'no-store',headers:H});
+      const t1=Date.now();
+      const h=res.headers.get('date'); if(!h) continue;
+      const srv=Date.parse(h); if(isNaN(srv)) continue;
+      // header Date cắt XUỐNG nguyên giây -> cộng ~0.5s bù sai số trung bình; bù thêm nửa RTT (mạng)
+      const rtt=t1-t0, offset=(srv+500)-(t0+rtt/2);
+      if(!best || rtt<best.rtt) best={rtt,offset};
+    }catch(e){}
+  }
+  if(best){ clockOffset=best.offset; clockSynced=true; }
+}
+/* Đo lại nếu đã quá 60s (offset drift theo phút là không đáng kể, khỏi đo liên tục) */
+function maybeSyncClock(){ if(!useCloud) return; if(Date.now()-lastClockSyncAt>60000) syncClock(); }
+syncClock();
 /* Cột bảng spaces TRỪ heart_photos (có thể nặng ~vài trăm KB với 55 ảnh) — dùng khi poll mỗi 5s
    để khỏi tải lại toàn bộ ảnh liên tục. Khớp danh sách cột thật trong schema.sql — nhớ thêm vào
    đây nếu sau này thêm cột mới cho spaces (trừ khi cột đó cũng nặng như heart_photos). */
@@ -1090,6 +1124,7 @@ let pollT, duelPollT, pollTick=0;
 function startPolling(){ clearInterval(duelPollT); duelPollT=setInterval(duelTick, 2500);
   if(Store.mode!=='cloud') return; clearInterval(pollT); pollTick=0;
   pollT=setInterval(async ()=>{ if(document.hidden) return; const ae=document.activeElement;
+    maybeSyncClock();
     if(ae && /INPUT|TEXTAREA|SELECT/.test(ae.tagName)) return; if(S.play || $('.overlay')) return;
     if(S.view==='arena') return; // màn đấu do duelTick lo
     try{ const before=JSON.stringify([S.decks,S.cards,S.quizzes,S.notes,S.dailyToday,S.space,S.duel]);
@@ -1105,6 +1140,7 @@ async function duelTick(){
   if(document.hidden || !S.space) return;
   const watching = S.view==='arena' || (S.duel && (S.duel.status==='waiting'||S.duel.status==='active'));
   if(!watching) return;
+  maybeSyncClock(); // giữ đồng hồ server tươi trong lúc đấu (nhất là nối từ có đếm ngược)
   try{
     const list=await Store.listDuels(S.space.id);
     const prev=S.duel, prevStatus=prev&&prev.status, prevOppDone=prev&&prev['done_'+other(S.me)], prevId=prev&&prev.id;
@@ -1831,7 +1867,7 @@ async function createDuel(){
     const eligible=hangmanEligible(s.words);
     if(!eligible.length){ toast('Bộ từ này không có từ đơn để bắt đầu Nối từ — chọn bộ khác nha'); return; }
     const starter=shuffle(eligible)[0];
-    questions = [{ kind:'chain', word:starter.en.toLowerCase(), by:S.me, at:new Date().toISOString() }];
+    questions = [{ kind:'chain', word:starter.en.toLowerCase(), by:S.me, at:new Date(serverNow()).toISOString() }];
   } else {
     const cap = nv==='all'? undefined : Math.min(parseInt(nv,10)||10, s.words.length);
     questions = buildQuestions(s.words,cap);
@@ -1870,13 +1906,13 @@ function chainTurn(du){ const chain=du.questions||[]; return chain.length%2===1 
    null = người tới lượt CHƯA mở màn hình này lần nào -> chưa bắt đầu đếm, chờ. */
 function chainLastAt(du){ const chain=du.questions||[]; if(!chain.length) return null;
   const last=chain[chain.length-1]; return last.seenAt ? new Date(last.seenAt).getTime() : null; }
-function chainRemainSec(du){ const t=chainLastAt(du); return t==null ? null : CHAIN_TURN_SEC-(Date.now()-t)/1000; }
+function chainRemainSec(du){ const t=chainLastAt(du); return t==null ? null : CHAIN_TURN_SEC-(serverNow()-t)/1000; }
 /* Gọi mỗi lần vẽ màn nối từ: nếu ĐANG tới lượt mình mà lượt này chưa ai "xem" -> đánh dấu NGAY (optimistic,
    set cục bộ trước khi lưu) để đồng hồ bắt đầu đếm đúng từ lúc mình thực sự thấy màn hình, không sớm hơn. */
 function ensureChainSeen(du){ const chain=du.questions||[]; if(!chain.length) return;
   const last=chain[chain.length-1];
   if(last.seenAt || chainTurn(du)!==S.me) return;
-  last.seenAt=new Date().toISOString();
+  last.seenAt=new Date(serverNow()).toISOString();
   Store.updateDuel(du.id,S.space.id,{questions:chain}).catch(()=>{}); }
 let chainTimerT=null;
 function startChainTimer(){ if(chainTimerT) return;
@@ -1929,7 +1965,7 @@ async function sendChainWord(){ const du=S.duel, p=S.duelPlay; if(!du||du.status
     if(inp) inp.disabled=false; if(btn){ btn.disabled=false; btn.textContent='Gửi từ ⚡'; }
     toast(`"${val.toUpperCase()}" không phải từ tiếng Anh thật, thử từ khác nha`); return; }
   if(exists===null) toast('Không tra được từ điển (mất mạng?) — tạm chấp nhận nha');
-  const chain=[...(du.questions||[]), { kind:'chain', word:val.toLowerCase(), by:S.me, at:new Date().toISOString() }];
+  const chain=[...(du.questions||[]), { kind:'chain', word:val.toLowerCase(), by:S.me, at:new Date(serverNow()).toISOString() }];
   du.questions=chain;
   try{ await Store.updateDuel(du.id,S.space.id,{questions:chain}); }
   catch(e){ toast('Gửi từ lỗi rồi, thử lại nha'); if(inp) inp.disabled=false; if(btn){ btn.disabled=false; btn.textContent='Gửi từ ⚡'; } return; }
