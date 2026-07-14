@@ -339,15 +339,19 @@
   .hangman-kb button.correct{ background:linear-gradient(135deg,var(--ok),#8fc4ac); color:#fff; border-color:var(--ok); }
   .hangman-kb button.wrong{ background:#f1c7ce; color:var(--no); border-color:#f1c7ce; opacity:.7; }
 
-  /* ===== Đấu — Giải ô chữ (mỗi người tự giải, cùng 1 bảng, điền từng từ theo thứ tự đánh số) ===== */
-  .cw-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:4px; }
-  .cw-grid{ display:inline-grid; gap:1px; background:var(--line); border:1.5px solid var(--edge); border-radius:8px; overflow:hidden; margin:0 auto; }
-  .cw-cell{ position:relative; width:22px; height:22px; background:var(--card); display:flex; align-items:center; justify-content:center;
-    font-size:12px; font-weight:800; color:var(--ink); }
-  .cw-cell.blocked{ background:transparent; }
-  .cw-cell.filled{ background:linear-gradient(150deg,var(--p1),var(--p2)); color:#fff; }
-  .cw-num{ position:absolute; top:0.5px; left:1.5px; font-size:6.5px; font-weight:700; color:var(--soft); line-height:1; }
-  .cw-cell.filled .cw-num{ color:rgba(255,255,255,.85); }
+  /* ===== Đấu — Giải ô chữ (chạm ô để chọn từ, gõ trực tiếp; mỗi từ tự giải độc lập cùng 1 bảng) ===== */
+  .cw-wrap{ width:100%; }
+  .cw-grid{ display:grid; gap:1px; background:var(--line); border:1.5px solid var(--edge); border-radius:8px; overflow:hidden; width:100%; }
+  .cw-cell{ position:relative; aspect-ratio:1; background:var(--card); display:flex; align-items:center; justify-content:center;
+    font-size:clamp(9px,3vw,14px); font-weight:800; color:var(--ink); cursor:pointer; }
+  .cw-cell.blocked{ background:transparent; cursor:default; }
+  .cw-cell.hint{ color:var(--soft); background:var(--chip); }
+  .cw-cell.solved{ background:linear-gradient(150deg,var(--p1),var(--p2)); color:#fff; }
+  .cw-cell.active{ box-shadow:inset 0 0 0 2px var(--p1); background:#fff3e0; }
+  .cw-cell.solved.active{ box-shadow:inset 0 0 0 2px #fff; }
+  .cw-num{ position:absolute; top:1px; left:2px; font-size:clamp(5px,1.6vw,7.5px); font-weight:700; color:var(--soft); line-height:1; }
+  .cw-cell.solved .cw-num{ color:rgba(255,255,255,.85); }
+  #cw_input{ text-transform:uppercase; }
 
   /* ===== Đấu — Nối từ (luân phiên lượt thật, đếm ngược 10s/lượt) ===== */
   .chain-list{ max-height:280px; overflow-y:auto; }
@@ -561,27 +565,111 @@ function buildCrosswordQuestions(eligible, cap){
   placed.sort((a,b)=> a.num-b.num || (a.dir==='across'?0:1)-(b.dir==='across'?0:1));
   return placed;
 }
-/* Vẽ bảng ô chữ chung — chữ của câu index < upToIdx đã hiện ra (đã qua), câu hiện tại/chưa tới thì để trống */
-function crosswordGridHTML(du, upToIdx){
-  const items=(du.questions||[]).filter(x=>x.kind==='crossword'); if(!items.length) return '';
+/* Vẽ bảng ô chữ chung — mỗi từ luôn lộ SẴN chữ cái đầu (gợi ý), từ đã giải đúng (p.solved) hiện đủ chữ,
+   ô thuộc từ đang chọn (p.active) được viền nổi; chạm ô (data-act="cw-cell") để chọn từ đi qua ô đó. */
+function crosswordGridHTML(du, p){
+  const items=du.questions||[]; if(!items.length) return '';
   let maxRow=0, maxCol=0;
-  items.forEach(p=>{ const endRow=p.row+(p.dir==='down'?p.en.length-1:0), endCol=p.col+(p.dir==='across'?p.en.length-1:0);
+  items.forEach(it=>{ const endRow=it.row+(it.dir==='down'?it.en.length-1:0), endCol=it.col+(it.dir==='across'?it.en.length-1:0);
     maxRow=Math.max(maxRow,endRow); maxCol=Math.max(maxCol,endCol); });
   const rows=maxRow+1, cols=maxCol+1;
-  const letter=new Array(rows*cols).fill(null), num=new Array(rows*cols).fill(null);
-  du.questions.forEach((p,i)=>{ if(p.kind!=='crossword') return;
-    const revealed=i<upToIdx, dr=p.dir==='down'?1:0, dc=p.dir==='across'?1:0;
-    for(let k=0;k<p.en.length;k++){ const idx=(p.row+dr*k)*cols+(p.col+dc*k);
-      if(revealed) letter[idx]=p.en[k].toUpperCase(); else if(letter[idx]==null) letter[idx]='';
+  const cell=new Array(rows*cols).fill(null); // null=ô chặn (không thuộc từ nào); {ch,solved,hint}=có ô
+  const num=new Array(rows*cols).fill(null);
+  const activeQ = (p.active!=null) ? items[p.active] : null;
+  const activeCells=new Set();
+
+  items.forEach((it,i)=>{
+    const solved=p.solved.has(i);
+    const dr=it.dir==='down'?1:0, dc=it.dir==='across'?1:0;
+    for(let k=0;k<it.en.length;k++){ const idx=(it.row+dr*k)*cols+(it.col+dc*k);
+      if(!cell[idx]) cell[idx]={ch:'',solved:false,hint:false};
+      if(solved){ cell[idx].ch=it.en[k].toUpperCase(); cell[idx].solved=true; }
+      else if(k===0 && !cell[idx].solved && !cell[idx].ch){ cell[idx].ch=it.en[0].toUpperCase(); cell[idx].hint=true; }
     }
-    const startIdx=p.row*cols+p.col; if(num[startIdx]==null) num[startIdx]=p.num;
+    const startIdx=it.row*cols+it.col; if(num[startIdx]==null) num[startIdx]=it.num;
   });
-  let html=`<div class="cw-grid" style="grid-template-columns:repeat(${cols},22px)">`;
-  for(let i=0;i<rows*cols;i++){
-    if(letter[i]===null){ html+='<div class="cw-cell blocked"></div>'; continue; }
-    html+=`<div class="cw-cell${letter[i]?' filled':''}">${num[i]?`<span class="cw-num">${num[i]}</span>`:''}${esc(letter[i]||'')}</div>`;
+  if(activeQ){ const dr=activeQ.dir==='down'?1:0, dc=activeQ.dir==='across'?1:0;
+    for(let k=0;k<activeQ.en.length;k++){ activeCells.add((activeQ.row+dr*k)*cols+(activeQ.col+dc*k)); }
+    if(p.buffer) for(let k=0;k<p.buffer.length;k++){ const idx=(activeQ.row+dr*k)*cols+(activeQ.col+dc*k); if(cell[idx]&&!cell[idx].solved) cell[idx].ch=p.buffer[k]; }
+  }
+
+  let html=`<div class="cw-grid" data-cols="${cols}" style="grid-template-columns:repeat(${cols},1fr)">`;
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+    const idx=r*cols+c, cd=cell[idx];
+    if(!cd){ html+='<div class="cw-cell blocked"></div>'; continue; }
+    const cls=['cw-cell']; if(cd.solved) cls.push('solved'); else if(cd.hint) cls.push('hint');
+    if(activeCells.has(idx)) cls.push('active');
+    html+=`<div class="${cls.join(' ')}" data-act="cw-cell" data-row="${r}" data-col="${c}">${num[idx]?`<span class="cw-num">${num[idx]}</span>`:''}<span class="cw-letter">${esc(cd.ch||'')}</span></div>`;
   }
   return html+'</div>';
+}
+/* Các index (trong du.questions) của từ đi qua ô (row,col) */
+function crosswordWordsAt(du,row,col){ const out=[];
+  (du.questions||[]).forEach((it,i)=>{ const dr=it.dir==='down'?1:0, dc=it.dir==='across'?1:0;
+    for(let k=0;k<it.en.length;k++){ if(it.row+dr*k===row && it.col+dc*k===col){ out.push(i); return; } } });
+  return out; }
+function selectCrosswordCell(row,col){ const p=S.duelPlay, du=S.duel; if(!p||!du||p.doneLocal) return;
+  const words=crosswordWordsAt(du,row,col).filter(i=>!p.solved.has(i));
+  if(!words.length) return;
+  const curPos=words.indexOf(p.active);
+  p.active = curPos===-1 ? words[0] : words[(curPos+1)%words.length];
+  p.buffer=''; render();
+  setTimeout(()=>{ const el=$('#cw_input'); if(el){ el.focus(); } },30); }
+/* Gõ trực tiếp: cập nhật DOM các ô sống (không render() lại toàn view để khỏi rớt bàn phím ảo mobile) */
+function crosswordOnInput(val){ const p=S.duelPlay, du=S.duel; if(!p||p.active==null) return;
+  const q=du.questions[p.active];
+  val=val.toUpperCase().replace(/[^A-Z]/g,'').slice(0,q.en.length);
+  p.buffer=val;
+  const dr=q.dir==='down'?1:0, dc=q.dir==='across'?1:0;
+  const grid=$('.cw-grid'); const cols=parseInt(grid?.dataset.cols||'0',10);
+  if(grid&&cols){ for(let k=0;k<q.en.length;k++){ const r=q.row+dr*k, c=q.col+dc*k;
+    const el=grid.children[r*cols+c]; const span=el&&el.querySelector('.cw-letter');
+    if(span) span.textContent = val[k]||''; } }
+  if(val.length===q.en.length){
+    if(val.toLowerCase()===q.en.toLowerCase()) crosswordSolve();
+  } }
+async function crosswordSolve(){ const p=S.duelPlay, du=S.duel; if(!p||p.active==null) return;
+  p.solved.add(p.active); p.score=p.solved.size; p.active=null; p.buffer='';
+  if(navigator.vibrate){ try{ navigator.vibrate(15); }catch(e){} }
+  const patch={}; patch['progress_'+S.me]=setToBitmask(p.solved); patch['score_'+S.me]=p.score;
+  if(p.solved.size>=(du.questions||[]).length && !p.doneLocal){ p.doneLocal=true; patch['done_'+S.me]=true; }
+  Object.assign(du,patch);
+  try{ await Store.updateDuel(du.id,S.space.id,patch); }catch(e){}
+  render(); }
+async function finishCrosswordLocal(){ const p=S.duelPlay, du=S.duel; if(!p||p.doneLocal) return;
+  p.doneLocal=true; p.active=null;
+  const patch={}; patch['done_'+S.me]=true; patch['progress_'+S.me]=setToBitmask(p.solved); patch['score_'+S.me]=p.score;
+  Object.assign(du,patch);
+  try{ await Store.updateDuel(du.id,S.space.id,patch); }catch(e){}
+  await bumpStreak();
+  if(du['done_'+other(S.me)]){ await Store.updateDuel(du.id,S.space.id,{status:'done',finished_at:new Date().toISOString()}); du.status='done'; S.duelHistory=[du,...S.duelHistory.filter(x=>x.id!==du.id)]; }
+  render(); }
+function duelCrosswordPlayView(du){
+  const p=S.duelPlay, total=(du.questions||[]).length||1;
+  const op=popcount(du['progress_'+other(S.me)]||0);
+  if(p.doneLocal){
+    return `<h2 class="title">Xong phần bạn! 🎉</h2>
+      <div class="card couple center"><b style="font-size:22px">${p.score}/${total} đúng</b>
+        <div class="muted">Đợi ${esc(partner()||'người ấy')} làm xong là biết ai thắng…</div></div>
+      <div class="card"><div class="row"><span class="muted grow">Tiến độ của ${esc(partner()||'người ấy')}</span>
+        <span class="muted" id="opp-txt">${esc(partner()||'Người ấy')}: ${op}/${total}</span></div>
+        ${progressBar(op/total*100,{id:'opp-fill'})}</div>
+      <button class="btn danger block sm" data-act="duel-cancel-active">Huỷ trận (nếu chờ lâu quá)</button>`;
+  }
+  const activeQ = p.active!=null ? du.questions[p.active] : null;
+  return `<div class="row" style="margin-bottom:2px"><button class="iconbtn" data-act="go" data-v="home">${ic('x','sm')}</button>
+      <div class="grow center" style="font-weight:800">🧩 Ô chữ · ${p.score}/${total}</div><div style="width:38px"></div></div>
+    <div class="row" style="margin:6px 2px 2px"><span class="muted grow">Bạn: ${p.score} đúng</span>
+      <span class="muted" id="opp-txt">${esc(partner()||'Người ấy')}: ${op}/${total}</span></div>
+    ${progressBar(op/total*100,{id:'opp-fill',style:'background:linear-gradient(90deg,var(--accent),var(--p2))'})}
+    ${progressBar(p.score/total*100)}
+    <div class="cw-wrap">${crosswordGridHTML(du,p)}</div>
+    ${ activeQ ? `<div class="card center" style="padding:14px 16px;margin-top:10px">
+        <div class="muted" style="font-weight:700">${activeQ.num} ${activeQ.dir==='across'?'Ngang →':'Dọc ↓'} · ${activeQ.en.length} ô</div>
+        <div style="margin-top:4px;font-weight:800;color:var(--p1)">Gợi ý: ${esc(activeQ.vi)}</div></div>
+      <input id="cw_input" value="${esc(p.buffer||'')}" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" style="text-align:center;font-size:18px;letter-spacing:3px;margin-top:10px" placeholder="Gõ từ..."/>`
+      : `<p class="muted center" style="margin-top:10px">Chạm vào 1 ô có số để bắt đầu điền nha</p>` }
+    <button class="btn ghost block sm" style="margin-top:12px" data-act="d-crossword-finish">Nộp bài 🏁</button>`;
 }
 const DAILY_QUESTIONS = [
   "Khoảnh khắc nào hôm nay khiến bạn nghĩ đến người ấy?",
@@ -1033,7 +1121,9 @@ async function duelTick(){
     }
     // đang chơi: chỉ cập nhật tiến độ đối thủ, không vẽ lại (giữ ô nhập)
     if(cur && cur.status==='active'){
-      const total=(cur.questions||[]).length||1, op=cur['progress_'+other(S.me)]||0;
+      const total=(cur.questions||[]).length||1;
+      const rawOp=cur['progress_'+other(S.me)]||0;
+      const op = isCrosswordDuel(cur) ? popcount(rawOp) : rawOp;
       const t=$('#opp-txt'), f=$('#opp-fill');
       if(t) t.textContent=(partner()||'Người ấy')+': '+op+'/'+total;
       if(f) f.style.width=(op/total*100)+'%';
@@ -1504,13 +1594,12 @@ function duelCreateView(){
     <div class="card">
       <label class="fld"><span class="lab">Kiểu chơi</span>
         <div class="seg"><button type="button" class="${game==='quiz'?'on':''}" data-act="duel-game" data-v="quiz">Trắc nghiệm</button>
-          <button type="button" class="${game==='hangman'?'on':''}" data-act="duel-game" data-v="hangman">Hangman 🎪</button>
-          <button type="button" class="${game==='crossword'?'on':''}" data-act="duel-game" data-v="crossword">Ô chữ 🧩</button></div>
-        <div class="seg" style="margin-top:8px"><button type="button" class="${game==='chain'?'on':''}" data-act="duel-game" data-v="chain" style="flex:none;padding-left:16px;padding-right:16px">Nối từ 🔗</button></div></label>
+          <button type="button" class="${game==='crossword'?'on':''}" data-act="duel-game" data-v="crossword">Ô chữ 🧩</button>
+          <button type="button" class="${game==='chain'?'on':''}" data-act="duel-game" data-v="chain">Nối từ 🔗</button></div></label>
       <label class="fld"><span class="lab">Chọn bộ từ</span>
         <select id="du_src">${srcs.map(o=>`<option value="${esc(o.v)}" ${o.v===pre?'selected':''}>${esc(o.label)}</option>`).join('')}</select></label>
       ${game==='chain'?`<p class="muted" style="margin:-4px 0 12px;font-size:12.5px">Chọn 1 từ ngẫu nhiên trong bộ này làm từ mở đầu. Sau đó hai đứa <b>thay phiên gõ từ tiếp theo</b> (bắt đầu bằng chữ cái cuối từ trước, không lặp từ, không cần nằm trong bộ từ) — mỗi lượt có <b>${CHAIN_TURN_SEC}s</b>, hết giờ hoặc bí từ là thua nha!</p>`
-      :game!=='quiz'?`<p class="muted" style="margin:-4px 0 12px;font-size:12.5px">${game==='hangman'?'Hangman':'Ô chữ'} cần từ đơn (không phải cụm) — nếu bộ từ toàn cụm sẽ báo chọn bộ khác nha.</p>`:''}
+      :game!=='quiz'?`<p class="muted" style="margin:-4px 0 12px;font-size:12.5px">Ô chữ cần từ đơn (không phải cụm) — nếu bộ từ toàn cụm sẽ báo chọn bộ khác nha.</p>`:''}
       ${game!=='chain'?`<label class="fld"><span class="lab">Số ${game==='quiz'?'câu':'từ'}</span>
         <select id="du_n"><option value="10">10 ${game==='quiz'?'câu':'từ'} (nhanh gọn)</option><option value="20">20 ${game==='quiz'?'câu':'từ'}</option><option value="all">Tất cả</option></select></label>`:''}
       <label class="fld"><span class="lab">Nếu bạn thắng, người ấy phải…? (không bắt buộc)</span>
@@ -1563,6 +1652,7 @@ function duelPlayView(du){
   }
   if(!S.duelPlay || S.duelPlay.id!==du.id) initDuelPlay(du);
   if(isChainDuel(du)) return duelChainBody(du);
+  if(isCrosswordDuel(du)) return duelCrosswordPlayView(du);
   const p=S.duelPlay, qs=du.questions||[], total=qs.length||1;
   const op=du['progress_'+other(S.me)]||0;
   if(p.doneLocal){
@@ -1575,14 +1665,14 @@ function duelPlayView(du){
       <button class="btn danger block sm" data-act="duel-cancel-active">Huỷ trận (nếu chờ lâu quá)</button>`;
   }
   const q=qs[p.idx], fb=p.phase==='feedback';
-  const icon = q.kind==='hangman' ? '🎪' : q.kind==='crossword' ? '🧩' : '⚔️';
+  const icon = q.kind==='hangman' ? '🎪' : '⚔️';
   return `<div class="row" style="margin-bottom:2px"><button class="iconbtn" data-act="go" data-v="home">${ic('x','sm')}</button>
       <div class="grow center" style="font-weight:800">${icon} Câu ${p.idx+1}/${total}</div><div style="width:38px"></div></div>
     <div class="row" style="margin:6px 2px 2px"><span class="muted grow">Bạn: ${p.score} đúng</span>
       <span class="muted" id="opp-txt">${esc(partner()||'Người ấy')}: ${op}/${total}</span></div>
     ${progressBar(op/total*100,{id:'opp-fill',style:'background:linear-gradient(90deg,var(--accent),var(--p2))'})}
     ${progressBar(p.idx/total*100)}
-    ${ q.kind==='mc' ? duelMcBody(q,p,fb) : q.kind==='hangman' ? duelHangmanBody(q,p,fb) : q.kind==='crossword' ? duelCrosswordBody(q,p,fb) : duelScrBody(q,p,fb) }`;
+    ${ q.kind==='mc' ? duelMcBody(q,p,fb) : q.kind==='hangman' ? duelHangmanBody(q,p,fb) : duelScrBody(q,p,fb) }`;
 }
 function duelChainBody(du){
   const chain=du.questions||[]; const turn=chainTurn(du); const myTurn=turn===S.me;
@@ -1657,15 +1747,6 @@ function duelHangmanBody(q,p,fb){
       <div class="hangman-kb">${kb}</div></div>
     ${ fb?duelFeedback(p,q):'' }`;
 }
-function duelCrosswordBody(q,p,fb){
-  const du=S.duel; const dirLabel = q.dir==='across' ? 'Ngang →' : 'Dọc ↓';
-  return `<div class="cw-wrap">${crosswordGridHTML(du,p.idx)}</div>
-    <div class="card center" style="padding:18px 16px;margin-top:12px">
-      <div class="muted" style="font-weight:700">${q.num} ${dirLabel} · ${q.en.length} ô</div>
-      <div style="margin-top:6px;font-weight:800;color:var(--p1);font-size:17px">${esc(q.vi)}</div></div>
-    <input id="dcw_input" placeholder="Gõ từ..." autocapitalize="none" autocomplete="off" autocorrect="off" spellcheck="false" ${fb?'disabled':''} value="${esc(p.answerGiven||'')}" style="text-align:center;font-size:18px;margin-top:12px"/>
-    ${ fb ? duelFeedback(p,q) : `<button class="btn block" style="margin-top:12px" data-act="d-check-crossword">Kiểm tra</button>` }`;
-}
 function duelFeedback(p,q){ const ok=p.lastCorrect;
   return `<div class="card center" style="background:${ok?'var(--chip)':'#fdeef0'};margin-top:12px">
       <b style="color:${ok?'var(--ok)':'var(--no)'}">${ok?'Chính xác!':'Chưa đúng'}</b>
@@ -1714,6 +1795,12 @@ function duelResultView(du){
 }
 /* ----- logic đấu ----- */
 function initDuelPlay(du){ const qs=du.questions||[]; const prog=du['progress_'+S.me]||0;
+  if(isCrosswordDuel(du)){
+    const solved=bitmaskToSet(prog);
+    S.duelPlay={ id:du.id, solved, active:null, buffer:'', score:solved.size,
+      doneLocal: !!du['done_'+S.me] || solved.size>=qs.length };
+    return;
+  }
   S.duelPlay={ id:du.id, idx:Math.min(prog,qs.length), score:du['score_'+S.me]||0, phase:'ask',
     chosen:null, answerGiven:'', lastCorrect:null, guessed:new Set(), wrongCount:0,
     doneLocal: !!du['done_'+S.me] || prog>=qs.length }; }
@@ -1755,6 +1842,13 @@ async function joinDuel(id){ const du=S.duel; if(!du||du.id!==id) return;
 function persistDuelProgress(){ const p=S.duelPlay, du=S.duel; if(!p||!du) return;
   const patch={}; patch['score_'+S.me]=p.score; patch['progress_'+S.me]=p.idx+1;
   Object.assign(du,patch); Store.updateDuel(du.id,S.space.id,patch).catch(()=>{}); }
+
+/* ----- Ô chữ: giải TỰ DO (không theo thứ tự), tiến độ mã hoá bitmask vào progress_a/b (int có sẵn,
+   khỏi thêm cột DB) vì giờ "đã giải mấy từ" không đủ biết CỤ THỂ từ nào — phải nhớ rõ từng từ. ----- */
+function isCrosswordDuel(du){ return !!(du && du.questions && du.questions[0] && du.questions[0].kind==='crossword'); }
+function bitmaskToSet(mask){ mask=mask||0; const s=new Set(); for(let i=0;i<31;i++){ if(mask&(1<<i)) s.add(i); } return s; }
+function setToBitmask(set){ let mask=0; for(const i of set){ if(i<31) mask|=(1<<i); } return mask>>>0; }
+function popcount(mask){ mask=mask||0; let c=0; while(mask){ c+=mask&1; mask>>>=1; } return c; }
 
 /* ----- Nối từ: luân phiên lượt thật (không phải "cùng đề độc lập" như các mode khác) ----- */
 const CHAIN_TURN_SEC=10;
@@ -1803,10 +1897,6 @@ function dAnswerMc(i){ const p=S.duelPlay, du=S.duel; if(!p||p.phase!=='ask') re
   p.phase='feedback'; persistDuelProgress(); render(); }
 function dCheckScramble(){ const p=S.duelPlay, du=S.duel; if(!p||p.phase!=='ask') return;
   const q=du.questions[p.idx]; const val=($('#dsc_input')?.value||'').trim(); if(!val){ toast('Gõ từ đã nha'); return; }
-  p.answerGiven=val; p.lastCorrect=(val.toLowerCase()===q.en.toLowerCase()); if(p.lastCorrect)p.score++;
-  p.phase='feedback'; persistDuelProgress(); render(); }
-function dCheckCrossword(){ const p=S.duelPlay, du=S.duel; if(!p||p.phase!=='ask') return;
-  const q=du.questions[p.idx]; const val=($('#dcw_input')?.value||'').trim(); if(!val){ toast('Gõ từ đã nha'); return; }
   p.answerGiven=val; p.lastCorrect=(val.toLowerCase()===q.en.toLowerCase()); if(p.lastCorrect)p.score++;
   p.phase='feedback'; persistDuelProgress(); render(); }
 function guessLetter(letter){ const p=S.duelPlay, du=S.duel; if(!p||p.phase!=='ask') return;
@@ -2262,6 +2352,7 @@ document.addEventListener('input',(e)=>{
   if(e.target.id==='emoji_q'){ const cur=(S.dailyToday||{})['reaction_'+S.tmp.emojiFor]||'';
     const sc=$('#emoji_scroll'); if(sc){ sc.innerHTML=emojiSearchHTML(e.target.value, cur); sc.scrollTop=0; }
     return; }
+  if(e.target.id==='cw_input'){ crosswordOnInput(e.target.value); return; }
   const f=e.target.dataset.filter; if(!f) return;
   if(f==='lib'){ S.tmp.libQuery=e.target.value; applyLibFilter(); return; }
   const q=(e.target.value||'').trim().toLowerCase();
@@ -2288,7 +2379,6 @@ document.addEventListener('keydown',(e)=>{ if(e.key!=='Enter') return;
   if(e.target.id==='sc_input'){ e.preventDefault(); handle('check-scramble'); }
   else if(e.target.id==='gr_input'){ e.preventDefault(); handle('check-grammar'); }
   else if(e.target.id==='dsc_input'){ e.preventDefault(); handle('d-check-scramble'); }
-  else if(e.target.id==='dcw_input'){ e.preventDefault(); handle('d-check-crossword'); }
   else if(e.target.id==='dchain_input'){ e.preventDefault(); handle('d-chain-send'); }
   else if(e.target.id==='d_reply_input'){ e.preventDefault(); handle('d-reply-send',S.tmp.dReplyOpen); }
   else if(e.target.id==='qa_front'){ e.preventDefault(); $('#qa_back')?.focus(); }
@@ -2350,7 +2440,8 @@ async function handle(act,v,id,t,e){
     case 'd-answer-mc': dAnswerMc(parseInt(v,10)); break;
     case 'd-check-scramble': dCheckScramble(); break;
     case 'd-guess-letter': guessLetter(v); break;
-    case 'd-check-crossword': dCheckCrossword(); break;
+    case 'cw-cell': selectCrosswordCell(parseInt(t.dataset.row,10),parseInt(t.dataset.col,10)); break;
+    case 'd-crossword-finish': await finishCrosswordLocal(); break;
     case 'd-chain-send': await sendChainWord(); break;
     case 'd-next': await dNext(); break;
     case 'duel-seen': markDuelSeen(id); S.duel=null; S.duelPlay=null; render(); break;
