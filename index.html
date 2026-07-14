@@ -346,6 +346,7 @@
     font-size:clamp(9px,3vw,14px); font-weight:800; color:var(--ink); cursor:pointer; }
   .cw-cell.blocked{ background:transparent; cursor:default; }
   .cw-cell.hint{ color:var(--soft); background:var(--chip); }
+  .cw-cell.reveal{ color:#b3a6ae; background:#f0eaee; } /* đáp án lộ ra khi nộp bài (ô mình chưa giải) */
   .cw-cell.solved{ background:linear-gradient(150deg,var(--p1),var(--p2)); color:#fff; }
   .cw-cell.active{ box-shadow:inset 0 0 0 2px var(--p1); background:#fff3e0; }
   .cw-cell.solved.active{ box-shadow:inset 0 0 0 2px #fff; }
@@ -567,7 +568,7 @@ function buildCrosswordQuestions(eligible, cap){
 }
 /* Vẽ bảng ô chữ chung — mỗi từ luôn lộ SẴN chữ cái đầu (gợi ý), từ đã giải đúng (p.solved) hiện đủ chữ,
    ô thuộc từ đang chọn (p.active) được viền nổi; chạm ô (data-act="cw-cell") để chọn từ đi qua ô đó. */
-function crosswordGridHTML(du, p){
+function crosswordGridHTML(du, p, revealAll){
   const items=du.questions||[]; if(!items.length) return '';
   let maxRow=0, maxCol=0;
   items.forEach(it=>{ const endRow=it.row+(it.dir==='down'?it.en.length-1:0), endCol=it.col+(it.dir==='across'?it.en.length-1:0);
@@ -582,8 +583,9 @@ function crosswordGridHTML(du, p){
     const solved=p.solved.has(i);
     const dr=it.dir==='down'?1:0, dc=it.dir==='across'?1:0;
     for(let k=0;k<it.en.length;k++){ const idx=(it.row+dr*k)*cols+(it.col+dc*k);
-      if(!cell[idx]) cell[idx]={ch:'',solved:false,hint:false};
+      if(!cell[idx]) cell[idx]={ch:'',solved:false,hint:false,reveal:false};
       if(solved){ cell[idx].ch=it.en[k].toUpperCase(); cell[idx].solved=true; }
+      else if(revealAll){ if(!cell[idx].solved){ cell[idx].ch=it.en[k].toUpperCase(); cell[idx].reveal=true; } }
       else if(k===0 && !cell[idx].solved && !cell[idx].ch){ cell[idx].ch=it.en[0].toUpperCase(); cell[idx].hint=true; }
     }
     const startIdx=it.row*cols+it.col; if(num[startIdx]==null) num[startIdx]=it.num;
@@ -597,7 +599,7 @@ function crosswordGridHTML(du, p){
   for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
     const idx=r*cols+c, cd=cell[idx];
     if(!cd){ html+='<div class="cw-cell blocked"></div>'; continue; }
-    const cls=['cw-cell']; if(cd.solved) cls.push('solved'); else if(cd.hint) cls.push('hint');
+    const cls=['cw-cell']; if(cd.solved) cls.push('solved'); else if(cd.reveal) cls.push('reveal'); else if(cd.hint) cls.push('hint');
     if(activeCells.has(idx)) cls.push('active');
     html+=`<div class="${cls.join(' ')}" data-act="cw-cell" data-row="${r}" data-col="${c}">${num[idx]?`<span class="cw-num">${num[idx]}</span>`:''}<span class="cw-letter">${esc(cd.ch||'')}</span></div>`;
   }
@@ -615,6 +617,36 @@ function selectCrosswordCell(row,col){ const p=S.duelPlay, du=S.duel; if(!p||!du
   p.active = curPos===-1 ? words[0] : words[(curPos+1)%words.length];
   p.buffer=''; render();
   setTimeout(()=>{ const el=$('#cw_input'); if(el){ el.focus(); } },30); }
+/* ----- Gợi ý ô chữ = VÍ DỤ / ĐỊNH NGHĨA TIẾNG ANH (che từ đáp án bằng ___), lấy từ dictionaryapi.dev
+   (free, có CORS, không cần key — dùng lại như Nối từ). Không ra thì fallback nghĩa tiếng Việt.
+   Cache theo từ trong p.clueCache: undefined=chưa tra, null=đang tra, {text}=xong. ----- */
+function blankWord(text, word){ if(!text||!word) return text||'';
+  const esc=word.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  return text.replace(new RegExp('\\b'+esc+'\\b','gi'), '____'); }
+function crosswordClueHTML(p, q){ ensureCrosswordClue(p,q);
+  const c=p.clueCache[q.en];
+  return (c&&c.text) ? esc(c.text) : `<span class="muted" style="font-weight:600">Đang tra gợi ý tiếng Anh…</span>`; }
+async function ensureCrosswordClue(p, q){ if(!p.clueCache) p.clueCache={};
+  if(q.en in p.clueCache) return; // đã tra hoặc đang tra
+  p.clueCache[q.en]=null;
+  let text=null;
+  try{ const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),4000);
+    const res=await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/'+encodeURIComponent(q.en),{signal:ctrl.signal});
+    clearTimeout(t);
+    if(res.ok){ const data=await res.json(); let ex=null, def=null;
+      for(const entry of (data||[])){ for(const m of (entry.meanings||[])){ for(const d of (m.definitions||[])){
+        if(!def && d.definition) def=d.definition;
+        if(!ex && d.example) ex=d.example;
+      } } }
+      if(ex) text='“'+blankWord(ex,q.en)+'”';           // ưu tiên câu ví dụ (che từ)
+      else if(def) text=blankWord(def,q.en);            // không có ví dụ thì dùng định nghĩa
+    }
+  }catch(e){}
+  if(!text) text='Nghĩa: '+q.vi;                        // tra không ra -> fallback tiếng Việt
+  p.clueCache[q.en]={ text };
+  // cập nhật DOM tại chỗ nếu vẫn đang chọn đúng từ này (không render lại để khỏi rớt bàn phím ảo)
+  if(S.duelPlay===p && p.active!=null){ const aq=(S.duel&&S.duel.questions[p.active]);
+    if(aq && aq.en===q.en){ const el=$('#cw-clue-text'); if(el) el.textContent=p.clueCache[q.en].text; } } }
 /* Gõ trực tiếp: cập nhật DOM các ô sống (không render() lại toàn view để khỏi rớt bàn phím ảo mobile) */
 function crosswordOnInput(val){ const p=S.duelPlay, du=S.duel; if(!p||p.active==null) return;
   const q=du.questions[p.active];
@@ -651,7 +683,10 @@ function duelCrosswordPlayView(du){
     return `<h2 class="title">Xong phần bạn! 🎉</h2>
       <div class="card couple center"><b style="font-size:22px">${p.score}/${total} đúng</b>
         <div class="muted">Đợi ${esc(partner()||'người ấy')} làm xong là biết ai thắng…</div></div>
-      <div class="card"><div class="row"><span class="muted grow">Tiến độ của ${esc(partner()||'người ấy')}</span>
+      <div class="label" style="margin:14px 2px 6px">Đáp án ô chữ</div>
+      <div class="cw-wrap">${crosswordGridHTML(du,p,true)}</div>
+      <p class="muted center" style="font-size:12px;margin:6px 0 0">Ô <b style="color:var(--p1)">hồng</b> là bạn giải đúng · ô <b>xám</b> là đáp án bạn chưa ra</p>
+      <div class="card" style="margin-top:12px"><div class="row"><span class="muted grow">Tiến độ của ${esc(partner()||'người ấy')}</span>
         <span class="muted" id="opp-txt">${esc(partner()||'Người ấy')}: ${op}/${total}</span></div>
         ${progressBar(op/total*100,{id:'opp-fill'})}</div>
       <button class="btn danger block sm" data-act="duel-cancel-active">Huỷ trận (nếu chờ lâu quá)</button>`;
@@ -666,7 +701,7 @@ function duelCrosswordPlayView(du){
     <div class="cw-wrap">${crosswordGridHTML(du,p)}</div>
     ${ activeQ ? `<div class="card center" style="padding:14px 16px;margin-top:10px">
         <div class="muted" style="font-weight:700">${activeQ.num} ${activeQ.dir==='across'?'Ngang →':'Dọc ↓'} · ${activeQ.en.length} ô</div>
-        <div style="margin-top:4px;font-weight:800;color:var(--p1)">Gợi ý: ${esc(activeQ.vi)}</div></div>
+        <div id="cw-clue-text" style="margin-top:6px;font-weight:700;color:var(--p1);font-style:italic">${crosswordClueHTML(p,activeQ)}</div></div>
       <input id="cw_input" value="${esc(p.buffer||'')}" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" style="text-align:center;font-size:18px;letter-spacing:3px;margin-top:10px" placeholder="Gõ từ..."/>`
       : `<p class="muted center" style="margin-top:10px">Chạm vào 1 ô có số để bắt đầu điền nha</p>` }
     <button class="btn ghost block sm" style="margin-top:12px" data-act="d-crossword-finish">Nộp bài 🏁</button>`;
@@ -1860,7 +1895,7 @@ function duelResultView(du){
 function initDuelPlay(du){ const qs=du.questions||[]; const prog=du['progress_'+S.me]||0;
   if(isCrosswordDuel(du)){
     const solved=bitmaskToSet(prog);
-    S.duelPlay={ id:du.id, solved, active:null, buffer:'', score:solved.size,
+    S.duelPlay={ id:du.id, solved, active:null, buffer:'', score:solved.size, clueCache:{},
       doneLocal: !!du['done_'+S.me] || solved.size>=qs.length };
     return;
   }
