@@ -625,28 +625,47 @@ function blankWord(text, word){ if(!text||!word) return text||'';
   return text.replace(new RegExp('\\b'+esc+'\\b','gi'), '____'); }
 function crosswordClueHTML(p, q){ ensureCrosswordClue(p,q);
   const c=p.clueCache[q.en];
-  return (c&&c.text) ? esc(c.text) : `<span class="muted" style="font-weight:600">Đang tra gợi ý tiếng Anh…</span>`; }
+  return (c&&c.text) ? esc(c.text) : `<span class="muted" style="font-weight:600">Đang nghĩ gợi ý dễ đoán…</span>`; }
+function updateCrosswordClueDOM(p,q){ if(S.duelPlay!==p || p.active==null) return;
+  const aq=S.duel&&S.duel.questions[p.active];
+  if(aq && aq.en===q.en){ const el=$('#cw-clue-text'); if(el && p.clueCache[q.en]) el.textContent=p.clueCache[q.en].text; } }
+/* Sinh gợi ý cho 1 từ. Ưu tiên câu AI dễ đoán, "bake" vào câu hỏi (dùng chung 2 người + lần sau tức thì).
+   cache: undefined=chưa, null=đang sinh, {text}=xong. Set null TRƯỚC mọi await -> chống sinh trùng 1 từ. */
 async function ensureCrosswordClue(p, q){ if(!p.clueCache) p.clueCache={};
-  if(q.en in p.clueCache) return; // đã tra hoặc đang tra
+  if(q.en in p.clueCache) return;
+  if(q.clue){ p.clueCache[q.en]={ text:'“'+blankWord(q.clue,q.en)+'”' }; updateCrosswordClueDOM(p,q); return; } // đã bake sẵn
   p.clueCache[q.en]=null;
+  let sentence=null;                                    // câu tiếng Anh CHỨA từ (chưa che)
+  // 1) AI: câu gợi ý dài, nhiều ngữ cảnh -> dễ đoán (chỉ khi cloud/đã deploy; preview local sẽ 404 rồi rơi xuống dưới)
+  if(useCloud){ try{ const j=await apiPost('/api/word-clue',{en:q.en,vi:q.vi},20000);
+    const c=(j&&j.clue||'').trim();
+    if(c && blankWord(c,q.en)!==c) sentence=c;          // chỉ nhận khi câu THỰC SỰ chứa từ (che được)
+  }catch(e){} }
+  // 2) dictionaryapi.dev: chỉ lấy CÂU VÍ DỤ (bỏ định nghĩa trừu tượng khó đoán)
   let text=null;
-  try{ const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),4000);
+  if(sentence==null){ try{ const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),4000);
     const res=await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/'+encodeURIComponent(q.en),{signal:ctrl.signal});
     clearTimeout(t);
     if(res.ok){ const data=await res.json(); let ex=null, def=null;
       for(const entry of (data||[])){ for(const m of (entry.meanings||[])){ for(const d of (m.definitions||[])){
-        if(!def && d.definition) def=d.definition;
-        if(!ex && d.example) ex=d.example;
-      } } }
-      if(ex) text='“'+blankWord(ex,q.en)+'”';           // ưu tiên câu ví dụ (che từ)
-      else if(def) text=blankWord(def,q.en);            // không có ví dụ thì dùng định nghĩa
+        if(!def && d.definition) def=d.definition; if(!ex && d.example) ex=d.example; } } }
+      if(ex) sentence=ex; else if(def) text=blankWord(def,q.en);
     }
-  }catch(e){}
-  if(!text) text='Nghĩa: '+q.vi;                        // tra không ra -> fallback tiếng Việt
+  }catch(e){} }
+  if(sentence){ text='“'+blankWord(sentence,q.en)+'”'; q.clue=sentence; // bake vào câu hỏi -> chia sẻ + tái dùng
+    try{ if(S.duel&&S.duel.questions) Store.updateDuel(S.duel.id,S.space.id,{questions:S.duel.questions}).catch(()=>{}); }catch(e){}
+  }
+  if(!text) text='Nghĩa: '+q.vi;                        // AI + dict đều fail -> nghĩa tiếng Việt (không bao giờ kẹt)
   p.clueCache[q.en]={ text };
-  // cập nhật DOM tại chỗ nếu vẫn đang chọn đúng từ này (không render lại để khỏi rớt bàn phím ảo)
-  if(S.duelPlay===p && p.active!=null){ const aq=(S.duel&&S.duel.questions[p.active]);
-    if(aq && aq.en===q.en){ const el=$('#cw-clue-text'); if(el) el.textContent=p.clueCache[q.en].text; } } }
+  updateCrosswordClueDOM(p,q); }
+/* Sinh trước (nền, tuần tự để nhẹ AI) các gợi ý còn thiếu -> tới lúc chạm từ thường đã có sẵn, đỡ chờ */
+let cwPrefetchId=null;
+async function prefetchCrosswordClues(du,p){ if(!du||!p||cwPrefetchId===du.id) return; cwPrefetchId=du.id;
+  const qs=du.questions||[];
+  for(let i=0;i<qs.length;i++){ if(p.solved.has(i)) continue; const q=qs[i];
+    if(q.en in (p.clueCache||{})) continue;
+    try{ await ensureCrosswordClue(p,q); }catch(e){}
+    if(S.duel!==du || S.view!=='arena' || S.duelPlay!==p) return; } }
 /* Gõ trực tiếp: cập nhật DOM các ô sống (không render() lại toàn view để khỏi rớt bàn phím ảo mobile) */
 function crosswordOnInput(val){ const p=S.duelPlay, du=S.duel; if(!p||p.active==null) return;
   const q=du.questions[p.active];
@@ -692,6 +711,7 @@ function duelCrosswordPlayView(du){
       <button class="btn danger block sm" data-act="duel-cancel-active">Huỷ trận (nếu chờ lâu quá)</button>`;
   }
   const activeQ = p.active!=null ? du.questions[p.active] : null;
+  prefetchCrosswordClues(du,p); // sinh trước gợi ý ở nền cho đỡ chờ khi chạm từ
   return `<div class="row" style="margin-bottom:2px"><button class="iconbtn" data-act="go" data-v="home">${ic('x','sm')}</button>
       <div class="grow center" style="font-weight:800">🧩 Ô chữ · ${p.score}/${total}</div><div style="width:38px"></div></div>
     <div class="row" style="margin:6px 2px 2px"><span class="muted grow">Bạn: ${p.score} đúng</span>
