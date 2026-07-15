@@ -936,7 +936,13 @@ const S = { user:null, space:null, me:null, view:'auth', sub:null,
   duel:null, duelPlay:null, duelHistory:[],
   play:null, compose:null, inboxTab:'in', authTab:'login', tmp:{} };
 function duelSeenIds(){ try{ return JSON.parse(localStorage.getItem('loveapp_duel_seen')||'[]'); }catch(e){ return []; } }
-function markDuelSeen(id){ try{ const a=duelSeenIds(); a.unshift(id); localStorage.setItem('loveapp_duel_seen',JSON.stringify(a.slice(0,30))); }catch(e){} }
+/* Đánh dấu "đã xem" kết quả. QUAN TRỌNG: gộp LUÔN mọi trận đã xong hiện có (S.duelHistory) chứ không chỉ
+   id vừa xem — vì app chỉ cho 1 trận diễn ra tại một thời điểm nên tại đây chỉ có DUY NHẤT 1 kết quả đang
+   chờ xem, đánh dấu cả các trận cũ là an toàn và tránh chúng "trồi lại" khi danh sách bị cắt bớt.
+   (Bug cũ: chỉ giữ 30 id -> có >30 trận đã xong thì trận cũ rớt khỏi danh sách -> hiện kết quả lặp liên tục.) */
+function markDuelSeen(id){ try{ const done=(S.duelHistory||[]).map(d=>d.id);
+  const merged=[...new Set([id, ...done, ...duelSeenIds()])];
+  localStorage.setItem('loveapp_duel_seen',JSON.stringify(merged.slice(0,1000))); }catch(e){} }
 /* Animation "đấm kiếm" chỉ nên phát 1 LẦN DUY NHẤT lúc trận thật sự bắt đầu — lưu localStorage (không chỉ
    S.tmp trong bộ nhớ) để mở lại app/tải lại trang giữa ván (đặc biệt hay gặp ở Nối từ, trận kéo dài) không
    bị phát lại, tránh ăn mất thời gian đếm ngược của người chơi. */
@@ -1165,7 +1171,7 @@ function applyDuels(list){
     // Chỉ trận nào kết thúc NGAY TRONG lúc đang mở app mới hiện màn kết quả.
     try{ const done=list.filter(x=>x.status==='done').map(x=>x.id);
       const merged=[...new Set([...done,...duelSeenIds()])];
-      localStorage.setItem('loveapp_duel_seen',JSON.stringify(merged.slice(0,200)));
+      localStorage.setItem('loveapp_duel_seen',JSON.stringify(merged.slice(0,1000)));
     }catch(e){}
     duelInited=true;
   }
