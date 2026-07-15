@@ -1749,7 +1749,14 @@ function duelCreateView(){
           <button type="button" class="${game==='chain'?'on':''}" data-act="duel-game" data-v="chain">Nối từ 🔗</button></div></label>
       <label class="fld"><span class="lab">Chọn bộ từ</span>
         <select id="du_src">${srcs.map(o=>`<option value="${esc(o.v)}" ${o.v===pre?'selected':''}>${esc(o.label)}</option>`).join('')}</select></label>
-      ${game==='chain'?`<p class="muted" style="margin:-4px 0 12px;font-size:12.5px">Chọn 1 từ ngẫu nhiên trong bộ này làm từ mở đầu. Sau đó hai đứa <b>thay phiên gõ từ tiếp theo</b> (bắt đầu bằng chữ cái cuối từ trước, không lặp từ, không cần nằm trong bộ từ) — mỗi lượt có <b>${CHAIN_TURN_SEC}s</b>, hết giờ hoặc bí từ là thua nha!</p>`
+      ${game==='chain'?`<p class="muted" style="margin:-4px 0 12px;font-size:12.5px">Chọn 1 từ ngẫu nhiên trong bộ này làm từ mở đầu. Sau đó hai đứa <b>thay phiên gõ từ tiếp theo</b> (bắt đầu bằng chữ cái cuối từ trước, không lặp từ, không cần nằm trong bộ từ) — mỗi lượt có <b>${CHAIN_TURN_SEC}s</b>, hết giờ hoặc bí từ là thua nha!</p>
+      <label class="fld"><span class="lab">Giới hạn âm tiết (khó hơn, dễ bí 😏)</span>
+        <select id="du_syl">
+          <option value="">Tự do — từ nào cũng được</option>
+          <option value="2">Đúng 2 âm tiết</option>
+          <option value="3">Đúng 3 âm tiết</option>
+          <option value="4">Từ 4 âm tiết trở lên</option>
+        </select></label>`
       :game!=='quiz'?`<p class="muted" style="margin:-4px 0 12px;font-size:12.5px">Ô chữ cần từ đơn (không phải cụm) — nếu bộ từ toàn cụm sẽ báo chọn bộ khác nha.</p>`:''}
       ${game!=='chain'?`<label class="fld"><span class="lab">Số ${game==='quiz'?'câu':'từ'}</span>
         <select id="du_n"><option value="10">10 ${game==='quiz'?'câu':'từ'} (nhanh gọn)</option><option value="20">20 ${game==='quiz'?'câu':'từ'}</option><option value="all">Tất cả</option></select></label>`:''}
@@ -1831,19 +1838,20 @@ function duelChainBody(du){
   const remainRaw=chainRemainSec(du);
   const remain = remainRaw==null ? null : Math.max(0,Math.ceil(remainRaw));
   const last=chain[chain.length-1], lastChar=last.word[last.word.length-1].toUpperCase();
+  const syl=chainSyl(du), sylTxt=syl?sylLabel(syl):'';
   return `<div class="row" style="margin-bottom:8px"><button class="iconbtn" data-act="go" data-v="home">${ic('x','sm')}</button>
-      <div class="grow center" style="font-weight:800">🔗 Nối từ · ${chain.length} từ</div><div style="width:38px"></div></div>
+      <div class="grow center" style="font-weight:800">🔗 Nối từ · ${chain.length} từ${sylTxt?' · '+sylTxt:''}</div><div style="width:38px"></div></div>
     <div class="card chain-list">${chain.slice().reverse().map((c,ri)=>{ const i=chain.length-1-ri;
         return `<div class="chain-item">${avatarEl(c.by,26)}<b class="grow">${esc(c.word)}</b>
           <span class="muted" style="font-size:11px">${i===0?'Từ mở đầu':(c.by===S.me?'Bạn':esc(partner()||'Người ấy'))}</span></div>`; }).join('')}</div>
     <div class="card chain-turn${remain!=null&&remain<=3?' warn':''}" id="chain-turn-box" style="margin-top:12px">
       <div class="chain-countdown" id="chain-countdown">${remain==null?'—':remain+'s'}</div>
       ${myTurn
-        ? `<div class="muted" style="margin-top:4px;font-weight:700">Tới lượt bạn! Gõ từ bắt đầu bằng chữ "${lastChar}"</div>`
+        ? `<div class="muted" style="margin-top:4px;font-weight:700">Tới lượt bạn! Gõ từ ${sylTxt?'<b>'+sylTxt+'</b> ':''}bắt đầu bằng chữ "${lastChar}"</div>`
         : `<div class="muted" style="margin-top:4px">${remain==null?`Đợi ${esc(partner()||'người ấy')} mở app xem lượt…`:`Đợi ${esc(partner()||'người ấy')} nối từ…`}</div>`}
     </div>
     ${ myTurn ? `
-    <input id="dchain_input" placeholder="Từ bắt đầu bằng ${lastChar}..." autocapitalize="none" autocomplete="off" autocorrect="off" spellcheck="false" style="text-align:center;font-size:18px;margin-top:12px"/>
+    <input id="dchain_input" placeholder="Từ ${sylTxt?sylTxt+', ':''}bắt đầu bằng ${lastChar}..." autocapitalize="none" autocomplete="off" autocorrect="off" spellcheck="false" style="text-align:center;font-size:18px;margin-top:12px"/>
     <button class="btn block" style="margin-top:10px" data-act="d-chain-send">Gửi từ ⚡</button>` : '' }
     <button class="btn ghost block sm" style="margin-top:12px" data-act="duel-cancel-active">Huỷ trận (nếu chờ lâu quá)</button>`;
 }
@@ -1974,10 +1982,16 @@ async function createDuel(){
     const cap = nv==='all'? eligible.length : Math.min(parseInt(nv,10)||10, eligible.length);
     questions = buildCrosswordQuestions(eligible,cap);
   } else if(game==='chain'){
-    const eligible=hangmanEligible(s.words);
+    const syl=$('#du_syl')?.value||'';
+    let eligible=hangmanEligible(s.words);
     if(!eligible.length){ toast('Bộ từ này không có từ đơn để bắt đầu Nối từ — chọn bộ khác nha'); return; }
+    if(syl){ const filtered=eligible.filter(w=>sylOk(countSyllables(w.en),syl));
+      if(!filtered.length){ toast('Bộ này không có từ '+sylLabel(syl)+' để mở đầu — chọn bộ khác hoặc bỏ giới hạn nha'); return; }
+      eligible=filtered; }
     const starter=shuffle(eligible)[0];
-    questions = [{ kind:'chain', word:starter.en.toLowerCase(), by:S.me, at:new Date(serverNow()).toISOString() }];
+    const q0={ kind:'chain', word:starter.en.toLowerCase(), by:S.me, at:new Date(serverNow()).toISOString() };
+    if(syl) q0.syl=syl;
+    questions = [q0];
   } else {
     const cap = nv==='all'? undefined : Math.min(parseInt(nv,10)||10, s.words.length);
     questions = buildQuestions(s.words,cap);
@@ -2045,6 +2059,15 @@ async function handleChainTimeout(){ const du=S.duel; if(!du||du.status!=='activ
   patch['score_'+loser]=0; patch['score_'+other(loser)]=1;
   try{ await Store.updateDuel(du.id,S.space.id,patch); }catch(e){}
   Object.assign(du,patch); S.duelHistory=[du,...(S.duelHistory||[]).filter(x=>x.id!==du.id)]; render(); }
+/* Đếm âm tiết tiếng Anh (heuristic ~85%): đếm nhóm nguyên âm liền nhau, bỏ 'e' câm cuối/es/ed nhưng
+   GIỮ '-le' (table, apple = 2 âm tiết). Dùng CHUNG cho cả chọn từ mở đầu lẫn kiểm tra -> luôn nhất quán. */
+function countSyllables(word){ word=(word||'').toLowerCase().replace(/[^a-z]/g,''); if(!word) return 0;
+  if(word.length<=3) return 1;
+  word=word.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/,'').replace(/^y/,'');
+  const m=word.match(/[aeiouy]{1,2}/g); return m?Math.max(1,m.length):1; }
+function sylOk(n, syl){ if(!syl) return true; if(syl==='4') return n>=4; return n===parseInt(syl,10); }
+function sylLabel(syl){ return syl==='4'?'4+ âm tiết' : (syl?syl+' âm tiết':''); }
+function chainSyl(du){ const c=du&&du.questions&&du.questions[0]; return (c&&c.syl)||''; }
 /* null = hợp lệ, string = lý do từ chối (hiện bằng toast, KHÔNG tính thua — vẫn còn giờ để gõ lại) */
 function validateChainWord(word,du){ word=(word||'').trim().toLowerCase();
   if(!word) return 'Gõ từ đã nha';
@@ -2053,6 +2076,8 @@ function validateChainWord(word,du){ word=(word||'').trim().toLowerCase();
   if(chain.some(c=>c.word===word)) return 'Từ này dùng rồi, đổi từ khác nha';
   const last=chain[chain.length-1].word, lastChar=last[last.length-1];
   if(word[0]!==lastChar) return `Từ phải bắt đầu bằng chữ "${lastChar.toUpperCase()}" nha`;
+  const syl=chainSyl(du);
+  if(syl && !sylOk(countSyllables(word),syl)) return `Cần từ ${sylLabel(syl)} nha (từ này ${countSyllables(word)} âm tiết)`;
   return null; }
 /* true=có thật, false=chắc chắn không có, null=không kiểm tra được (mất mạng/API lỗi) — dictionaryapi.dev free, có CORS, không cần key */
 async function dictWordExists(word){
