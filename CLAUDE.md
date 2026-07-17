@@ -111,6 +111,12 @@ Streak (`bumpStreak`): học/thi/trả lời câu hỏi xong → chuỗi +1 (1 l
 - Quy trình: sửa → `git add/commit/push` → `wrangler pages deploy`. `.wrangler/` đã gitignore (chỉ chứa account id, không secret).
 - ⚠️ Cloudflare redirect `/index.html`→`/` (308). `manifest.json start_url` và `sw.js` phải trỏ `./` (KHÔNG `./index.html`). SW dùng **network-first**, tăng `CACHE` version mỗi lần đổi shell.
 
+## Trang quản trị hệ thống — `admin.html` (TÁCH RIÊNG khỏi app chính)
+- File **`admin.html`** độc lập (KHÔNG nằm trong `index.html`, KHÔNG trong SW cache, có `<meta robots noindex>`), truy cập qua `cungnhau.pages.dev/admin.html`. Dùng CHUNG `SUPABASE_URL`/`ANON_KEY` và **cùng hàm `hashPass` djb2** với index.html. Vì RLS "allow all" + anon key nên admin đọc/ghi thẳng MỌI bảng từ trình duyệt (không có backend riêng, đúng triết lý app).
+- **Bảng `admins`** (username pk, passcode băm djb2, created_at) — đã thêm vào `schema.sql` + vòng RLS. Vào lần đầu (bảng rỗng) admin.html tự hiện màn **"Thiết lập quản trị"** để tạo tài khoản đầu tiên (self-bootstrap, không cần chạy SQL thủ công ngoài việc tạo bảng). Bảng `admins` chưa tồn tại → hiện màn hướng dẫn chạy `schema.sql`. Phiên đăng nhập lưu `sessionStorage` (`cungnhau_admin_session`).
+- 3 tab: **Tổng quan** (stat cards: users/spaces/paired/active7/decks/cards/quizzes/notes/duels/daily + phòng hoạt động gần đây) · **Người dùng** (tìm kiếm, Đặt lại PIN qua prompt→`hashPass`, Gỡ ghép = null `space_id`/`person` + gỡ `person_x_username` trong space, Xóa user) · **Phòng** (tìm kiếm, bấm dòng → modal chi tiết: sửa nhanh name/start_date/streak/theme, liệt kê decks/quizzes/notes/duels/daily, **Xóa phòng** = xóa `spaces` cho FK `on delete cascade` dọn decks/cards/quizzes/notes/duels/daily/push_subscriptions, còn users+invites tự dọn tay).
+- `loadAll()` fetch song song mọi bảng (cột tường minh, KHÔNG lấy avatar/heart_photos nặng). Event delegation `data-act` giống app chính (dùng `data-act="stop"` cho click trong modal, `overlay`/`close-modal` để đóng). Đã tự test bằng Playwright + mock Supabase in-memory (setup/login/dashboard/search/sửa phòng) — network CDN bị chặn trong sandbox là bình thường.
+
 ## Cách test (QUAN TRỌNG)
 - Preview: `.claude/launch.json` chạy `python -m http.server 4599`. Dùng `preview_start`/`preview_eval`.
 - ⚠️ **`preview_screenshot` HAY TREO** khi trang có animation chạy liên tục (lottie/confetti) — kể cả sau `Lot.freeze()`. **Xác minh bằng DOM** qua `preview_eval` (đếm số phần tử SVG, đọc textContent) thay vì ảnh.
