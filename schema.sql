@@ -167,8 +167,10 @@ alter table spaces  add column if not exists heart_photos jsonb default '[]'::js
 create table if not exists admins (
   username    text primary key,
   passcode    text,                       -- mật khẩu đã băm nhẹ (djb2, khớp index.html)
+  role        text default 'manager',      -- 'owner' (Chủ hệ thống, toàn quyền + quản lý admin) | 'manager' (sửa/xóa user & phòng) | 'viewer' (chỉ xem)
   created_at  timestamptz default now()
 );
+alter table admins add column if not exists role text default 'manager';   -- bổ sung cho DB đã tạo bảng admins từ trước
 
 -- Cache ví dụ AI theo TỪ (toàn cục, không theo phòng) để khỏi gọi AI lại tốn token
 create table if not exists word_examples (

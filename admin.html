@@ -138,13 +138,28 @@
   function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2200); }
 
   /* ====== Trạng thái ====== */
-  const A = { admin:null, tab:'overview', data:null, q:'' };
+  const A = { admin:null, role:null, tab:'overview', data:null, q:'', admins:[] };
   const SESSION_KEY = 'cungnhau_admin_session';
 
+  /* ====== Vai trò & phân quyền ======
+     owner  = Chủ hệ thống: toàn quyền, quản lý cả tài khoản quản trị khác
+     manager= Quản lý: xem + sửa/xóa người dùng & phòng, KHÔNG quản admin
+     viewer = Chỉ xem: chỉ đọc, không sửa/xóa được gì                       */
+  const ROLES = ['owner','manager','viewer'];
+  const ROLE_LABEL = { owner:'Chủ hệ thống', manager:'Quản lý', viewer:'Chỉ xem' };
+  const ROLE_DESC  = { owner:'Toàn quyền + quản lý quản trị viên', manager:'Sửa/xóa người dùng & phòng', viewer:'Chỉ được xem, không sửa/xóa' };
+  const roleOf = (a)=> (a && a.role) || 'owner';   // thiếu cột role (DB cũ) → coi như owner để không khóa nhầm
+  function canEdit(){ return A.role==='owner' || A.role==='manager'; }
+  function canManageAdmins(){ return A.role==='owner'; }
+  function requireEdit(){ if(!canEdit()){ toast('Tài khoản này chỉ có quyền xem'); return false; } return true; }
+  function requireOwner(){ if(!canManageAdmins()){ toast('Chỉ Chủ hệ thống mới làm được'); return false; } return true; }
+
   /* ====== Xác thực quản trị ====== */
-  async function listAdmins(){ const {data,error}=await sb.from('admins').select('username,created_at'); if(error) throw error; return data||[]; }
+  async function listAdmins(){ const {data,error}=await sb.from('admins').select('username,role,created_at'); if(error) throw error; return data||[]; }
   async function getAdmin(u){ const {data,error}=await sb.from('admins').select('*').eq('username',u).maybeSingle(); if(error) throw error; return data; }
   async function createAdmin(o){ const {error}=await sb.from('admins').insert(o); if(error) throw error; }
+  async function updateAdmin(u,patch){ const {error}=await sb.from('admins').update(patch).eq('username',u); if(error) throw error; }
+  async function deleteAdmin(u){ const {error}=await sb.from('admins').delete().eq('username',u); if(error) throw error; }
 
   function saveSession(u){ try{ sessionStorage.setItem(SESSION_KEY, u); }catch(e){} }
   function loadSession(){ try{ return sessionStorage.getItem(SESSION_KEY); }catch(e){ return null; } }
@@ -194,7 +209,7 @@
             <div><h1>cùng nhau</h1><small>Bảng quản trị</small></div>
           </div>
           <div class="spacer"></div>
-          <span class="muted" style="font-weight:800;font-size:13px">👤 ${esc(A.admin)}</span>
+          <span class="muted" style="font-weight:800;font-size:13px">👤 ${esc(A.admin)} <span class="pill ${A.role==='owner'?'ok':(A.role==='viewer'?'':'warn')}" style="margin-left:4px">${ROLE_LABEL[A.role]||A.role||'?'}</span></span>
           <button class="btn sm ghost" data-act="reload">↻ Tải lại</button>
           <button class="btn sm" data-act="logout">Đăng xuất</button>
         </div>
@@ -202,6 +217,7 @@
           ${tabBtn('overview','📊 Tổng quan')}
           ${tabBtn('users','👥 Người dùng')}
           ${tabBtn('spaces','💞 Phòng')}
+          ${canManageAdmins()?tabBtn('admins','🛡️ Quản trị viên'):''}
         </div>
         <div id="tabbody">${tabBody()}</div>
       </div>`;
@@ -212,6 +228,7 @@
     if(A.tab==='overview') return viewOverview();
     if(A.tab==='users') return viewUsers();
     if(A.tab==='spaces') return viewSpaces();
+    if(A.tab==='admins') return canManageAdmins()? viewAdmins() : viewOverview();
     return '';
   }
 
@@ -308,11 +325,11 @@
         <td>${esc(u.display||'—')}</td>
         <td>${u.space_id?`<span class="pill">${esc(u.space_id)}</span> <span class="muted">(${esc(u.person||'?')})</span>`:'<span class="pill no">Chưa ghép</span>'}</td>
         <td class="muted mini">${fmtDateTime(u.created_at)}</td>
-        <td><div class="row-actions">
+        <td>${canEdit()?`<div class="row-actions">
           <button class="btn sm" data-act="reset-pin" data-id="${esc(u.username)}">Đặt lại PIN</button>
           ${u.space_id?`<button class="btn sm" data-act="unpair-user" data-id="${esc(u.username)}">Gỡ ghép</button>`:''}
           <button class="btn sm danger" data-act="del-user" data-id="${esc(u.username)}">Xóa</button>
-        </div></td>
+        </div>`:'<span class="muted mini">chỉ xem</span>'}</td>
       </tr>`).join('');
     return `
       <div class="toolbar">
@@ -355,6 +372,43 @@
       </div>`;
   }
 
+  /* ---- Quản trị viên (chỉ owner) ---- */
+  function viewAdmins(){
+    const owners=A.admins.filter(a=>roleOf(a)==='owner').length;
+    const rows=A.admins.map(a=>{
+      const r=roleOf(a); const self=a.username===A.admin;
+      const isLastOwner = r==='owner' && owners<=1;
+      return `<tr>
+        <td><b>${esc(a.username)}</b>${self?' <span class="pill">bạn</span>':''}</td>
+        <td><span class="pill ${r==='owner'?'ok':(r==='viewer'?'':'warn')}">${ROLE_LABEL[r]||r}</span></td>
+        <td class="muted mini">${fmtDateTime(a.created_at)}</td>
+        <td><div class="row-actions">
+          <select class="rolesel" data-user="${esc(a.username)}" style="width:auto;padding:6px 8px;font-size:13px" ${isLastOwner?'disabled title="Phải còn ít nhất 1 Chủ hệ thống"':''}>
+            ${ROLES.map(x=>`<option value="${x}" ${x===r?'selected':''}>${ROLE_LABEL[x]}</option>`).join('')}
+          </select>
+          ${(self||isLastOwner)?'':`<button class="btn sm danger" data-act="del-admin" data-id="${esc(a.username)}">Xóa</button>`}
+        </div></td>
+      </tr>`;
+    }).join('');
+    return `
+      <div class="warnbox">🛡️ <b>Phân quyền quản trị.</b> ${esc(ROLE_LABEL.owner)}: ${ROLE_DESC.owner}. ${esc(ROLE_LABEL.manager)}: ${ROLE_DESC.manager}. ${esc(ROLE_LABEL.viewer)}: ${ROLE_DESC.viewer}.</div>
+      <div class="card">
+        <div class="sec-title" style="margin-top:0">➕ Thêm quản trị viên</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+          <div style="flex:2;min-width:160px"><label class="f">Tên đăng nhập</label><input id="na_user" placeholder="tên admin mới" autocomplete="off" /></div>
+          <div style="flex:2;min-width:160px"><label class="f">Mật khẩu</label><input id="na_pass" type="password" placeholder="mật khẩu" autocomplete="new-password" /></div>
+          <div style="flex:1;min-width:130px"><label class="f">Vai trò</label>
+            <select id="na_role">${ROLES.map(x=>`<option value="${x}" ${x==='manager'?'selected':''}>${ROLE_LABEL[x]}</option>`).join('')}</select>
+          </div>
+          <button class="btn pri" data-act="add-admin">Thêm</button>
+        </div>
+      </div>
+      <div class="tbl-wrap">
+        <table><thead><tr><th>Tên đăng nhập</th><th>Vai trò</th><th>Tạo lúc</th><th>Thao tác</th></tr></thead>
+        <tbody>${rows||'<tr><td colspan="4" class="empty">Chưa có</td></tr>'}</tbody></table>
+      </div>`;
+  }
+
   /* ---- Chi tiết phòng (modal) ---- */
   function openSpaceModal(sid){
     const sp=A.data.spaces.find(s=>s.id===sid); if(!sp) return;
@@ -385,7 +439,7 @@
         <div class="k">Tài khoản</div><div>${users.map(u=>esc(u.username)).join(', ')||'—'}</div>
       </div>
 
-      <div class="card" style="background:var(--bg2);margin:12px 0">
+      ${canEdit()?`<div class="card" style="background:var(--bg2);margin:12px 0">
         <div class="sec-title" style="margin-top:0">✏️ Sửa nhanh</div>
         <label class="f">Tên phòng</label>
         <input id="e_name" value="${esc(sp.name||'')}" />
@@ -397,7 +451,7 @@
           </div>
         </div>
         <button class="btn pri sm" style="margin-top:12px" data-act="save-space" data-id="${esc(sp.id)}">Lưu thay đổi</button>
-      </div>
+      </div>`:''}
 
       <div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(90px,1fr))">
         <div class="stat"><div class="n">${decks.length}</div><div class="l">Bộ thẻ</div></div>
@@ -415,7 +469,7 @@
       ${list('☀️ Câu hỏi mỗi ngày','',daily.slice(0,12), x=>`<li><span class="muted">${esc(x.day||'')}</span> ${esc((x.question||'').slice(0,70))}</li>`)}
 
       <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
-        <button class="btn danger" data-act="del-space" data-id="${esc(sp.id)}">🗑️ Xóa phòng (kèm toàn bộ nội dung)</button>
+        ${canEdit()?`<button class="btn danger" data-act="del-space" data-id="${esc(sp.id)}">🗑️ Xóa phòng (kèm toàn bộ nội dung)</button>`:''}
         <div class="spacer"></div>
         <button class="btn ghost" data-act="close-modal">Đóng</button>
       </div>`;
@@ -429,24 +483,28 @@
     if(!u||!p){ toast('Nhập đủ tên và mật khẩu'); return; }
     let adm; try{ adm=await getAdmin(u); }catch(e){ toast('Lỗi kết nối: '+e.message); return; }
     if(!adm || adm.passcode!==hashPass(p)){ $('#loginnote').textContent='Sai tên đăng nhập hoặc mật khẩu.'; return; }
-    A.admin=u; saveSession(u); await enterApp();
+    A.admin=u; A.role=roleOf(adm); saveSession(u); await enterApp();
   }
   async function doSetup(){
     const u=$('#au').value.trim(), p=$('#ap').value, p2=$('#ap2').value;
     if(!u||!p){ toast('Nhập đủ tên và mật khẩu'); return; }
     if(p!==p2){ toast('Hai mật khẩu chưa khớp'); return; }
     if(p.length<4){ toast('Mật khẩu tối thiểu 4 ký tự'); return; }
-    try{ await createAdmin({ username:u, passcode:hashPass(p), created_at:new Date().toISOString() }); }
+    // Tài khoản quản trị ĐẦU TIÊN luôn là Chủ hệ thống (owner)
+    try{ await createAdmin({ username:u, passcode:hashPass(p), role:'owner', created_at:new Date().toISOString() }); }
     catch(e){ toast('Không tạo được: '+e.message); return; }
-    noAdminYet=false; A.admin=u; saveSession(u); toast('Đã tạo tài khoản quản trị 🎉'); await enterApp();
+    noAdminYet=false; A.admin=u; A.role='owner'; saveSession(u); toast('Đã tạo tài khoản quản trị 🎉'); await enterApp();
   }
+  async function loadAdminsList(){ try{ A.admins=await listAdmins(); }catch(e){ A.admins=[]; } }
   async function enterApp(){
     render();
     try{ await refresh(); }catch(e){ toast('Lỗi tải dữ liệu: '+e.message); }
+    if(canManageAdmins()) await loadAdminsList();
     render();
   }
 
   async function resetPin(username){
+    if(!requireEdit()) return;
     const pin=prompt('Đặt PIN/mật khẩu MỚI cho "'+username+'":');
     if(pin==null) return; if(!pin.trim()){ toast('PIN trống'); return; }
     try{ const {error}=await sb.from('users').update({passcode:hashPass(pin.trim())}).eq('username',username); if(error) throw error;
@@ -454,6 +512,7 @@
     catch(e){ toast('Lỗi: '+e.message); }
   }
   async function unpairUser(username){
+    if(!requireEdit()) return;
     const u=A.data.users.find(x=>x.username===username); if(!u) return;
     if(!confirm('Gỡ ghép đôi cho "'+username+'"? Tài khoản sẽ rời khỏi phòng '+(u.space_id||'')+'.\n(Không xóa dữ liệu phòng, chỉ tách người này ra.)')) return;
     try{
@@ -471,6 +530,7 @@
     }catch(e){ toast('Lỗi: '+e.message); }
   }
   async function delUser(username){
+    if(!requireEdit()) return;
     if(!confirm('XÓA hẳn tài khoản "'+username+'"?\nThao tác này không hoàn tác được. Dữ liệu phòng KHÔNG bị xóa.')) return;
     try{ const {error}=await sb.from('users').delete().eq('username',username); if(error) throw error;
       // Gỡ tham chiếu username trong spaces
@@ -486,6 +546,7 @@
   }
 
   async function saveSpace(sid){
+    if(!requireEdit()) return;
     const patch={
       name:$('#e_name').value.trim()||null,
       start_date:$('#e_start').value||null,
@@ -497,6 +558,7 @@
     }catch(e){ toast('Lỗi: '+e.message); }
   }
   async function delSpace(sid){
+    if(!requireEdit()) return;
     const sp=A.data.spaces.find(s=>s.id===sid);
     if(!confirm('XÓA phòng "'+(sp?.name||sid)+'" (mã '+sid+')?\n\nSẽ xóa TOÀN BỘ: bộ thẻ, thẻ từ, bài dò, ghi chú, trận đấu, câu hỏi mỗi ngày của phòng này. Hai tài khoản thành viên sẽ bị gỡ khỏi phòng.\n\nKHÔNG hoàn tác được.')) return;
     try{
@@ -508,6 +570,40 @@
       const {error}=await sb.from('spaces').delete().eq('id',sid); if(error) throw error;
       toast('Đã xóa phòng '+sid); closeModal(); await refresh(); render();
     }catch(e){ toast('Lỗi: '+e.message); }
+  }
+
+  /* ---- Quản lý quản trị viên (chỉ owner) ---- */
+  async function addAdmin(){
+    if(!requireOwner()) return;
+    const u=$('#na_user').value.trim(), p=$('#na_pass').value, role=$('#na_role').value;
+    if(!u||!p){ toast('Nhập đủ tên và mật khẩu'); return; }
+    if(p.length<4){ toast('Mật khẩu tối thiểu 4 ký tự'); return; }
+    if(!ROLES.includes(role)){ toast('Vai trò không hợp lệ'); return; }
+    if(A.admins.some(a=>a.username===u)){ toast('Tên quản trị này đã tồn tại'); return; }
+    try{ await createAdmin({ username:u, passcode:hashPass(p), role, created_at:new Date().toISOString() }); }
+    catch(e){ toast('Không thêm được: '+e.message); return; }
+    toast('Đã thêm quản trị viên '+u); await loadAdminsList(); render();
+  }
+  async function delAdmin(username){
+    if(!requireOwner()) return;
+    if(username===A.admin){ toast('Không thể tự xóa chính mình'); return; }
+    const owners=A.admins.filter(a=>roleOf(a)==='owner');
+    const target=A.admins.find(a=>a.username===username);
+    if(target && roleOf(target)==='owner' && owners.length<=1){ toast('Phải còn ít nhất 1 Chủ hệ thống'); return; }
+    if(!confirm('Xóa quản trị viên "'+username+'"? Tài khoản này sẽ không đăng nhập được trang quản trị nữa.')) return;
+    try{ await deleteAdmin(username); }catch(e){ toast('Lỗi: '+e.message); return; }
+    toast('Đã xóa quản trị viên '+username); await loadAdminsList(); render();
+  }
+  async function changeAdminRole(username, role){
+    if(!requireOwner()) return;
+    if(!ROLES.includes(role)) return;
+    const target=A.admins.find(a=>a.username===username); if(!target) return;
+    const owners=A.admins.filter(a=>roleOf(a)==='owner');
+    // Không cho hạ cấp Chủ hệ thống cuối cùng (kể cả chính mình) → tránh khóa hệ thống
+    if(roleOf(target)==='owner' && role!=='owner' && owners.length<=1){ toast('Phải còn ít nhất 1 Chủ hệ thống'); await loadAdminsList(); render(); return; }
+    try{ await updateAdmin(username,{role}); }catch(e){ toast('Lỗi: '+e.message); return; }
+    if(username===A.admin) A.role=role;   // tự đổi vai trò mình → cập nhật quyền hiện tại
+    toast('Đã đổi vai trò '+username+' → '+ROLE_LABEL[role]); await loadAdminsList(); render();
   }
 
   /* ====== Event delegation ====== */
@@ -529,7 +625,12 @@
       case 'del-user': delUser(id); break;
       case 'save-space': saveSpace(id); break;
       case 'del-space': delSpace(id); break;
+      case 'add-admin': addAdmin(); break;
+      case 'del-admin': delAdmin(id); break;
     }
+  });
+  document.addEventListener('change', (e)=>{
+    if(e.target.classList.contains('rolesel')){ changeAdminRole(e.target.getAttribute('data-user'), e.target.value); }
   });
   document.addEventListener('input', (e)=>{
     if(e.target.matches('[data-act="search"]')){ A.q=e.target.value;
@@ -558,8 +659,10 @@
       return;
     }
     noAdminYet = admins.length===0;
+    A.admins = admins;
     const sess=loadSession();
-    if(sess && admins.some(a=>a.username===sess)){ A.admin=sess; await enterApp(); return; }
+    const me = sess && admins.find(a=>a.username===sess);
+    if(me){ A.admin=me.username; A.role=roleOf(me); await enterApp(); return; }
     render();
   })();
   </script>
