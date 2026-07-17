@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>cùng nhau · Quản trị</title>
+<meta name="theme-color" content="#d97a92" />
+<meta name="robots" content="noindex, nofollow" />
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --p1:#d97a92; --p2:#e7a3b4; --accent:#c79a72; --ok:#6cab8e; --no:#e08a93; --warn:#d99a4e;
+    --bg1:#fcf7f4; --bg2:#f6ebe9; --card:#fffdfc; --ink:#473a40; --soft:#9c8a90;
+    --line:#efe1de; --chip:#f6ece9;
+    --shadow:0 14px 34px rgba(160,110,120,.14); --shadow-sm:0 6px 16px rgba(160,110,120,.10);
+    --edge:#4a3d43; --grid:rgba(150,105,115,.11);
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ margin:0; padding:0; }
+  body{ font-family:'Nunito',sans-serif; color:var(--ink); min-height:100vh;
+    background-color:var(--bg1);
+    background-image:linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size:24px 24px, 24px 24px; }
+  h1,h2,h3{ font-family:'Fraunces',serif; font-weight:600; letter-spacing:-.01em; margin:0; }
+  a{ color:var(--p1); }
+  .wrap{ max-width:1040px; margin:0 auto; padding:16px 16px 80px; }
+
+  /* Header */
+  .topbar{ display:flex; align-items:center; gap:12px; padding:14px 4px 18px; flex-wrap:wrap; }
+  .brand{ display:flex; align-items:center; gap:10px; }
+  .brand .dot{ width:34px; height:34px; border-radius:11px; background:linear-gradient(135deg,var(--p1),var(--p2)); box-shadow:var(--shadow-sm); display:grid; place-items:center; color:#fff; font-size:18px; }
+  .brand h1{ font-size:20px; }
+  .brand small{ display:block; color:var(--soft); font-weight:700; font-size:12px; letter-spacing:.02em; }
+  .spacer{ flex:1; }
+
+  .btn{ font-family:'Nunito'; font-weight:800; border:2px solid var(--edge); background:var(--card);
+    color:var(--ink); border-radius:13px; padding:9px 14px; cursor:pointer; box-shadow:3px 3px 0 var(--edge);
+    transition:transform .08s ease, box-shadow .08s ease; font-size:14px; }
+  .btn:active{ transform:translate(2px,2px); box-shadow:1px 1px 0 var(--edge); }
+  .btn.pri{ background:linear-gradient(135deg,var(--p1),var(--p2)); color:#fff; border-color:var(--edge); }
+  .btn.danger{ background:#fbeaec; color:#b23b4b; }
+  .btn.sm{ padding:6px 10px; font-size:13px; border-radius:10px; box-shadow:2px 2px 0 var(--edge); }
+  .btn.ghost{ box-shadow:none; border-color:var(--line); background:transparent; }
+
+  input, select{ font-family:'Nunito'; font-weight:600; font-size:15px; color:var(--ink);
+    border:2px solid var(--line); background:var(--card); border-radius:12px; padding:10px 12px; width:100%; }
+  input:focus, select:focus{ outline:none; border-color:var(--p2); }
+  label.f{ display:block; font-weight:800; font-size:13px; margin:10px 0 5px; color:var(--soft); }
+
+  .card{ background:var(--card); border:2px solid var(--edge); border-radius:18px; box-shadow:var(--shadow-sm);
+    padding:16px; margin-bottom:14px; }
+
+  /* Tabs */
+  .tabs{ display:flex; gap:8px; margin:6px 0 16px; flex-wrap:wrap; }
+  .tab{ font-weight:800; font-size:14px; border:2px solid var(--edge); background:var(--card); color:var(--ink);
+    padding:8px 16px; border-radius:999px; cursor:pointer; box-shadow:2px 2px 0 var(--edge); }
+  .tab.on{ background:linear-gradient(135deg,var(--p1),var(--p2)); color:#fff; }
+
+  /* Stats grid */
+  .stats{ display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; }
+  .stat{ background:var(--card); border:2px solid var(--edge); border-radius:16px; padding:14px 16px; box-shadow:2px 2px 0 var(--edge); }
+  .stat .n{ font-family:'Fraunces',serif; font-size:30px; font-weight:600; line-height:1; }
+  .stat .l{ color:var(--soft); font-weight:800; font-size:12px; margin-top:6px; text-transform:uppercase; letter-spacing:.03em; }
+  .stat.accent .n{ color:var(--p1); }
+
+  /* Table */
+  .tbl-wrap{ overflow-x:auto; border:2px solid var(--edge); border-radius:16px; box-shadow:2px 2px 0 var(--edge); background:var(--card); }
+  table{ border-collapse:collapse; width:100%; font-size:14px; min-width:560px; }
+  th,td{ text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  th{ font-weight:800; color:var(--soft); font-size:12px; text-transform:uppercase; letter-spacing:.03em; background:var(--bg2); position:sticky; top:0; }
+  tr:last-child td{ border-bottom:none; }
+  tr.rowlink{ cursor:pointer; }
+  tr.rowlink:hover{ background:var(--chip); }
+  .muted{ color:var(--soft); }
+  .pill{ display:inline-block; padding:2px 9px; border-radius:999px; font-weight:800; font-size:12px; background:var(--chip); color:var(--ink); }
+  .pill.ok{ background:#e4f3ec; color:#2f7f5f; }
+  .pill.no{ background:#fbeaec; color:#b23b4b; }
+  .pill.warn{ background:#fbf0dd; color:#9a6a1e; }
+  .ava{ width:28px; height:28px; border-radius:9px; object-fit:cover; border:1.5px solid var(--line); background:var(--chip); display:inline-grid; place-items:center; font-weight:800; font-size:12px; color:var(--soft); vertical-align:middle; }
+  .row-actions{ display:flex; gap:6px; flex-wrap:wrap; }
+
+  .toolbar{ display:flex; gap:10px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
+  .toolbar .search{ flex:1; min-width:200px; }
+
+  /* Overlay / modal */
+  .overlay{ position:fixed; inset:0; background:rgba(60,40,45,.42); backdrop-filter:blur(2px); z-index:50; display:flex; align-items:flex-start; justify-content:center; padding:24px 14px; overflow:auto; }
+  .modal{ background:var(--bg1); border:2px solid var(--edge); border-radius:20px; box-shadow:8px 8px 0 var(--edge); width:100%; max-width:640px; padding:18px; }
+  .modal h2{ font-size:20px; margin-bottom:2px; }
+  .modal .sub{ color:var(--soft); font-weight:700; font-size:13px; margin-bottom:14px; }
+  .modal .x{ float:right; cursor:pointer; font-size:22px; color:var(--soft); line-height:1; border:none; background:none; }
+  .kv{ display:grid; grid-template-columns:auto 1fr; gap:4px 14px; font-size:14px; margin:8px 0; }
+  .kv .k{ color:var(--soft); font-weight:800; }
+  .sec-title{ font-family:'Fraunces',serif; font-weight:600; font-size:15px; margin:16px 0 8px; display:flex; align-items:center; gap:8px; }
+  .sec-title .badge{ background:var(--chip); border-radius:999px; padding:1px 9px; font-size:12px; font-family:'Nunito'; font-weight:800; color:var(--soft); }
+  .mini{ font-size:13px; }
+  .mini li{ margin:3px 0; }
+  .empty{ text-align:center; color:var(--soft); font-weight:700; padding:26px 10px; }
+
+  /* Login */
+  .login{ max-width:380px; margin:8vh auto 0; }
+  .login .card{ padding:22px; }
+  .login h2{ font-size:22px; margin-bottom:2px; }
+  .login .sub{ color:var(--soft); font-weight:700; font-size:13px; margin-bottom:8px; }
+
+  .toast{ position:fixed; left:50%; bottom:26px; transform:translateX(-50%); background:var(--edge); color:#fff;
+    font-weight:800; padding:11px 18px; border-radius:13px; z-index:99; box-shadow:var(--shadow); opacity:0;
+    transition:opacity .2s, transform .2s; pointer-events:none; font-size:14px; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(-4px); }
+  .note{ font-size:12px; color:var(--soft); font-weight:700; margin-top:8px; }
+  .warnbox{ background:#fbf0dd; border:2px solid #e6c98a; color:#8a5e14; border-radius:13px; padding:11px 13px; font-weight:700; font-size:13px; margin:10px 0; }
+</style>
+</head>
+<body>
+  <div id="app"></div>
+  <div id="modal"></div>
+  <div class="toast" id="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+  /* ====== Cấu hình Supabase (khớp index.html) ====== */
+  const SUPABASE_URL = "https://vklsqexomaconbzoufmu.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_YDj6liDtYbMFq38GhwCwIQ_KlS-lNwI";
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  /* Băm mật khẩu — cùng thuật toán djb2 với index.html để tương thích */
+  const hashPass = (s)=>{ let h=5381; for(let i=0;i<s.length;i++) h=((h<<5)+h+s.charCodeAt(i))>>>0; return 'h'+h.toString(36); };
+
+  const $ = (s,r=document)=>r.querySelector(s);
+  const esc = (s)=> (s==null?'':String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fmtDate = (s)=>{ if(!s) return '—'; const d=new Date(s); if(isNaN(d)) return esc(s); return d.toLocaleDateString('vi-VN'); };
+  const fmtDateTime = (s)=>{ if(!s) return '—'; const d=new Date(s); if(isNaN(d)) return esc(s); return d.toLocaleString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); };
+  const todayISO = ()=> new Date().toISOString().slice(0,10);
+  const daysAgo = (n)=>{ const d=new Date(); d.setDate(d.getDate()-n); return d.toISOString().slice(0,10); };
+  let toastT=null;
+  function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2200); }
+
+  /* ====== Trạng thái ====== */
+  const A = { admin:null, role:null, tab:'overview', data:null, q:'', admins:[] };
+  const SESSION_KEY = 'cungnhau_admin_session';
+
+  /* ====== Vai trò & phân quyền ======
+     owner  = Chủ hệ thống: toàn quyền, quản lý cả tài khoản quản trị khác
+     manager= Quản lý: xem + sửa/xóa người dùng & phòng, KHÔNG quản admin
+     viewer = Chỉ xem: chỉ đọc, không sửa/xóa được gì                       */
+  const ROLES = ['owner','manager','viewer'];
+  const ROLE_LABEL = { owner:'Chủ hệ thống', manager:'Quản lý', viewer:'Chỉ xem' };
+  const ROLE_DESC  = { owner:'Toàn quyền + quản lý quản trị viên', manager:'Sửa/xóa người dùng & phòng', viewer:'Chỉ được xem, không sửa/xóa' };
+  const roleOf = (a)=> (a && a.role) || 'owner';   // thiếu cột role (DB cũ) → coi như owner để không khóa nhầm
+  function canEdit(){ return A.role==='owner' || A.role==='manager'; }
+  function canManageAdmins(){ return A.role==='owner'; }
+  function requireEdit(){ if(!canEdit()){ toast('Tài khoản này chỉ có quyền xem'); return false; } return true; }
+  function requireOwner(){ if(!canManageAdmins()){ toast('Chỉ Chủ hệ thống mới làm được'); return false; } return true; }
+
+  /* ====== Xác thực quản trị ====== */
+  async function listAdmins(){ const {data,error}=await sb.from('admins').select('username,role,created_at'); if(error) throw error; return data||[]; }
+  async function getAdmin(u){ const {data,error}=await sb.from('admins').select('*').eq('username',u).maybeSingle(); if(error) throw error; return data; }
+  async function createAdmin(o){ const {error}=await sb.from('admins').insert(o); if(error) throw error; }
+  async function updateAdmin(u,patch){ const {error}=await sb.from('admins').update(patch).eq('username',u); if(error) throw error; }
+  async function deleteAdmin(u){ const {error}=await sb.from('admins').delete().eq('username',u); if(error) throw error; }
+
+  function saveSession(u){ try{ sessionStorage.setItem(SESSION_KEY, u); }catch(e){} }
+  function loadSession(){ try{ return sessionStorage.getItem(SESSION_KEY); }catch(e){ return null; } }
+  function clearSession(){ try{ sessionStorage.removeItem(SESSION_KEY); }catch(e){} }
+
+  /* ====== Tải toàn bộ dữ liệu ====== */
+  async function loadAll(){
+    const light='id,name,person_a,person_b,person_a_username,person_b_username,theme,start_date,streak,longest,last_active,created_at';
+    const [users,spaces,decks,cards,quizzes,notes,duels,daily,invites,pushes] = await Promise.all([
+      sb.from('users').select('*').order('created_at',{ascending:false}),
+      sb.from('spaces').select(light).order('created_at',{ascending:false}),
+      sb.from('decks').select('id,space_id,name,created_at'),
+      sb.from('cards').select('id,space_id,deck_id'),
+      sb.from('quizzes').select('id,space_id,from_person,to_person,title,status,score,total,created_at'),
+      sb.from('notes').select('id,space_id,author_name,text,remind_at,done,created_at'),
+      sb.from('duels').select('id,space_id,challenger,status,stake,title,score_a,score_b,created_at'),
+      sb.from('daily').select('id,space_id,day,question,answer_a,answer_b'),
+      sb.from('invites').select('*'),
+      sb.from('push_subscriptions').select('id,space_id,person'),
+    ]);
+    for(const r of [users,spaces,decks,cards,quizzes,notes,duels,daily,invites,pushes]) if(r.error) throw r.error;
+    return { users:users.data||[], spaces:spaces.data||[], decks:decks.data||[], cards:cards.data||[],
+      quizzes:quizzes.data||[], notes:notes.data||[], duels:duels.data||[], daily:daily.data||[],
+      invites:invites.data||[], pushes:pushes.data||[] };
+  }
+  async function refresh(){ A.data = await loadAll(); }
+
+  /* ====== Helper theo phòng ====== */
+  const bySpace = (arr,sid)=> arr.filter(x=>x.space_id===sid);
+  function spaceMembers(sp){
+    const a = sp.person_a||sp.person_a_username||'?';
+    const b = sp.person_b||sp.person_b_username||'?';
+    return {a,b};
+  }
+  function isActive(sp,days=7){ return sp.last_active && sp.last_active >= daysAgo(days); }
+  function avatarLetter(name){ return esc((name||'?').trim().charAt(0).toUpperCase()||'?'); }
+
+  /* ====== RENDER ====== */
+  function render(){
+    const app=$('#app');
+    if(!A.admin){ app.innerHTML = viewLogin(); return; }
+    app.innerHTML = `
+      <div class="wrap">
+        <div class="topbar">
+          <div class="brand">
+            <div class="dot">♥</div>
+            <div><h1>cùng nhau</h1><small>Bảng quản trị</small></div>
+          </div>
+          <div class="spacer"></div>
+          <span class="muted" style="font-weight:800;font-size:13px">👤 ${esc(A.admin)} <span class="pill ${A.role==='owner'?'ok':(A.role==='viewer'?'':'warn')}" style="margin-left:4px">${ROLE_LABEL[A.role]||A.role||'?'}</span></span>
+          <button class="btn sm ghost" data-act="reload">↻ Tải lại</button>
+          <button class="btn sm" data-act="logout">Đăng xuất</button>
+        </div>
+        <div class="tabs">
+          ${tabBtn('overview','📊 Tổng quan')}
+          ${tabBtn('users','👥 Người dùng')}
+          ${tabBtn('spaces','💞 Phòng')}
+          ${canManageAdmins()?tabBtn('admins','🛡️ Quản trị viên'):''}
+        </div>
+        <div id="tabbody">${tabBody()}</div>
+      </div>`;
+  }
+  const tabBtn = (id,label)=> `<button class="tab ${A.tab===id?'on':''}" data-act="tab" data-id="${id}">${label}</button>`;
+  function tabBody(){
+    if(!A.data) return `<div class="empty">Đang tải dữ liệu…</div>`;
+    if(A.tab==='overview') return viewOverview();
+    if(A.tab==='users') return viewUsers();
+    if(A.tab==='spaces') return viewSpaces();
+    if(A.tab==='admins') return canManageAdmins()? viewAdmins() : viewOverview();
+    return '';
+  }
+
+  /* ---- Đăng nhập / Thiết lập lần đầu ---- */
+  let noAdminYet=false;
+  function viewLogin(){
+    if(noAdminYet){
+      return `<div class="login"><div class="card">
+        <h2>Thiết lập quản trị 🔐</h2>
+        <div class="sub">Chưa có tài khoản quản trị nào. Tạo tài khoản đầu tiên nhé.</div>
+        <div class="warnbox">Nhớ kỹ mật khẩu này — nó dùng để vào trang quản trị. Không có cách khôi phục tự động.</div>
+        <label class="f">Tên đăng nhập quản trị</label>
+        <input id="au" placeholder="vd: admin" autocomplete="off" />
+        <label class="f">Mật khẩu</label>
+        <input id="ap" type="password" placeholder="Đặt mật khẩu" autocomplete="new-password" />
+        <label class="f">Nhập lại mật khẩu</label>
+        <input id="ap2" type="password" placeholder="Nhập lại" autocomplete="new-password" />
+        <button class="btn pri block" style="width:100%;margin-top:14px" data-act="do-setup">Tạo tài khoản quản trị</button>
+      </div></div>`;
+    }
+    return `<div class="login"><div class="card">
+      <h2>Đăng nhập quản trị 🔐</h2>
+      <div class="sub">Trang này dành riêng cho quản trị hệ thống.</div>
+      <label class="f">Tên đăng nhập</label>
+      <input id="au" placeholder="Tên quản trị" autocomplete="username" />
+      <label class="f">Mật khẩu</label>
+      <input id="ap" type="password" placeholder="Mật khẩu" autocomplete="current-password" />
+      <button class="btn pri block" style="width:100%;margin-top:14px" data-act="do-login">Đăng nhập</button>
+      <div class="note" id="loginnote"></div>
+    </div></div>`;
+  }
+
+  /* ---- Tổng quan ---- */
+  function viewOverview(){
+    const d=A.data;
+    const paired = d.spaces.filter(s=> (s.person_a_username&&s.person_b_username)).length;
+    const active7 = d.spaces.filter(s=>isActive(s,7)).length;
+    const unpairedUsers = d.users.filter(u=>!u.space_id).length;
+    const newUsers7 = d.users.filter(u=>u.created_at && u.created_at.slice(0,10) >= daysAgo(7)).length;
+    const activeDuels = d.duels.filter(x=>x.status==='active'||x.status==='waiting').length;
+    const dueNotes = d.notes.filter(n=>!n.done && n.remind_at && n.remind_at <= todayISO()).length;
+    const stat=(n,l,accent)=>`<div class="stat ${accent?'accent':''}"><div class="n">${n}</div><div class="l">${l}</div></div>`;
+
+    const recent = d.spaces.slice().sort((a,b)=> (b.last_active||'')<(a.last_active||'')?-1:1).slice(0,8);
+    const recentRows = recent.map(s=>{
+      const m=spaceMembers(s);
+      return `<tr class="rowlink" data-act="open-space" data-id="${esc(s.id)}">
+        <td><b>${esc(s.name||'(chưa đặt tên)')}</b><div class="muted mini">${esc(s.id)}</div></td>
+        <td>${esc(m.a)} · ${esc(m.b)}</td>
+        <td>🔥 ${s.streak||0}</td>
+        <td>${s.last_active?fmtDate(s.last_active):'<span class="muted">—</span>'}</td>
+        <td>${isActive(s,7)?'<span class="pill ok">Hoạt động</span>':'<span class="pill">Im ắng</span>'}</td>
+      </tr>`;
+    }).join('');
+
+    return `
+      <div class="stats" style="margin-bottom:16px">
+        ${stat(d.users.length,'Người dùng',true)}
+        ${stat(d.spaces.length,'Phòng',true)}
+        ${stat(paired,'Đã ghép đôi')}
+        ${stat(active7,'Hoạt động 7 ngày')}
+        ${stat(unpairedUsers,'User chưa ghép')}
+        ${stat(newUsers7,'User mới 7 ngày')}
+      </div>
+      <div class="stats" style="margin-bottom:16px">
+        ${stat(d.decks.length,'Bộ thẻ')}
+        ${stat(d.cards.length,'Thẻ từ')}
+        ${stat(d.quizzes.length,'Bài dò')}
+        ${stat(d.notes.length,'Ghi chú')}
+        ${stat(d.duels.length,'Trận đấu')}
+        ${stat(d.daily.length,'Câu hỏi/ngày')}
+      </div>
+      <div class="stats" style="margin-bottom:18px">
+        ${stat(activeDuels,'Đấu đang diễn ra')}
+        ${stat(dueNotes,'Nhắc tới hạn')}
+        ${stat(d.pushes.length,'Thiết bị nhận push')}
+        ${stat(d.invites.filter(i=>i.status==='pending').length,'Lời mời chờ')}
+      </div>
+      <h3 style="margin:6px 2px 10px">Phòng hoạt động gần đây</h3>
+      <div class="tbl-wrap">
+        <table><thead><tr><th>Phòng</th><th>Thành viên</th><th>Chuỗi</th><th>Hoạt động cuối</th><th>Trạng thái</th></tr></thead>
+        <tbody>${recentRows||'<tr><td colspan="5" class="empty">Chưa có phòng nào</td></tr>'}</tbody></table>
+      </div>`;
+  }
+
+  /* ---- Người dùng ---- */
+  function viewUsers(){
+    const q=A.q.trim().toLowerCase();
+    let list=A.data.users;
+    if(q) list=list.filter(u=> (u.username||'').toLowerCase().includes(q) || (u.display||'').toLowerCase().includes(q) || (u.space_id||'').toLowerCase().includes(q));
+    const rows=list.map(u=>`
+      <tr>
+        <td><b>${esc(u.username)}</b></td>
+        <td>${esc(u.display||'—')}</td>
+        <td>${u.space_id?`<span class="pill">${esc(u.space_id)}</span> <span class="muted">(${esc(u.person||'?')})</span>`:'<span class="pill no">Chưa ghép</span>'}</td>
+        <td class="muted mini">${fmtDateTime(u.created_at)}</td>
+        <td>${canEdit()?`<div class="row-actions">
+          <button class="btn sm" data-act="reset-pin" data-id="${esc(u.username)}">Đặt lại PIN</button>
+          ${u.space_id?`<button class="btn sm" data-act="unpair-user" data-id="${esc(u.username)}">Gỡ ghép</button>`:''}
+          <button class="btn sm danger" data-act="del-user" data-id="${esc(u.username)}">Xóa</button>
+        </div>`:'<span class="muted mini">chỉ xem</span>'}</td>
+      </tr>`).join('');
+    return `
+      <div class="toolbar">
+        <input class="search" data-act="search" placeholder="🔎 Tìm theo tên / hiển thị / mã phòng…" value="${esc(A.q)}" />
+        <span class="muted" style="font-weight:800">${list.length} / ${A.data.users.length} người dùng</span>
+      </div>
+      <div class="tbl-wrap">
+        <table><thead><tr><th>Tên đăng nhập</th><th>Hiển thị</th><th>Phòng</th><th>Tạo lúc</th><th>Thao tác</th></tr></thead>
+        <tbody>${rows||'<tr><td colspan="5" class="empty">Không tìm thấy</td></tr>'}</tbody></table>
+      </div>`;
+  }
+
+  /* ---- Phòng ---- */
+  function viewSpaces(){
+    const q=A.q.trim().toLowerCase();
+    let list=A.data.spaces;
+    if(q) list=list.filter(s=> (s.id||'').toLowerCase().includes(q) || (s.name||'').toLowerCase().includes(q)
+      || (s.person_a||'').toLowerCase().includes(q) || (s.person_b||'').toLowerCase().includes(q)
+      || (s.person_a_username||'').toLowerCase().includes(q) || (s.person_b_username||'').toLowerCase().includes(q));
+    const rows=list.map(s=>{
+      const m=spaceMembers(s);
+      const cards=bySpace(A.data.cards,s.id).length;
+      return `<tr class="rowlink" data-act="open-space" data-id="${esc(s.id)}">
+        <td><b>${esc(s.name||'(chưa đặt tên)')}</b><div class="muted mini">${esc(s.id)}</div></td>
+        <td>${esc(m.a)} <span class="muted">·</span> ${esc(m.b)}</td>
+        <td>🔥 ${s.streak||0}<div class="muted mini">KL ${s.longest||0}</div></td>
+        <td>${s.start_date?fmtDate(s.start_date):'<span class="muted">—</span>'}</td>
+        <td>${cards} thẻ</td>
+        <td>${isActive(s,7)?'<span class="pill ok">Hoạt động</span>':(s.last_active?'<span class="pill">'+fmtDate(s.last_active)+'</span>':'<span class="pill no">Chưa</span>')}</td>
+      </tr>`;
+    }).join('');
+    return `
+      <div class="toolbar">
+        <input class="search" data-act="search" placeholder="🔎 Tìm theo tên phòng / mã / thành viên…" value="${esc(A.q)}" />
+        <span class="muted" style="font-weight:800">${list.length} / ${A.data.spaces.length} phòng</span>
+      </div>
+      <div class="tbl-wrap">
+        <table><thead><tr><th>Phòng</th><th>Thành viên</th><th>Chuỗi</th><th>Bắt đầu</th><th>Nội dung</th><th>Hoạt động</th></tr></thead>
+        <tbody>${rows||'<tr><td colspan="6" class="empty">Không tìm thấy</td></tr>'}</tbody></table>
+      </div>`;
+  }
+
+  /* ---- Quản trị viên (chỉ owner) ---- */
+  function viewAdmins(){
+    const owners=A.admins.filter(a=>roleOf(a)==='owner').length;
+    const rows=A.admins.map(a=>{
+      const r=roleOf(a); const self=a.username===A.admin;
+      const isLastOwner = r==='owner' && owners<=1;
+      return `<tr>
+        <td><b>${esc(a.username)}</b>${self?' <span class="pill">bạn</span>':''}</td>
+        <td><span class="pill ${r==='owner'?'ok':(r==='viewer'?'':'warn')}">${ROLE_LABEL[r]||r}</span></td>
+        <td class="muted mini">${fmtDateTime(a.created_at)}</td>
+        <td><div class="row-actions">
+          <select class="rolesel" data-user="${esc(a.username)}" style="width:auto;padding:6px 8px;font-size:13px" ${isLastOwner?'disabled title="Phải còn ít nhất 1 Chủ hệ thống"':''}>
+            ${ROLES.map(x=>`<option value="${x}" ${x===r?'selected':''}>${ROLE_LABEL[x]}</option>`).join('')}
+          </select>
+          ${(self||isLastOwner)?'':`<button class="btn sm danger" data-act="del-admin" data-id="${esc(a.username)}">Xóa</button>`}
+        </div></td>
+      </tr>`;
+    }).join('');
+    return `
+      <div class="warnbox">🛡️ <b>Phân quyền quản trị.</b> ${esc(ROLE_LABEL.owner)}: ${ROLE_DESC.owner}. ${esc(ROLE_LABEL.manager)}: ${ROLE_DESC.manager}. ${esc(ROLE_LABEL.viewer)}: ${ROLE_DESC.viewer}.</div>
+      <div class="card">
+        <div class="sec-title" style="margin-top:0">➕ Thêm quản trị viên</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+          <div style="flex:2;min-width:160px"><label class="f">Tên đăng nhập</label><input id="na_user" placeholder="tên admin mới" autocomplete="off" /></div>
+          <div style="flex:2;min-width:160px"><label class="f">Mật khẩu</label><input id="na_pass" type="password" placeholder="mật khẩu" autocomplete="new-password" /></div>
+          <div style="flex:1;min-width:130px"><label class="f">Vai trò</label>
+            <select id="na_role">${ROLES.map(x=>`<option value="${x}" ${x==='manager'?'selected':''}>${ROLE_LABEL[x]}</option>`).join('')}</select>
+          </div>
+          <button class="btn pri" data-act="add-admin">Thêm</button>
+        </div>
+      </div>
+      <div class="tbl-wrap">
+        <table><thead><tr><th>Tên đăng nhập</th><th>Vai trò</th><th>Tạo lúc</th><th>Thao tác</th></tr></thead>
+        <tbody>${rows||'<tr><td colspan="4" class="empty">Chưa có</td></tr>'}</tbody></table>
+      </div>`;
+  }
+
+  /* ---- Chi tiết phòng (modal) ---- */
+  function openSpaceModal(sid){
+    const sp=A.data.spaces.find(s=>s.id===sid); if(!sp) return;
+    const m=spaceMembers(sp);
+    const decks=bySpace(A.data.decks,sid);
+    const cards=bySpace(A.data.cards,sid);
+    const quizzes=bySpace(A.data.quizzes,sid);
+    const notes=bySpace(A.data.notes,sid);
+    const duels=bySpace(A.data.duels,sid);
+    const daily=bySpace(A.data.daily,sid).slice().sort((a,b)=>(a.day<b.day?1:-1));
+    const users=A.data.users.filter(u=>u.space_id===sid);
+
+    const list=(title,badge,items,fn)=>`
+      <div class="sec-title">${title} <span class="badge">${badge}</span></div>
+      ${items.length? `<ul class="mini">${items.map(fn).join('')}</ul>` : '<div class="muted mini" style="margin-left:2px">— trống —</div>'}`;
+
+    const body=`
+      <button class="x" data-act="close-modal">×</button>
+      <h2>${esc(sp.name||'(chưa đặt tên)')}</h2>
+      <div class="sub">Mã phòng: ${esc(sp.id)} · theme ${esc(sp.theme||'blush')}</div>
+
+      <div class="kv">
+        <div class="k">Người A</div><div>${esc(m.a)} ${sp.person_a_username?`<span class="muted">(@${esc(sp.person_a_username)})</span>`:''}</div>
+        <div class="k">Người B</div><div>${esc(m.b)} ${sp.person_b_username?`<span class="muted">(@${esc(sp.person_b_username)})</span>`:''}</div>
+        <div class="k">Chuỗi 🔥</div><div>${sp.streak||0} (kỷ lục ${sp.longest||0})</div>
+        <div class="k">Ngày yêu</div><div>${sp.start_date?fmtDate(sp.start_date):'—'}</div>
+        <div class="k">Hoạt động cuối</div><div>${sp.last_active?fmtDate(sp.last_active):'—'}</div>
+        <div class="k">Tài khoản</div><div>${users.map(u=>esc(u.username)).join(', ')||'—'}</div>
+      </div>
+
+      ${canEdit()?`<div class="card" style="background:var(--bg2);margin:12px 0">
+        <div class="sec-title" style="margin-top:0">✏️ Sửa nhanh</div>
+        <label class="f">Tên phòng</label>
+        <input id="e_name" value="${esc(sp.name||'')}" />
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <div style="flex:1;min-width:140px"><label class="f">Ngày bắt đầu yêu</label><input id="e_start" type="date" value="${esc(sp.start_date||'')}" /></div>
+          <div style="flex:1;min-width:100px"><label class="f">Chuỗi 🔥</label><input id="e_streak" type="number" min="0" value="${sp.streak||0}" /></div>
+          <div style="flex:1;min-width:120px"><label class="f">Tông màu</label>
+            <select id="e_theme">${['blush','sage','dusk','sky','sand'].map(t=>`<option value="${t}" ${(sp.theme||'blush')===t?'selected':''}>${t}</option>`).join('')}</select>
+          </div>
+        </div>
+        <button class="btn pri sm" style="margin-top:12px" data-act="save-space" data-id="${esc(sp.id)}">Lưu thay đổi</button>
+      </div>`:''}
+
+      <div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(90px,1fr))">
+        <div class="stat"><div class="n">${decks.length}</div><div class="l">Bộ thẻ</div></div>
+        <div class="stat"><div class="n">${cards.length}</div><div class="l">Thẻ từ</div></div>
+        <div class="stat"><div class="n">${quizzes.length}</div><div class="l">Bài dò</div></div>
+        <div class="stat"><div class="n">${notes.length}</div><div class="l">Ghi chú</div></div>
+        <div class="stat"><div class="n">${duels.length}</div><div class="l">Trận đấu</div></div>
+        <div class="stat"><div class="n">${daily.length}</div><div class="l">Câu hỏi</div></div>
+      </div>
+
+      ${list('📚 Bộ thẻ','',decks, d=>`<li><b>${esc(d.name||'(không tên)')}</b> <span class="muted">· ${bySpace(A.data.cards,sid).filter(c=>c.deck_id===d.id).length} thẻ</span></li>`)}
+      ${list('📝 Bài dò','',quizzes, x=>`<li>${esc(x.title||'(không tựa)')} <span class="pill ${x.status==='answered'?'ok':'warn'}">${esc(x.status||'')}</span> ${x.status==='answered'?`<span class="muted">${x.score||0}/${x.total||0}</span>`:''}</li>`)}
+      ${list('🗒️ Ghi chú','',notes, n=>`<li>${n.done?'<span class="muted">✓ </span>':''}${esc((n.text||'').slice(0,80))||'(trống)'} ${n.remind_at?`<span class="pill">⏰ ${fmtDate(n.remind_at)}</span>`:''}</li>`)}
+      ${list('⚔️ Trận đấu','',duels, x=>`<li>${esc(x.title||'trận')} <span class="pill">${esc(x.status||'')}</span> <span class="muted">${x.score_a||0} - ${x.score_b||0}</span></li>`)}
+      ${list('☀️ Câu hỏi mỗi ngày','',daily.slice(0,12), x=>`<li><span class="muted">${esc(x.day||'')}</span> ${esc((x.question||'').slice(0,70))}</li>`)}
+
+      <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
+        ${canEdit()?`<button class="btn danger" data-act="del-space" data-id="${esc(sp.id)}">🗑️ Xóa phòng (kèm toàn bộ nội dung)</button>`:''}
+        <div class="spacer"></div>
+        <button class="btn ghost" data-act="close-modal">Đóng</button>
+      </div>`;
+    $('#modal').innerHTML = `<div class="overlay" data-act="overlay"><div class="modal" data-act="stop">${body}</div></div>`;
+  }
+  function closeModal(){ $('#modal').innerHTML=''; }
+
+  /* ====== HÀNH ĐỘNG ====== */
+  async function doLogin(){
+    const u=$('#au').value.trim(), p=$('#ap').value;
+    if(!u||!p){ toast('Nhập đủ tên và mật khẩu'); return; }
+    let adm; try{ adm=await getAdmin(u); }catch(e){ toast('Lỗi kết nối: '+e.message); return; }
+    if(!adm || adm.passcode!==hashPass(p)){ $('#loginnote').textContent='Sai tên đăng nhập hoặc mật khẩu.'; return; }
+    A.admin=u; A.role=roleOf(adm); saveSession(u); await enterApp();
+  }
+  async function doSetup(){
+    const u=$('#au').value.trim(), p=$('#ap').value, p2=$('#ap2').value;
+    if(!u||!p){ toast('Nhập đủ tên và mật khẩu'); return; }
+    if(p!==p2){ toast('Hai mật khẩu chưa khớp'); return; }
+    if(p.length<4){ toast('Mật khẩu tối thiểu 4 ký tự'); return; }
+    // Tài khoản quản trị ĐẦU TIÊN luôn là Chủ hệ thống (owner)
+    try{ await createAdmin({ username:u, passcode:hashPass(p), role:'owner', created_at:new Date().toISOString() }); }
+    catch(e){ toast('Không tạo được: '+e.message); return; }
+    noAdminYet=false; A.admin=u; A.role='owner'; saveSession(u); toast('Đã tạo tài khoản quản trị 🎉'); await enterApp();
+  }
+  async function loadAdminsList(){ try{ A.admins=await listAdmins(); }catch(e){ A.admins=[]; } }
+  async function enterApp(){
+    render();
+    try{ await refresh(); }catch(e){ toast('Lỗi tải dữ liệu: '+e.message); }
+    if(canManageAdmins()) await loadAdminsList();
+    render();
+  }
+
+  async function resetPin(username){
+    if(!requireEdit()) return;
+    const pin=prompt('Đặt PIN/mật khẩu MỚI cho "'+username+'":');
+    if(pin==null) return; if(!pin.trim()){ toast('PIN trống'); return; }
+    try{ const {error}=await sb.from('users').update({passcode:hashPass(pin.trim())}).eq('username',username); if(error) throw error;
+      toast('Đã đặt lại PIN cho '+username); }
+    catch(e){ toast('Lỗi: '+e.message); }
+  }
+  async function unpairUser(username){
+    if(!requireEdit()) return;
+    const u=A.data.users.find(x=>x.username===username); if(!u) return;
+    if(!confirm('Gỡ ghép đôi cho "'+username+'"? Tài khoản sẽ rời khỏi phòng '+(u.space_id||'')+'.\n(Không xóa dữ liệu phòng, chỉ tách người này ra.)')) return;
+    try{
+      const {error}=await sb.from('users').update({space_id:null, person:null}).eq('username',username); if(error) throw error;
+      // Gỡ tham chiếu trong space (nếu người này là A hoặc B)
+      if(u.space_id){
+        const sp=A.data.spaces.find(s=>s.id===u.space_id);
+        if(sp){ const patch={};
+          if(sp.person_a_username===username){ patch.person_a_username=null; }
+          if(sp.person_b_username===username){ patch.person_b_username=null; }
+          if(Object.keys(patch).length){ await sb.from('spaces').update(patch).eq('id',u.space_id); }
+        }
+      }
+      toast('Đã gỡ ghép '+username); await refresh(); render();
+    }catch(e){ toast('Lỗi: '+e.message); }
+  }
+  async function delUser(username){
+    if(!requireEdit()) return;
+    if(!confirm('XÓA hẳn tài khoản "'+username+'"?\nThao tác này không hoàn tác được. Dữ liệu phòng KHÔNG bị xóa.')) return;
+    try{ const {error}=await sb.from('users').delete().eq('username',username); if(error) throw error;
+      // Gỡ tham chiếu username trong spaces
+      const u=A.data.users.find(x=>x.username===username);
+      if(u&&u.space_id){ const sp=A.data.spaces.find(s=>s.id===u.space_id);
+        if(sp){ const patch={};
+          if(sp.person_a_username===username) patch.person_a_username=null;
+          if(sp.person_b_username===username) patch.person_b_username=null;
+          if(Object.keys(patch).length) await sb.from('spaces').update(patch).eq('id',u.space_id);
+        } }
+      toast('Đã xóa tài khoản '+username); await refresh(); render();
+    }catch(e){ toast('Lỗi: '+e.message); }
+  }
+
+  async function saveSpace(sid){
+    if(!requireEdit()) return;
+    const patch={
+      name:$('#e_name').value.trim()||null,
+      start_date:$('#e_start').value||null,
+      streak:parseInt($('#e_streak').value,10)||0,
+      theme:$('#e_theme').value,
+    };
+    try{ const {error}=await sb.from('spaces').update(patch).eq('id',sid); if(error) throw error;
+      toast('Đã lưu phòng'); await refresh(); closeModal(); openSpaceModal(sid); render();
+    }catch(e){ toast('Lỗi: '+e.message); }
+  }
+  async function delSpace(sid){
+    if(!requireEdit()) return;
+    const sp=A.data.spaces.find(s=>s.id===sid);
+    if(!confirm('XÓA phòng "'+(sp?.name||sid)+'" (mã '+sid+')?\n\nSẽ xóa TOÀN BỘ: bộ thẻ, thẻ từ, bài dò, ghi chú, trận đấu, câu hỏi mỗi ngày của phòng này. Hai tài khoản thành viên sẽ bị gỡ khỏi phòng.\n\nKHÔNG hoàn tác được.')) return;
+    try{
+      // FK on delete cascade lo phần decks/cards/quizzes/notes/duels/daily/push_subscriptions.
+      // Ta tự dọn: gỡ user khỏi phòng + xóa lời mời liên quan.
+      const members=A.data.users.filter(u=>u.space_id===sid);
+      for(const u of members){ await sb.from('users').update({space_id:null,person:null}).eq('username',u.username); }
+      await sb.from('invites').delete().eq('space_id',sid);
+      const {error}=await sb.from('spaces').delete().eq('id',sid); if(error) throw error;
+      toast('Đã xóa phòng '+sid); closeModal(); await refresh(); render();
+    }catch(e){ toast('Lỗi: '+e.message); }
+  }
+
+  /* ---- Quản lý quản trị viên (chỉ owner) ---- */
+  async function addAdmin(){
+    if(!requireOwner()) return;
+    const u=$('#na_user').value.trim(), p=$('#na_pass').value, role=$('#na_role').value;
+    if(!u||!p){ toast('Nhập đủ tên và mật khẩu'); return; }
+    if(p.length<4){ toast('Mật khẩu tối thiểu 4 ký tự'); return; }
+    if(!ROLES.includes(role)){ toast('Vai trò không hợp lệ'); return; }
+    if(A.admins.some(a=>a.username===u)){ toast('Tên quản trị này đã tồn tại'); return; }
+    try{ await createAdmin({ username:u, passcode:hashPass(p), role, created_at:new Date().toISOString() }); }
+    catch(e){ toast('Không thêm được: '+e.message); return; }
+    toast('Đã thêm quản trị viên '+u); await loadAdminsList(); render();
+  }
+  async function delAdmin(username){
+    if(!requireOwner()) return;
+    if(username===A.admin){ toast('Không thể tự xóa chính mình'); return; }
+    const owners=A.admins.filter(a=>roleOf(a)==='owner');
+    const target=A.admins.find(a=>a.username===username);
+    if(target && roleOf(target)==='owner' && owners.length<=1){ toast('Phải còn ít nhất 1 Chủ hệ thống'); return; }
+    if(!confirm('Xóa quản trị viên "'+username+'"? Tài khoản này sẽ không đăng nhập được trang quản trị nữa.')) return;
+    try{ await deleteAdmin(username); }catch(e){ toast('Lỗi: '+e.message); return; }
+    toast('Đã xóa quản trị viên '+username); await loadAdminsList(); render();
+  }
+  async function changeAdminRole(username, role){
+    if(!requireOwner()) return;
+    if(!ROLES.includes(role)) return;
+    const target=A.admins.find(a=>a.username===username); if(!target) return;
+    const owners=A.admins.filter(a=>roleOf(a)==='owner');
+    // Không cho hạ cấp Chủ hệ thống cuối cùng (kể cả chính mình) → tránh khóa hệ thống
+    if(roleOf(target)==='owner' && role!=='owner' && owners.length<=1){ toast('Phải còn ít nhất 1 Chủ hệ thống'); await loadAdminsList(); render(); return; }
+    try{ await updateAdmin(username,{role}); }catch(e){ toast('Lỗi: '+e.message); return; }
+    if(username===A.admin) A.role=role;   // tự đổi vai trò mình → cập nhật quyền hiện tại
+    toast('Đã đổi vai trò '+username+' → '+ROLE_LABEL[role]); await loadAdminsList(); render();
+  }
+
+  /* ====== Event delegation ====== */
+  document.addEventListener('click', async (e)=>{
+    const el=e.target.closest('[data-act]'); if(!el) return;
+    const act=el.getAttribute('data-act'), id=el.getAttribute('data-id');
+    switch(act){
+      case 'stop': break;
+      case 'overlay': closeModal(); break;
+      case 'close-modal': closeModal(); break;
+      case 'do-login': doLogin(); break;
+      case 'do-setup': doSetup(); break;
+      case 'logout': clearSession(); A.admin=null; A.data=null; render(); break;
+      case 'reload': toast('Đang tải lại…'); try{ await refresh(); }catch(err){ toast('Lỗi: '+err.message); } render(); break;
+      case 'tab': A.tab=id; A.q=''; render(); break;
+      case 'open-space': openSpaceModal(id); break;
+      case 'reset-pin': resetPin(id); break;
+      case 'unpair-user': unpairUser(id); break;
+      case 'del-user': delUser(id); break;
+      case 'save-space': saveSpace(id); break;
+      case 'del-space': delSpace(id); break;
+      case 'add-admin': addAdmin(); break;
+      case 'del-admin': delAdmin(id); break;
+    }
+  });
+  document.addEventListener('change', (e)=>{
+    if(e.target.classList.contains('rolesel')){ changeAdminRole(e.target.getAttribute('data-user'), e.target.value); }
+  });
+  document.addEventListener('input', (e)=>{
+    if(e.target.matches('[data-act="search"]')){ A.q=e.target.value;
+      const body=$('#tabbody'); if(body) body.innerHTML=tabBody();
+      const inp=$('[data-act="search"]'); if(inp){ inp.focus(); const v=inp.value; inp.value=''; inp.value=v; } }
+  });
+  document.addEventListener('keydown',(e)=>{
+    if(e.key==='Enter'){ if($('#ap')&&document.activeElement&&(document.activeElement.id==='ap'||document.activeElement.id==='ap2'||document.activeElement.id==='au')){
+      noAdminYet?doSetup():doLogin(); } }
+    if(e.key==='Escape') closeModal();
+  });
+
+  /* ====== Khởi động ====== */
+  (async function boot(){
+    render();
+    let admins=[];
+    try{ admins=await listAdmins(); }
+    catch(e){
+      // Bảng admins chưa tồn tại → hướng dẫn chạy SQL
+      $('#app').innerHTML=`<div class="login"><div class="card">
+        <h2>Cần thiết lập cơ sở dữ liệu</h2>
+        <div class="warnbox">Chưa có bảng <b>admins</b> trong Supabase. Mở Supabase → SQL Editor → chạy đoạn trong <b>schema.sql</b> (đã bổ sung bảng admins), rồi tải lại trang này.</div>
+        <div class="note">Lỗi: ${esc(e.message)}</div>
+        <button class="btn pri" style="width:100%;margin-top:12px" onclick="location.reload()">Tải lại</button>
+      </div></div>`;
+      return;
+    }
+    noAdminYet = admins.length===0;
+    A.admins = admins;
+    const sess=loadSession();
+    const me = sess && admins.find(a=>a.username===sess);
+    if(me){ A.admin=me.username; A.role=roleOf(me); await enterApp(); return; }
+    render();
+  })();
+  </script>
+</body>
+</html>

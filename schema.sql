@@ -162,6 +162,16 @@ alter table spaces  add column if not exists learned_a jsonb default '[]'::jsonb
 alter table spaces  add column if not exists learned_b jsonb default '[]'::jsonb; -- tương tự cho người B
 alter table spaces  add column if not exists heart_photos jsonb default '[]'::jsonb; -- ảnh cặp đôi hiển thị trong "ly tim" ở màn Nhà (mảng data URL JPEG nén)
 
+-- Tài khoản QUẢN TRỊ hệ thống (đăng nhập trang admin.html để xem/sửa/xóa toàn hệ thống)
+-- Lần đầu vào admin.html sẽ tự hiện màn "Thiết lập quản trị" để tạo tài khoản đầu tiên.
+create table if not exists admins (
+  username    text primary key,
+  passcode    text,                       -- mật khẩu đã băm nhẹ (djb2, khớp index.html)
+  role        text default 'manager',      -- 'owner' (Chủ hệ thống, toàn quyền + quản lý admin) | 'manager' (sửa/xóa user & phòng) | 'viewer' (chỉ xem)
+  created_at  timestamptz default now()
+);
+alter table admins add column if not exists role text default 'manager';   -- bổ sung cho DB đã tạo bảng admins từ trước
+
 -- Cache ví dụ AI theo TỪ (toàn cục, không theo phòng) để khỏi gọi AI lại tốn token
 create table if not exists word_examples (
   word         text primary key,   -- từ/cụm tiếng Anh, viết thường
@@ -181,7 +191,7 @@ create table if not exists word_examples (
 do $$
 declare t text;
 begin
-  foreach t in array array['users','spaces','invites','decks','cards','quizzes','notes','daily','duels','push_subscriptions','word_examples'] loop
+  foreach t in array array['users','spaces','invites','decks','cards','quizzes','notes','daily','duels','push_subscriptions','word_examples','admins'] loop
     execute format('alter table %I enable row level security;', t);
     execute format('drop policy if exists "allow all" on %I;', t);
     execute format('create policy "allow all" on %I for all using (true) with check (true);', t);
