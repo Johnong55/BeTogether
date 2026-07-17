@@ -13,104 +13,129 @@
 <style>
   :root{
     --p1:#d97a92; --p2:#e7a3b4; --accent:#c79a72; --ok:#6cab8e; --no:#e08a93; --warn:#d99a4e;
-    --bg1:#fcf7f4; --bg2:#f6ebe9; --card:#fffdfc; --ink:#473a40; --soft:#9c8a90;
-    --line:#efe1de; --chip:#f6ece9;
-    --shadow:0 14px 34px rgba(160,110,120,.14); --shadow-sm:0 6px 16px rgba(160,110,120,.10);
-    --edge:#4a3d43; --grid:rgba(150,105,115,.11);
+    --bg1:#fbf6f4; --bg2:#f6ebe9; --card:#fffdfc; --ink:#473a40; --soft:#9c8a90;
+    --line:#efe1de; --chip:#f6ece9; --side:#fffaf8;
+    --shadow:0 14px 34px rgba(160,110,120,.14); --shadow-sm:0 6px 16px rgba(160,110,120,.08);
+    --edge:#4a3d43;
   }
   *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  html,body{ margin:0; padding:0; }
-  body{ font-family:'Nunito',sans-serif; color:var(--ink); min-height:100vh;
-    background-color:var(--bg1);
-    background-image:linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-    background-size:24px 24px, 24px 24px; }
+  html,body{ margin:0; padding:0; height:100%; }
+  body{ font-family:'Nunito',sans-serif; color:var(--ink); background:var(--bg1); min-height:100vh; }
   h1,h2,h3{ font-family:'Fraunces',serif; font-weight:600; letter-spacing:-.01em; margin:0; }
   a{ color:var(--p1); }
-  .wrap{ max-width:1040px; margin:0 auto; padding:16px 16px 80px; }
+  ::-webkit-scrollbar{ width:10px; height:10px; } ::-webkit-scrollbar-thumb{ background:#e6d3d0; border-radius:8px; border:2px solid var(--bg1); }
 
-  /* Header */
-  .topbar{ display:flex; align-items:center; gap:12px; padding:14px 4px 18px; flex-wrap:wrap; }
-  .brand{ display:flex; align-items:center; gap:10px; }
-  .brand .dot{ width:34px; height:34px; border-radius:11px; background:linear-gradient(135deg,var(--p1),var(--p2)); box-shadow:var(--shadow-sm); display:grid; place-items:center; color:#fff; font-size:18px; }
-  .brand h1{ font-size:20px; }
-  .brand small{ display:block; color:var(--soft); font-weight:700; font-size:12px; letter-spacing:.02em; }
-  .spacer{ flex:1; }
+  .btn{ font-family:'Nunito'; font-weight:800; border:1.5px solid var(--line); background:var(--card);
+    color:var(--ink); border-radius:11px; padding:9px 14px; cursor:pointer; font-size:14px;
+    transition:background .12s, transform .06s, box-shadow .12s; display:inline-flex; align-items:center; gap:6px; }
+  .btn:hover{ box-shadow:var(--shadow-sm); }
+  .btn:active{ transform:translateY(1px); }
+  .btn.pri{ background:linear-gradient(135deg,var(--p1),var(--p2)); color:#fff; border-color:transparent; }
+  .btn.danger{ background:#fff; color:#c0485a; border-color:#f0c9d0; }
+  .btn.danger:hover{ background:#fdeef0; }
+  .btn.sm{ padding:6px 10px; font-size:13px; border-radius:9px; }
+  .btn.ghost{ background:transparent; border-color:transparent; }
+  .btn[disabled]{ opacity:.5; cursor:not-allowed; }
 
-  .btn{ font-family:'Nunito'; font-weight:800; border:2px solid var(--edge); background:var(--card);
-    color:var(--ink); border-radius:13px; padding:9px 14px; cursor:pointer; box-shadow:3px 3px 0 var(--edge);
-    transition:transform .08s ease, box-shadow .08s ease; font-size:14px; }
-  .btn:active{ transform:translate(2px,2px); box-shadow:1px 1px 0 var(--edge); }
-  .btn.pri{ background:linear-gradient(135deg,var(--p1),var(--p2)); color:#fff; border-color:var(--edge); }
-  .btn.danger{ background:#fbeaec; color:#b23b4b; }
-  .btn.sm{ padding:6px 10px; font-size:13px; border-radius:10px; box-shadow:2px 2px 0 var(--edge); }
-  .btn.ghost{ box-shadow:none; border-color:var(--line); background:transparent; }
+  input, select, textarea{ font-family:'Nunito'; font-weight:600; font-size:14.5px; color:var(--ink);
+    border:1.5px solid var(--line); background:var(--card); border-radius:10px; padding:10px 12px; width:100%; }
+  input:focus, select:focus, textarea:focus{ outline:none; border-color:var(--p2); box-shadow:0 0 0 3px rgba(231,163,180,.18); }
+  textarea{ resize:vertical; min-height:80px; line-height:1.5; }
+  label.f{ display:block; font-weight:800; font-size:12.5px; margin:12px 0 5px; color:var(--soft); }
 
-  input, select{ font-family:'Nunito'; font-weight:600; font-size:15px; color:var(--ink);
-    border:2px solid var(--line); background:var(--card); border-radius:12px; padding:10px 12px; width:100%; }
-  input:focus, select:focus{ outline:none; border-color:var(--p2); }
-  label.f{ display:block; font-weight:800; font-size:13px; margin:10px 0 5px; color:var(--soft); }
-
-  .card{ background:var(--card); border:2px solid var(--edge); border-radius:18px; box-shadow:var(--shadow-sm);
-    padding:16px; margin-bottom:14px; }
-
-  /* Tabs */
-  .tabs{ display:flex; gap:8px; margin:6px 0 16px; flex-wrap:wrap; }
-  .tab{ font-weight:800; font-size:14px; border:2px solid var(--edge); background:var(--card); color:var(--ink);
-    padding:8px 16px; border-radius:999px; cursor:pointer; box-shadow:2px 2px 0 var(--edge); }
-  .tab.on{ background:linear-gradient(135deg,var(--p1),var(--p2)); color:#fff; }
-
-  /* Stats grid */
-  .stats{ display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; }
-  .stat{ background:var(--card); border:2px solid var(--edge); border-radius:16px; padding:14px 16px; box-shadow:2px 2px 0 var(--edge); }
-  .stat .n{ font-family:'Fraunces',serif; font-size:30px; font-weight:600; line-height:1; }
-  .stat .l{ color:var(--soft); font-weight:800; font-size:12px; margin-top:6px; text-transform:uppercase; letter-spacing:.03em; }
-  .stat.accent .n{ color:var(--p1); }
-
-  /* Table */
-  .tbl-wrap{ overflow-x:auto; border:2px solid var(--edge); border-radius:16px; box-shadow:2px 2px 0 var(--edge); background:var(--card); }
-  table{ border-collapse:collapse; width:100%; font-size:14px; min-width:560px; }
-  th,td{ text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:middle; }
-  th{ font-weight:800; color:var(--soft); font-size:12px; text-transform:uppercase; letter-spacing:.03em; background:var(--bg2); position:sticky; top:0; }
-  tr:last-child td{ border-bottom:none; }
-  tr.rowlink{ cursor:pointer; }
-  tr.rowlink:hover{ background:var(--chip); }
+  .card{ background:var(--card); border:1.5px solid var(--line); border-radius:16px; box-shadow:var(--shadow-sm); padding:18px; }
   .muted{ color:var(--soft); }
-  .pill{ display:inline-block; padding:2px 9px; border-radius:999px; font-weight:800; font-size:12px; background:var(--chip); color:var(--ink); }
-  .pill.ok{ background:#e4f3ec; color:#2f7f5f; }
-  .pill.no{ background:#fbeaec; color:#b23b4b; }
-  .pill.warn{ background:#fbf0dd; color:#9a6a1e; }
-  .ava{ width:28px; height:28px; border-radius:9px; object-fit:cover; border:1.5px solid var(--line); background:var(--chip); display:inline-grid; place-items:center; font-weight:800; font-size:12px; color:var(--soft); vertical-align:middle; }
+  .mini{ font-size:13px; }
+  .pill{ display:inline-flex; align-items:center; gap:4px; padding:2px 9px; border-radius:999px; font-weight:800; font-size:12px; background:var(--chip); color:var(--ink); }
+  .pill.ok{ background:#e4f3ec; color:#2f7f5f; } .pill.no{ background:#fbeaec; color:#b23b4b; }
+  .pill.warn{ background:#fbf0dd; color:#9a6a1e; } .pill.info{ background:#e7eefb; color:#3a5a9a; }
+  .empty{ text-align:center; color:var(--soft); font-weight:700; padding:34px 10px; }
+
+  /* ===== Layout: sidebar + main ===== */
+  .shell{ display:grid; grid-template-columns:248px 1fr; min-height:100vh; }
+  .side{ background:var(--side); border-right:1.5px solid var(--line); display:flex; flex-direction:column;
+    position:sticky; top:0; height:100vh; z-index:40; }
+  .side .brand{ display:flex; align-items:center; gap:11px; padding:20px 20px 16px; }
+  .side .brand .dot{ width:40px; height:40px; border-radius:13px; background:linear-gradient(135deg,var(--p1),var(--p2)); display:grid; place-items:center; color:#fff; font-size:20px; box-shadow:var(--shadow-sm); }
+  .side .brand h1{ font-size:19px; line-height:1; } .side .brand small{ display:block; color:var(--soft); font-weight:800; font-size:11px; letter-spacing:.06em; text-transform:uppercase; margin-top:3px; }
+  .nav{ padding:6px 12px; display:flex; flex-direction:column; gap:3px; overflow-y:auto; flex:1; }
+  .nav .item{ display:flex; align-items:center; gap:11px; padding:11px 13px; border-radius:12px; cursor:pointer; font-weight:800; font-size:14.5px; color:var(--ink); border:none; background:none; width:100%; text-align:left; }
+  .nav .item .ic{ font-size:18px; width:22px; text-align:center; }
+  .nav .item:hover{ background:var(--chip); }
+  .nav .item.on{ background:linear-gradient(135deg,var(--p1),var(--p2)); color:#fff; box-shadow:var(--shadow-sm); }
+  .nav .navlabel{ font-size:11px; font-weight:800; color:var(--soft); text-transform:uppercase; letter-spacing:.06em; padding:14px 14px 5px; }
+  .side .foot{ border-top:1.5px solid var(--line); padding:13px 16px; display:flex; align-items:center; gap:9px; }
+  .side .foot .who{ font-weight:800; font-size:13px; line-height:1.2; } .side .foot .who small{ color:var(--soft); display:block; font-size:11px; }
+
+  .main{ min-width:0; display:flex; flex-direction:column; }
+  .topbar{ position:sticky; top:0; z-index:20; background:rgba(251,246,244,.86); backdrop-filter:blur(8px);
+    border-bottom:1.5px solid var(--line); padding:14px 24px; display:flex; align-items:center; gap:12px; }
+  .topbar .burger{ display:none; }
+  .topbar h2{ font-size:21px; } .topbar .sub{ color:var(--soft); font-weight:700; font-size:12.5px; margin-top:1px; }
+  .topbar .spacer{ flex:1; }
+  .content{ padding:24px; max-width:1180px; width:100%; }
+
+  /* ===== Stats ===== */
+  .sech{ font-family:'Fraunces',serif; font-weight:600; font-size:15px; color:var(--ink); margin:4px 2px 12px; display:flex; align-items:center; gap:8px; }
+  .stats{ display:grid; grid-template-columns:repeat(auto-fit,minmax(158px,1fr)); gap:13px; margin-bottom:22px; }
+  .stat{ background:var(--card); border:1.5px solid var(--line); border-radius:15px; padding:15px 16px; box-shadow:var(--shadow-sm); position:relative; overflow:hidden; }
+  .stat .ic{ position:absolute; right:12px; top:11px; font-size:20px; opacity:.5; }
+  .stat .n{ font-family:'Fraunces',serif; font-size:29px; font-weight:600; line-height:1; }
+  .stat .l{ color:var(--soft); font-weight:800; font-size:12px; margin-top:7px; }
+  .stat.accent{ background:linear-gradient(135deg,#fff, #fdf1f3); border-color:#f3d9df; } .stat.accent .n{ color:var(--p1); }
+
+  /* ===== Table ===== */
+  .toolbar{ display:flex; gap:10px; align-items:center; margin-bottom:14px; flex-wrap:wrap; }
+  .toolbar .search{ flex:1; min-width:200px; max-width:420px; }
+  .tbl-wrap{ overflow-x:auto; border:1.5px solid var(--line); border-radius:15px; box-shadow:var(--shadow-sm); background:var(--card); }
+  table{ border-collapse:collapse; width:100%; font-size:14px; min-width:560px; }
+  th,td{ text-align:left; padding:11px 14px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  th{ font-weight:800; color:var(--soft); font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; background:#fdf8f6; position:sticky; top:0; }
+  tr:last-child td{ border-bottom:none; }
+  tr.rowlink{ cursor:pointer; } tr.rowlink:hover{ background:var(--chip); }
   .row-actions{ display:flex; gap:6px; flex-wrap:wrap; }
 
-  .toolbar{ display:flex; gap:10px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
-  .toolbar .search{ flex:1; min-width:200px; }
-
-  /* Overlay / modal */
-  .overlay{ position:fixed; inset:0; background:rgba(60,40,45,.42); backdrop-filter:blur(2px); z-index:50; display:flex; align-items:flex-start; justify-content:center; padding:24px 14px; overflow:auto; }
-  .modal{ background:var(--bg1); border:2px solid var(--edge); border-radius:20px; box-shadow:8px 8px 0 var(--edge); width:100%; max-width:640px; padding:18px; }
-  .modal h2{ font-size:20px; margin-bottom:2px; }
-  .modal .sub{ color:var(--soft); font-weight:700; font-size:13px; margin-bottom:14px; }
-  .modal .x{ float:right; cursor:pointer; font-size:22px; color:var(--soft); line-height:1; border:none; background:none; }
-  .kv{ display:grid; grid-template-columns:auto 1fr; gap:4px 14px; font-size:14px; margin:8px 0; }
+  /* ===== Modal ===== */
+  .overlay{ position:fixed; inset:0; background:rgba(60,40,45,.44); backdrop-filter:blur(3px); z-index:60; display:flex; align-items:flex-start; justify-content:center; padding:26px 14px; overflow:auto; }
+  .modal{ background:var(--bg1); border:1.5px solid var(--line); border-radius:20px; box-shadow:0 30px 70px rgba(90,50,60,.3); width:100%; max-width:660px; padding:22px; }
+  .modal h2{ font-size:21px; } .modal .sub{ color:var(--soft); font-weight:700; font-size:13px; margin:2px 0 14px; }
+  .modal .x{ float:right; cursor:pointer; font-size:24px; color:var(--soft); line-height:1; border:none; background:none; }
+  .kv{ display:grid; grid-template-columns:auto 1fr; gap:5px 16px; font-size:14px; margin:8px 0; }
   .kv .k{ color:var(--soft); font-weight:800; }
-  .sec-title{ font-family:'Fraunces',serif; font-weight:600; font-size:15px; margin:16px 0 8px; display:flex; align-items:center; gap:8px; }
+  .sec-title{ font-family:'Fraunces',serif; font-weight:600; font-size:15px; margin:18px 0 9px; display:flex; align-items:center; gap:8px; }
   .sec-title .badge{ background:var(--chip); border-radius:999px; padding:1px 9px; font-size:12px; font-family:'Nunito'; font-weight:800; color:var(--soft); }
-  .mini{ font-size:13px; }
-  .mini li{ margin:3px 0; }
-  .empty{ text-align:center; color:var(--soft); font-weight:700; padding:26px 10px; }
+  .wordrow{ display:flex; gap:8px; align-items:center; padding:8px 0; border-bottom:1px dashed var(--line); font-size:14px; }
+  .wordrow:last-child{ border-bottom:none; }
+  .wordrow .w-front{ font-weight:800; min-width:120px; } .wordrow .w-back{ flex:1; color:#5b4c52; }
 
-  /* Login */
-  .login{ max-width:380px; margin:8vh auto 0; }
-  .login .card{ padding:22px; }
-  .login h2{ font-size:22px; margin-bottom:2px; }
-  .login .sub{ color:var(--soft); font-weight:700; font-size:13px; margin-bottom:8px; }
+  /* ===== Login ===== */
+  .login{ min-height:100vh; display:grid; place-items:center; padding:20px; }
+  .login .card{ width:100%; max-width:390px; padding:26px; }
+  .login .lbrand{ display:flex; align-items:center; gap:11px; margin-bottom:14px; }
+  .login .lbrand .dot{ width:42px; height:42px; border-radius:13px; background:linear-gradient(135deg,var(--p1),var(--p2)); display:grid; place-items:center; color:#fff; font-size:21px; }
+  .login h2{ font-size:22px; } .login .sub{ color:var(--soft); font-weight:700; font-size:13px; margin-bottom:6px; }
 
   .toast{ position:fixed; left:50%; bottom:26px; transform:translateX(-50%); background:var(--edge); color:#fff;
-    font-weight:800; padding:11px 18px; border-radius:13px; z-index:99; box-shadow:var(--shadow); opacity:0;
-    transition:opacity .2s, transform .2s; pointer-events:none; font-size:14px; }
+    font-weight:800; padding:11px 18px; border-radius:12px; z-index:99; box-shadow:var(--shadow); opacity:0;
+    transition:opacity .2s, transform .2s; pointer-events:none; font-size:14px; max-width:90vw; }
   .toast.show{ opacity:1; transform:translateX(-50%) translateY(-4px); }
   .note{ font-size:12px; color:var(--soft); font-weight:700; margin-top:8px; }
-  .warnbox{ background:#fbf0dd; border:2px solid #e6c98a; color:#8a5e14; border-radius:13px; padding:11px 13px; font-weight:700; font-size:13px; margin:10px 0; }
+  .warnbox{ background:#fbf0dd; border:1.5px solid #ecd39a; color:#8a5e14; border-radius:12px; padding:12px 14px; font-weight:700; font-size:13px; margin:10px 0; }
+  .infobox{ background:#eef3fc; border:1.5px solid #cdddf5; color:#3a5a9a; border-radius:12px; padding:12px 14px; font-weight:700; font-size:13px; }
+
+  .ing-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; }
+  .drop{ border:2px dashed var(--line); border-radius:14px; padding:26px 16px; text-align:center; color:var(--soft); font-weight:800; background:#fdf8f6; }
+
+  .scrim{ display:none; }
+  @media(max-width:860px){
+    .shell{ grid-template-columns:1fr; }
+    .side{ position:fixed; left:0; top:0; width:260px; transform:translateX(-102%); transition:transform .22s cubic-bezier(.22,1,.36,1); box-shadow:0 0 60px rgba(60,40,45,.25); }
+    body.nav-open .side{ transform:translateX(0); }
+    body.nav-open .scrim{ display:block; position:fixed; inset:0; background:rgba(60,40,45,.4); z-index:39; }
+    .topbar .burger{ display:inline-flex; }
+    .content{ padding:18px 16px; }
+    .topbar{ padding:12px 16px; }
+  }
 </style>
 </head>
 <body>
@@ -125,8 +150,8 @@
   const SUPABASE_ANON_KEY = "sb_publishable_YDj6liDtYbMFq38GhwCwIQ_KlS-lNwI";
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  /* Băm mật khẩu — cùng thuật toán djb2 với index.html để tương thích */
   const hashPass = (s)=>{ let h=5381; for(let i=0;i<s.length;i++) h=((h<<5)+h+s.charCodeAt(i))>>>0; return 'h'+h.toString(36); };
+  const genId = ()=> Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 
   const $ = (s,r=document)=>r.querySelector(s);
   const esc = (s)=> (s==null?'':String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -135,37 +160,47 @@
   const todayISO = ()=> new Date().toISOString().slice(0,10);
   const daysAgo = (n)=>{ const d=new Date(); d.setDate(d.getDate()-n); return d.toISOString().slice(0,10); };
   let toastT=null;
-  function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2200); }
+  function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2400); }
 
   /* ====== Trạng thái ====== */
-  const A = { admin:null, role:null, tab:'overview', data:null, q:'', admins:[] };
+  const A = { admin:null, role:null, tab:'overview', data:null, q:'', admins:[], lib:null, navOpen:false };
   const SESSION_KEY = 'cungnhau_admin_session';
 
-  /* ====== Vai trò & phân quyền ======
-     owner  = Chủ hệ thống: toàn quyền, quản lý cả tài khoản quản trị khác
-     manager= Quản lý: xem + sửa/xóa người dùng & phòng, KHÔNG quản admin
-     viewer = Chỉ xem: chỉ đọc, không sửa/xóa được gì                       */
+  /* ====== Vai trò & phân quyền ====== */
   const ROLES = ['owner','manager','viewer'];
   const ROLE_LABEL = { owner:'Chủ hệ thống', manager:'Quản lý', viewer:'Chỉ xem' };
-  const ROLE_DESC  = { owner:'Toàn quyền + quản lý quản trị viên', manager:'Sửa/xóa người dùng & phòng', viewer:'Chỉ được xem, không sửa/xóa' };
-  const roleOf = (a)=> (a && a.role) || 'owner';   // thiếu cột role (DB cũ) → coi như owner để không khóa nhầm
+  const ROLE_DESC  = { owner:'Toàn quyền + quản lý quản trị viên', manager:'Sửa/xóa người dùng, phòng, thư viện', viewer:'Chỉ được xem, không sửa/xóa' };
+  const roleOf = (a)=> (a && a.role) || 'owner';
   function canEdit(){ return A.role==='owner' || A.role==='manager'; }
   function canManageAdmins(){ return A.role==='owner'; }
   function requireEdit(){ if(!canEdit()){ toast('Tài khoản này chỉ có quyền xem'); return false; } return true; }
   function requireOwner(){ if(!canManageAdmins()){ toast('Chỉ Chủ hệ thống mới làm được'); return false; } return true; }
 
-  /* ====== Xác thực quản trị ====== */
+  const NAV = [
+    {id:'overview', ic:'📊', label:'Tổng quan'},
+    {id:'users',    ic:'👥', label:'Người dùng'},
+    {id:'spaces',   ic:'💞', label:'Phòng'},
+    {sep:'Tri thức'},
+    {id:'library',  ic:'📚', label:'Thư viện chung'},
+    {id:'ingest',   ic:'🧲', label:'Nguồn tri thức'},
+    {sep:'Hệ thống'},
+    {id:'admins',   ic:'🛡️', label:'Quản trị viên', owner:true},
+  ];
+  const pageTitle = (id)=> (NAV.find(n=>n.id===id)||{}).label || 'Quản trị';
+  const pageSub = { overview:'Bức tranh toàn hệ thống', users:'Tất cả tài khoản người dùng', spaces:'Các phòng cặp đôi & nội dung',
+    library:'Chủ đề & bộ từ dùng chung cho mọi cặp đôi', ingest:'Nhập tri thức từ nguồn ngoài (crawl / OCR PDF)', admins:'Tài khoản quản trị & phân quyền' };
+
+  /* ====== Xác thực ====== */
   async function listAdmins(){ const {data,error}=await sb.from('admins').select('username,role,created_at'); if(error) throw error; return data||[]; }
   async function getAdmin(u){ const {data,error}=await sb.from('admins').select('*').eq('username',u).maybeSingle(); if(error) throw error; return data; }
   async function createAdmin(o){ const {error}=await sb.from('admins').insert(o); if(error) throw error; }
   async function updateAdmin(u,patch){ const {error}=await sb.from('admins').update(patch).eq('username',u); if(error) throw error; }
   async function deleteAdmin(u){ const {error}=await sb.from('admins').delete().eq('username',u); if(error) throw error; }
-
   function saveSession(u){ try{ sessionStorage.setItem(SESSION_KEY, u); }catch(e){} }
   function loadSession(){ try{ return sessionStorage.getItem(SESSION_KEY); }catch(e){ return null; } }
   function clearSession(){ try{ sessionStorage.removeItem(SESSION_KEY); }catch(e){} }
 
-  /* ====== Tải toàn bộ dữ liệu ====== */
+  /* ====== Tải dữ liệu ====== */
   async function loadAll(){
     const light='id,name,person_a,person_b,person_a_username,person_b_username,theme,start_date,streak,longest,last_active,created_at';
     const [users,spaces,decks,cards,quizzes,notes,duels,daily,invites,pushes] = await Promise.all([
@@ -186,77 +221,87 @@
       invites:invites.data||[], pushes:pushes.data||[] };
   }
   async function refresh(){ A.data = await loadAll(); }
-
-  /* ====== Helper theo phòng ====== */
-  const bySpace = (arr,sid)=> arr.filter(x=>x.space_id===sid);
-  function spaceMembers(sp){
-    const a = sp.person_a||sp.person_a_username||'?';
-    const b = sp.person_b||sp.person_b_username||'?';
-    return {a,b};
+  async function loadLibrary(){
+    try{
+      const [t,w]=await Promise.all([
+        sb.from('library_topics').select('*').order('created_at',{ascending:false}),
+        sb.from('library_words').select('id,topic_id,front,back,example,pos'),
+      ]);
+      if(t.error) throw t.error; if(w.error) throw w.error;
+      A.lib={ ok:true, topics:t.data||[], words:w.data||[] };
+    }catch(e){ A.lib={ ok:false, topics:[], words:[], err:e.message }; }
   }
+  async function loadAdminsList(){ try{ A.admins=await listAdmins(); }catch(e){ A.admins=[]; } }
+
+  const bySpace = (arr,sid)=> arr.filter(x=>x.space_id===sid);
+  const wordsOf = (tid)=> (A.lib?A.lib.words:[]).filter(w=>w.topic_id===tid);
+  function spaceMembers(sp){ return { a:sp.person_a||sp.person_a_username||'?', b:sp.person_b||sp.person_b_username||'?' }; }
   function isActive(sp,days=7){ return sp.last_active && sp.last_active >= daysAgo(days); }
-  function avatarLetter(name){ return esc((name||'?').trim().charAt(0).toUpperCase()||'?'); }
 
   /* ====== RENDER ====== */
   function render(){
     const app=$('#app');
-    if(!A.admin){ app.innerHTML = viewLogin(); return; }
+    if(!A.admin){ app.innerHTML = viewLogin(); document.body.classList.remove('nav-open'); return; }
+    const navHTML = NAV.filter(n=>!n.owner||canManageAdmins()).map(n=>{
+      if(n.sep) return `<div class="navlabel">${esc(n.sep)}</div>`;
+      return `<button class="item ${A.tab===n.id?'on':''}" data-act="nav" data-id="${n.id}"><span class="ic">${n.ic}</span>${esc(n.label)}</button>`;
+    }).join('');
     app.innerHTML = `
-      <div class="wrap">
-        <div class="topbar">
-          <div class="brand">
-            <div class="dot">♥</div>
-            <div><h1>cùng nhau</h1><small>Bảng quản trị</small></div>
+      <div class="shell">
+        <aside class="side">
+          <div class="brand"><div class="dot">♥</div><div><h1>cùng nhau</h1><small>Quản trị hệ thống</small></div></div>
+          <nav class="nav">${navHTML}</nav>
+          <div class="foot">
+            <div class="dot" style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--p1),var(--p2));display:grid;place-items:center;color:#fff;font-weight:800">${esc((A.admin||'?').charAt(0).toUpperCase())}</div>
+            <div class="who">${esc(A.admin)}<small>${ROLE_LABEL[A.role]||A.role||''}</small></div>
           </div>
-          <div class="spacer"></div>
-          <span class="muted" style="font-weight:800;font-size:13px">👤 ${esc(A.admin)} <span class="pill ${A.role==='owner'?'ok':(A.role==='viewer'?'':'warn')}" style="margin-left:4px">${ROLE_LABEL[A.role]||A.role||'?'}</span></span>
-          <button class="btn sm ghost" data-act="reload">↻ Tải lại</button>
-          <button class="btn sm" data-act="logout">Đăng xuất</button>
+        </aside>
+        <div class="main">
+          <div class="topbar">
+            <button class="btn ghost sm burger" data-act="toggle-nav" aria-label="menu">☰</button>
+            <div><h2>${esc(pageTitle(A.tab))}</h2><div class="sub">${esc(pageSub[A.tab]||'')}</div></div>
+            <div class="spacer"></div>
+            <button class="btn sm ghost" data-act="reload" title="Tải lại">↻</button>
+            <button class="btn sm" data-act="logout">Đăng xuất</button>
+          </div>
+          <div class="content" id="page">${tabBody()}</div>
         </div>
-        <div class="tabs">
-          ${tabBtn('overview','📊 Tổng quan')}
-          ${tabBtn('users','👥 Người dùng')}
-          ${tabBtn('spaces','💞 Phòng')}
-          ${canManageAdmins()?tabBtn('admins','🛡️ Quản trị viên'):''}
-        </div>
-        <div id="tabbody">${tabBody()}</div>
+        <div class="scrim" data-act="toggle-nav"></div>
       </div>`;
+    document.body.classList.toggle('nav-open', A.navOpen);
   }
-  const tabBtn = (id,label)=> `<button class="tab ${A.tab===id?'on':''}" data-act="tab" data-id="${id}">${label}</button>`;
   function tabBody(){
+    if(A.tab==='library') return viewLibrary();
+    if(A.tab==='ingest')  return viewIngest();
+    if(A.tab==='admins')  return canManageAdmins()? viewAdmins() : viewOverview();
     if(!A.data) return `<div class="empty">Đang tải dữ liệu…</div>`;
     if(A.tab==='overview') return viewOverview();
     if(A.tab==='users') return viewUsers();
     if(A.tab==='spaces') return viewSpaces();
-    if(A.tab==='admins') return canManageAdmins()? viewAdmins() : viewOverview();
     return '';
   }
 
-  /* ---- Đăng nhập / Thiết lập lần đầu ---- */
+  /* ---- Login / Setup ---- */
   let noAdminYet=false;
   function viewLogin(){
+    const brand=`<div class="lbrand"><div class="dot">♥</div><div><h2 style="font-size:20px">cùng nhau</h2><div class="sub" style="margin:0">Quản trị hệ thống</div></div></div>`;
     if(noAdminYet){
-      return `<div class="login"><div class="card">
-        <h2>Thiết lập quản trị 🔐</h2>
-        <div class="sub">Chưa có tài khoản quản trị nào. Tạo tài khoản đầu tiên nhé.</div>
-        <div class="warnbox">Nhớ kỹ mật khẩu này — nó dùng để vào trang quản trị. Không có cách khôi phục tự động.</div>
-        <label class="f">Tên đăng nhập quản trị</label>
-        <input id="au" placeholder="vd: admin" autocomplete="off" />
-        <label class="f">Mật khẩu</label>
-        <input id="ap" type="password" placeholder="Đặt mật khẩu" autocomplete="new-password" />
-        <label class="f">Nhập lại mật khẩu</label>
-        <input id="ap2" type="password" placeholder="Nhập lại" autocomplete="new-password" />
-        <button class="btn pri block" style="width:100%;margin-top:14px" data-act="do-setup">Tạo tài khoản quản trị</button>
+      return `<div class="login"><div class="card">${brand}
+        <h2>Thiết lập lần đầu 🔐</h2>
+        <div class="sub">Chưa có tài khoản quản trị. Tạo tài khoản Chủ hệ thống đầu tiên.</div>
+        <div class="warnbox">Nhớ kỹ mật khẩu — dùng để vào trang quản trị, không có khôi phục tự động.</div>
+        <label class="f">Tên đăng nhập</label><input id="au" placeholder="vd: admin" autocomplete="off" />
+        <label class="f">Mật khẩu</label><input id="ap" type="password" placeholder="Đặt mật khẩu" autocomplete="new-password" />
+        <label class="f">Nhập lại mật khẩu</label><input id="ap2" type="password" placeholder="Nhập lại" autocomplete="new-password" />
+        <button class="btn pri" style="width:100%;margin-top:16px;justify-content:center" data-act="do-setup">Tạo tài khoản quản trị</button>
       </div></div>`;
     }
-    return `<div class="login"><div class="card">
-      <h2>Đăng nhập quản trị 🔐</h2>
-      <div class="sub">Trang này dành riêng cho quản trị hệ thống.</div>
-      <label class="f">Tên đăng nhập</label>
-      <input id="au" placeholder="Tên quản trị" autocomplete="username" />
-      <label class="f">Mật khẩu</label>
-      <input id="ap" type="password" placeholder="Mật khẩu" autocomplete="current-password" />
-      <button class="btn pri block" style="width:100%;margin-top:14px" data-act="do-login">Đăng nhập</button>
+    return `<div class="login"><div class="card">${brand}
+      <h2>Đăng nhập 🔐</h2>
+      <div class="sub">Trang dành riêng cho quản trị hệ thống.</div>
+      <label class="f">Tên đăng nhập</label><input id="au" placeholder="Tên quản trị" autocomplete="username" />
+      <label class="f">Mật khẩu</label><input id="ap" type="password" placeholder="Mật khẩu" autocomplete="current-password" />
+      <button class="btn pri" style="width:100%;margin-top:16px;justify-content:center" data-act="do-login">Đăng nhập</button>
       <div class="note" id="loginnote"></div>
     </div></div>`;
   }
@@ -264,225 +309,283 @@
   /* ---- Tổng quan ---- */
   function viewOverview(){
     const d=A.data;
-    const paired = d.spaces.filter(s=> (s.person_a_username&&s.person_b_username)).length;
-    const active7 = d.spaces.filter(s=>isActive(s,7)).length;
-    const unpairedUsers = d.users.filter(u=>!u.space_id).length;
-    const newUsers7 = d.users.filter(u=>u.created_at && u.created_at.slice(0,10) >= daysAgo(7)).length;
-    const activeDuels = d.duels.filter(x=>x.status==='active'||x.status==='waiting').length;
-    const dueNotes = d.notes.filter(n=>!n.done && n.remind_at && n.remind_at <= todayISO()).length;
-    const stat=(n,l,accent)=>`<div class="stat ${accent?'accent':''}"><div class="n">${n}</div><div class="l">${l}</div></div>`;
-
-    const recent = d.spaces.slice().sort((a,b)=> (b.last_active||'')<(a.last_active||'')?-1:1).slice(0,8);
-    const recentRows = recent.map(s=>{
-      const m=spaceMembers(s);
-      return `<tr class="rowlink" data-act="open-space" data-id="${esc(s.id)}">
+    const paired=d.spaces.filter(s=>s.person_a_username&&s.person_b_username).length;
+    const active7=d.spaces.filter(s=>isActive(s,7)).length;
+    const unpaired=d.users.filter(u=>!u.space_id).length;
+    const newU7=d.users.filter(u=>u.created_at&&u.created_at.slice(0,10)>=daysAgo(7)).length;
+    const activeDuels=d.duels.filter(x=>x.status==='active'||x.status==='waiting').length;
+    const dueNotes=d.notes.filter(n=>!n.done&&n.remind_at&&n.remind_at<=todayISO()).length;
+    const libTopics=A.lib&&A.lib.ok?A.lib.topics.length:0;
+    const st=(ic,n,l,acc)=>`<div class="stat ${acc?'accent':''}"><div class="ic">${ic}</div><div class="n">${n}</div><div class="l">${l}</div></div>`;
+    const recent=d.spaces.slice().sort((a,b)=>(b.last_active||'')<(a.last_active||'')?-1:1).slice(0,8);
+    const rows=recent.map(s=>{ const m=spaceMembers(s); return `<tr class="rowlink" data-act="open-space" data-id="${esc(s.id)}">
         <td><b>${esc(s.name||'(chưa đặt tên)')}</b><div class="muted mini">${esc(s.id)}</div></td>
-        <td>${esc(m.a)} · ${esc(m.b)}</td>
-        <td>🔥 ${s.streak||0}</td>
+        <td>${esc(m.a)} · ${esc(m.b)}</td><td>🔥 ${s.streak||0}</td>
         <td>${s.last_active?fmtDate(s.last_active):'<span class="muted">—</span>'}</td>
-        <td>${isActive(s,7)?'<span class="pill ok">Hoạt động</span>':'<span class="pill">Im ắng</span>'}</td>
-      </tr>`;
-    }).join('');
-
+        <td>${isActive(s,7)?'<span class="pill ok">Hoạt động</span>':'<span class="pill">Im ắng</span>'}</td></tr>`; }).join('');
     return `
-      <div class="stats" style="margin-bottom:16px">
-        ${stat(d.users.length,'Người dùng',true)}
-        ${stat(d.spaces.length,'Phòng',true)}
-        ${stat(paired,'Đã ghép đôi')}
-        ${stat(active7,'Hoạt động 7 ngày')}
-        ${stat(unpairedUsers,'User chưa ghép')}
-        ${stat(newUsers7,'User mới 7 ngày')}
+      <div class="sech">👥 Người dùng & phòng</div>
+      <div class="stats">
+        ${st('👤',d.users.length,'Người dùng',true)}
+        ${st('💞',d.spaces.length,'Phòng',true)}
+        ${st('🔗',paired,'Đã ghép đôi')}
+        ${st('✨',active7,'Hoạt động 7 ngày')}
+        ${st('🕊️',unpaired,'User chưa ghép')}
+        ${st('🌱',newU7,'User mới 7 ngày')}
       </div>
-      <div class="stats" style="margin-bottom:16px">
-        ${stat(d.decks.length,'Bộ thẻ')}
-        ${stat(d.cards.length,'Thẻ từ')}
-        ${stat(d.quizzes.length,'Bài dò')}
-        ${stat(d.notes.length,'Ghi chú')}
-        ${stat(d.duels.length,'Trận đấu')}
-        ${stat(d.daily.length,'Câu hỏi/ngày')}
+      <div class="sech">📚 Nội dung</div>
+      <div class="stats">
+        ${st('📖',libTopics,'Chủ đề thư viện')}
+        ${st('🗂️',d.decks.length,'Bộ thẻ (cặp đôi)')}
+        ${st('🔤',d.cards.length,'Thẻ từ')}
+        ${st('📝',d.quizzes.length,'Bài dò')}
+        ${st('⚔️',d.duels.length,'Trận đấu')}
+        ${st('☀️',d.daily.length,'Câu hỏi/ngày')}
       </div>
-      <div class="stats" style="margin-bottom:18px">
-        ${stat(activeDuels,'Đấu đang diễn ra')}
-        ${stat(dueNotes,'Nhắc tới hạn')}
-        ${stat(d.pushes.length,'Thiết bị nhận push')}
-        ${stat(d.invites.filter(i=>i.status==='pending').length,'Lời mời chờ')}
+      <div class="sech">🔔 Đang diễn ra</div>
+      <div class="stats">
+        ${st('⚔️',activeDuels,'Đấu đang diễn ra')}
+        ${st('⏰',dueNotes,'Nhắc tới hạn')}
+        ${st('📲',d.pushes.length,'Thiết bị nhận push')}
+        ${st('✉️',d.invites.filter(i=>i.status==='pending').length,'Lời mời chờ')}
       </div>
-      <h3 style="margin:6px 2px 10px">Phòng hoạt động gần đây</h3>
-      <div class="tbl-wrap">
-        <table><thead><tr><th>Phòng</th><th>Thành viên</th><th>Chuỗi</th><th>Hoạt động cuối</th><th>Trạng thái</th></tr></thead>
-        <tbody>${recentRows||'<tr><td colspan="5" class="empty">Chưa có phòng nào</td></tr>'}</tbody></table>
-      </div>`;
+      <div class="sech">Phòng hoạt động gần đây</div>
+      <div class="tbl-wrap"><table><thead><tr><th>Phòng</th><th>Thành viên</th><th>Chuỗi</th><th>Hoạt động cuối</th><th>Trạng thái</th></tr></thead>
+      <tbody>${rows||'<tr><td colspan="5" class="empty">Chưa có phòng nào</td></tr>'}</tbody></table></div>`;
   }
 
   /* ---- Người dùng ---- */
   function viewUsers(){
     const q=A.q.trim().toLowerCase();
     let list=A.data.users;
-    if(q) list=list.filter(u=> (u.username||'').toLowerCase().includes(q) || (u.display||'').toLowerCase().includes(q) || (u.space_id||'').toLowerCase().includes(q));
-    const rows=list.map(u=>`
-      <tr>
-        <td><b>${esc(u.username)}</b></td>
-        <td>${esc(u.display||'—')}</td>
+    if(q) list=list.filter(u=>(u.username||'').toLowerCase().includes(q)||(u.display||'').toLowerCase().includes(q)||(u.space_id||'').toLowerCase().includes(q));
+    const rows=list.map(u=>`<tr>
+        <td><b>${esc(u.username)}</b></td><td>${esc(u.display||'—')}</td>
         <td>${u.space_id?`<span class="pill">${esc(u.space_id)}</span> <span class="muted">(${esc(u.person||'?')})</span>`:'<span class="pill no">Chưa ghép</span>'}</td>
         <td class="muted mini">${fmtDateTime(u.created_at)}</td>
         <td>${canEdit()?`<div class="row-actions">
           <button class="btn sm" data-act="reset-pin" data-id="${esc(u.username)}">Đặt lại PIN</button>
           ${u.space_id?`<button class="btn sm" data-act="unpair-user" data-id="${esc(u.username)}">Gỡ ghép</button>`:''}
-          <button class="btn sm danger" data-act="del-user" data-id="${esc(u.username)}">Xóa</button>
-        </div>`:'<span class="muted mini">chỉ xem</span>'}</td>
-      </tr>`).join('');
-    return `
-      <div class="toolbar">
-        <input class="search" data-act="search" placeholder="🔎 Tìm theo tên / hiển thị / mã phòng…" value="${esc(A.q)}" />
-        <span class="muted" style="font-weight:800">${list.length} / ${A.data.users.length} người dùng</span>
-      </div>
-      <div class="tbl-wrap">
-        <table><thead><tr><th>Tên đăng nhập</th><th>Hiển thị</th><th>Phòng</th><th>Tạo lúc</th><th>Thao tác</th></tr></thead>
-        <tbody>${rows||'<tr><td colspan="5" class="empty">Không tìm thấy</td></tr>'}</tbody></table>
-      </div>`;
+          <button class="btn sm danger" data-act="del-user" data-id="${esc(u.username)}">Xóa</button></div>`:'<span class="muted mini">chỉ xem</span>'}</td></tr>`).join('');
+    return `<div class="toolbar"><input class="search" data-act="search" placeholder="🔎 Tìm tên / hiển thị / mã phòng…" value="${esc(A.q)}" />
+      <span class="muted" style="font-weight:800">${list.length}/${A.data.users.length}</span></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Tên đăng nhập</th><th>Hiển thị</th><th>Phòng</th><th>Tạo lúc</th><th>Thao tác</th></tr></thead>
+      <tbody>${rows||'<tr><td colspan="5" class="empty">Không tìm thấy</td></tr>'}</tbody></table></div>`;
   }
 
   /* ---- Phòng ---- */
   function viewSpaces(){
     const q=A.q.trim().toLowerCase();
     let list=A.data.spaces;
-    if(q) list=list.filter(s=> (s.id||'').toLowerCase().includes(q) || (s.name||'').toLowerCase().includes(q)
-      || (s.person_a||'').toLowerCase().includes(q) || (s.person_b||'').toLowerCase().includes(q)
-      || (s.person_a_username||'').toLowerCase().includes(q) || (s.person_b_username||'').toLowerCase().includes(q));
-    const rows=list.map(s=>{
-      const m=spaceMembers(s);
-      const cards=bySpace(A.data.cards,s.id).length;
+    if(q) list=list.filter(s=>(s.id||'').toLowerCase().includes(q)||(s.name||'').toLowerCase().includes(q)||(s.person_a||'').toLowerCase().includes(q)||(s.person_b||'').toLowerCase().includes(q)||(s.person_a_username||'').toLowerCase().includes(q)||(s.person_b_username||'').toLowerCase().includes(q));
+    const rows=list.map(s=>{ const m=spaceMembers(s); const cards=bySpace(A.data.cards,s.id).length;
       return `<tr class="rowlink" data-act="open-space" data-id="${esc(s.id)}">
         <td><b>${esc(s.name||'(chưa đặt tên)')}</b><div class="muted mini">${esc(s.id)}</div></td>
         <td>${esc(m.a)} <span class="muted">·</span> ${esc(m.b)}</td>
         <td>🔥 ${s.streak||0}<div class="muted mini">KL ${s.longest||0}</div></td>
         <td>${s.start_date?fmtDate(s.start_date):'<span class="muted">—</span>'}</td>
         <td>${cards} thẻ</td>
-        <td>${isActive(s,7)?'<span class="pill ok">Hoạt động</span>':(s.last_active?'<span class="pill">'+fmtDate(s.last_active)+'</span>':'<span class="pill no">Chưa</span>')}</td>
-      </tr>`;
-    }).join('');
+        <td>${isActive(s,7)?'<span class="pill ok">Hoạt động</span>':(s.last_active?'<span class="pill">'+fmtDate(s.last_active)+'</span>':'<span class="pill no">Chưa</span>')}</td></tr>`; }).join('');
+    return `<div class="toolbar"><input class="search" data-act="search" placeholder="🔎 Tìm tên phòng / mã / thành viên…" value="${esc(A.q)}" />
+      <span class="muted" style="font-weight:800">${list.length}/${A.data.spaces.length}</span></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Phòng</th><th>Thành viên</th><th>Chuỗi</th><th>Bắt đầu</th><th>Nội dung</th><th>Hoạt động</th></tr></thead>
+      <tbody>${rows||'<tr><td colspan="6" class="empty">Không tìm thấy</td></tr>'}</tbody></table></div>`;
+  }
+
+  /* ---- Thư viện chung ---- */
+  const KIND_LABEL={ vocab:'Từ vựng', colloc:'Collocation', grammar:'Ngữ pháp' };
+  function viewLibrary(){
+    if(!A.lib) return `<div class="empty">Đang tải thư viện…</div>`;
+    if(!A.lib.ok) return `<div class="warnbox">Chưa có bảng thư viện chung trong Supabase. Mở Supabase → SQL Editor → chạy đoạn tạo bảng <b>library_topics</b> & <b>library_words</b> trong <b>schema.sql</b>, rồi bấm ↻ tải lại.<div class="note">Lỗi: ${esc(A.lib.err||'')}</div></div>`;
+    const q=A.q.trim().toLowerCase();
+    let list=A.lib.topics;
+    if(q) list=list.filter(t=>(t.title||'').toLowerCase().includes(q));
+    const rows=list.map(t=>{ const n=wordsOf(t.id).length;
+      return `<tr class="rowlink" data-act="open-topic" data-id="${esc(t.id)}">
+        <td><b>${esc(t.title||'(chưa đặt tên)')}</b>${t.source?`<div class="muted mini">nguồn: ${esc(t.source)}</div>`:''}</td>
+        <td><span class="pill info">${KIND_LABEL[t.kind]||t.kind||'—'}</span></td>
+        <td>${n} từ</td>
+        <td>${t.status==='published'?'<span class="pill ok">Đang phát</span>':'<span class="pill warn">Nháp</span>'}</td>
+        <td class="muted mini">${fmtDateTime(t.created_at)}</td></tr>`; }).join('');
+    return `<div class="infobox" style="margin-bottom:14px">📚 Chủ đề ở đây là <b>thư viện dùng chung</b> — dự kiến mọi cặp đôi đều học được. Đây cũng là <b>đích đến</b> của nội dung crawl/OCR sau này.</div>
+      <div class="toolbar"><input class="search" data-act="search" placeholder="🔎 Tìm chủ đề…" value="${esc(A.q)}" />
+        <div class="spacer"></div>
+        ${canEdit()?'<button class="btn pri sm" data-act="new-topic">＋ Thêm chủ đề</button>':''}
+        <span class="muted" style="font-weight:800">${list.length} chủ đề</span></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Chủ đề</th><th>Loại</th><th>Số từ</th><th>Trạng thái</th><th>Tạo lúc</th></tr></thead>
+      <tbody>${rows||`<tr><td colspan="5" class="empty">Chưa có chủ đề nào.${canEdit()?' Bấm “Thêm chủ đề” để bắt đầu.':''}</td></tr>`}</tbody></table></div>`;
+  }
+
+  /* ---- Nguồn tri thức (khung, crawl/OCR làm sau) ---- */
+  function viewIngest(){
     return `
-      <div class="toolbar">
-        <input class="search" data-act="search" placeholder="🔎 Tìm theo tên phòng / mã / thành viên…" value="${esc(A.q)}" />
-        <span class="muted" style="font-weight:800">${list.length} / ${A.data.spaces.length} phòng</span>
-      </div>
-      <div class="tbl-wrap">
-        <table><thead><tr><th>Phòng</th><th>Thành viên</th><th>Chuỗi</th><th>Bắt đầu</th><th>Nội dung</th><th>Hoạt động</th></tr></thead>
-        <tbody>${rows||'<tr><td colspan="6" class="empty">Không tìm thấy</td></tr>'}</tbody></table>
+      <div class="infobox" style="margin-bottom:16px">🧲 Nơi <b>nhập tri thức</b> từ nguồn ngoài vào <b>Thư viện chung</b>. Crawl & OCR đang dựng khung (sắp có); phần <b>nhập thủ công</b> đã dùng được ngay.</div>
+      <div class="ing-grid">
+        <div class="card">
+          <div class="sech" style="margin-top:0">🌐 Crawl từ nguồn <span class="pill warn">Sắp có</span></div>
+          <p class="mini muted" style="margin:2px 0 12px">Dán link trang bài học / danh sách từ vựng → hệ thống tự tải, bóc tách từ + nghĩa + ví dụ → đưa vào Thư viện chung để duyệt.</p>
+          <label class="f">Đường dẫn nguồn</label>
+          <input placeholder="https://… (sắp có)" disabled />
+          <button class="btn pri" style="margin-top:12px;justify-content:center;width:100%" disabled>Bóc tách (đang phát triển)</button>
+          <div class="note">Cần một Cloudflare Function làm proxy tải trang (tránh CORS) + bộ chọn quy tắc bóc tách theo nguồn.</div>
+        </div>
+        <div class="card">
+          <div class="sech" style="margin-top:0">📄 Quét PDF (OCR) <span class="pill warn">Sắp có</span></div>
+          <p class="mini muted" style="margin:2px 0 12px">Tải lên PDF/ảnh giáo trình → OCR trích chữ (Tesseract.js hoặc AI) → biên tập thành bộ từ → đưa vào Thư viện chung.</p>
+          <div class="drop">📥 Kéo/thả PDF hoặc ảnh vào đây<br><span class="mini">(sắp có)</span></div>
+          <button class="btn pri" style="margin-top:12px;justify-content:center;width:100%" disabled>Quét & trích chữ (đang phát triển)</button>
+          <div class="note">Dự kiến OCR chạy ngay trên trình duyệt (Tesseract.js), không cần gửi file lên server.</div>
+        </div>
+        <div class="card">
+          <div class="sech" style="margin-top:0">✍️ Nhập thủ công <span class="pill ok">Dùng được</span></div>
+          <p class="mini muted" style="margin:2px 0 12px">Tự tạo chủ đề rồi dán hàng loạt “từ = nghĩa” (mỗi dòng một từ). Nhanh gọn để đưa tri thức vào ngay hôm nay.</p>
+          <button class="btn pri" style="justify-content:center;width:100%" data-act="new-topic" ${canEdit()?'':'disabled'}>＋ Tạo chủ đề trong Thư viện chung</button>
+          ${canEdit()?'':'<div class="note">Chỉ tài khoản có quyền sửa mới tạo được.</div>'}
+        </div>
       </div>`;
   }
 
-  /* ---- Quản trị viên (chỉ owner) ---- */
+  /* ---- Quản trị viên ---- */
   function viewAdmins(){
     const owners=A.admins.filter(a=>roleOf(a)==='owner').length;
-    const rows=A.admins.map(a=>{
-      const r=roleOf(a); const self=a.username===A.admin;
-      const isLastOwner = r==='owner' && owners<=1;
-      return `<tr>
-        <td><b>${esc(a.username)}</b>${self?' <span class="pill">bạn</span>':''}</td>
+    const rows=A.admins.map(a=>{ const r=roleOf(a); const self=a.username===A.admin; const lastOwner=r==='owner'&&owners<=1;
+      return `<tr><td><b>${esc(a.username)}</b>${self?' <span class="pill">bạn</span>':''}</td>
         <td><span class="pill ${r==='owner'?'ok':(r==='viewer'?'':'warn')}">${ROLE_LABEL[r]||r}</span></td>
         <td class="muted mini">${fmtDateTime(a.created_at)}</td>
         <td><div class="row-actions">
-          <select class="rolesel" data-user="${esc(a.username)}" style="width:auto;padding:6px 8px;font-size:13px" ${isLastOwner?'disabled title="Phải còn ít nhất 1 Chủ hệ thống"':''}>
+          <select class="rolesel" data-user="${esc(a.username)}" style="width:auto;padding:6px 8px;font-size:13px" ${lastOwner?'disabled':''}>
             ${ROLES.map(x=>`<option value="${x}" ${x===r?'selected':''}>${ROLE_LABEL[x]}</option>`).join('')}
           </select>
-          ${(self||isLastOwner)?'':`<button class="btn sm danger" data-act="del-admin" data-id="${esc(a.username)}">Xóa</button>`}
-        </div></td>
-      </tr>`;
-    }).join('');
-    return `
-      <div class="warnbox">🛡️ <b>Phân quyền quản trị.</b> ${esc(ROLE_LABEL.owner)}: ${ROLE_DESC.owner}. ${esc(ROLE_LABEL.manager)}: ${ROLE_DESC.manager}. ${esc(ROLE_LABEL.viewer)}: ${ROLE_DESC.viewer}.</div>
-      <div class="card">
+          ${(self||lastOwner)?'':`<button class="btn sm danger" data-act="del-admin" data-id="${esc(a.username)}">Xóa</button>`}
+        </div></td></tr>`; }).join('');
+    return `<div class="warnbox">🛡️ <b>${ROLE_LABEL.owner}</b>: ${ROLE_DESC.owner} · <b>${ROLE_LABEL.manager}</b>: ${ROLE_DESC.manager} · <b>${ROLE_LABEL.viewer}</b>: ${ROLE_DESC.viewer}</div>
+      <div class="card" style="margin-bottom:16px">
         <div class="sec-title" style="margin-top:0">➕ Thêm quản trị viên</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
-          <div style="flex:2;min-width:160px"><label class="f">Tên đăng nhập</label><input id="na_user" placeholder="tên admin mới" autocomplete="off" /></div>
-          <div style="flex:2;min-width:160px"><label class="f">Mật khẩu</label><input id="na_pass" type="password" placeholder="mật khẩu" autocomplete="new-password" /></div>
-          <div style="flex:1;min-width:130px"><label class="f">Vai trò</label>
-            <select id="na_role">${ROLES.map(x=>`<option value="${x}" ${x==='manager'?'selected':''}>${ROLE_LABEL[x]}</option>`).join('')}</select>
-          </div>
+          <div style="flex:2;min-width:150px"><label class="f">Tên đăng nhập</label><input id="na_user" placeholder="tên admin mới" autocomplete="off" /></div>
+          <div style="flex:2;min-width:150px"><label class="f">Mật khẩu</label><input id="na_pass" type="password" placeholder="mật khẩu" autocomplete="new-password" /></div>
+          <div style="flex:1;min-width:130px"><label class="f">Vai trò</label><select id="na_role">${ROLES.map(x=>`<option value="${x}" ${x==='manager'?'selected':''}>${ROLE_LABEL[x]}</option>`).join('')}</select></div>
           <button class="btn pri" data-act="add-admin">Thêm</button>
         </div>
       </div>
-      <div class="tbl-wrap">
-        <table><thead><tr><th>Tên đăng nhập</th><th>Vai trò</th><th>Tạo lúc</th><th>Thao tác</th></tr></thead>
-        <tbody>${rows||'<tr><td colspan="4" class="empty">Chưa có</td></tr>'}</tbody></table>
-      </div>`;
+      <div class="tbl-wrap"><table><thead><tr><th>Tên đăng nhập</th><th>Vai trò</th><th>Tạo lúc</th><th>Thao tác</th></tr></thead>
+      <tbody>${rows||'<tr><td colspan="4" class="empty">Chưa có</td></tr>'}</tbody></table></div>`;
   }
 
-  /* ---- Chi tiết phòng (modal) ---- */
+  /* ====== Modal: chi tiết phòng ====== */
   function openSpaceModal(sid){
     const sp=A.data.spaces.find(s=>s.id===sid); if(!sp) return;
     const m=spaceMembers(sp);
-    const decks=bySpace(A.data.decks,sid);
-    const cards=bySpace(A.data.cards,sid);
-    const quizzes=bySpace(A.data.quizzes,sid);
-    const notes=bySpace(A.data.notes,sid);
-    const duels=bySpace(A.data.duels,sid);
-    const daily=bySpace(A.data.daily,sid).slice().sort((a,b)=>(a.day<b.day?1:-1));
-    const users=A.data.users.filter(u=>u.space_id===sid);
-
-    const list=(title,badge,items,fn)=>`
-      <div class="sec-title">${title} <span class="badge">${badge}</span></div>
-      ${items.length? `<ul class="mini">${items.map(fn).join('')}</ul>` : '<div class="muted mini" style="margin-left:2px">— trống —</div>'}`;
-
-    const body=`
-      <button class="x" data-act="close-modal">×</button>
-      <h2>${esc(sp.name||'(chưa đặt tên)')}</h2>
-      <div class="sub">Mã phòng: ${esc(sp.id)} · theme ${esc(sp.theme||'blush')}</div>
-
+    const decks=bySpace(A.data.decks,sid), cards=bySpace(A.data.cards,sid), quizzes=bySpace(A.data.quizzes,sid),
+      notes=bySpace(A.data.notes,sid), duels=bySpace(A.data.duels,sid),
+      daily=bySpace(A.data.daily,sid).slice().sort((a,b)=>(a.day<b.day?1:-1)),
+      users=A.data.users.filter(u=>u.space_id===sid);
+    const list=(title,items,fn)=>`<div class="sec-title">${title}</div>${items.length?`<ul class="mini">${items.map(fn).join('')}</ul>`:'<div class="muted mini">— trống —</div>'}`;
+    const body=`<button class="x" data-act="close-modal">×</button>
+      <h2>${esc(sp.name||'(chưa đặt tên)')}</h2><div class="sub">Mã phòng: ${esc(sp.id)} · theme ${esc(sp.theme||'blush')}</div>
       <div class="kv">
         <div class="k">Người A</div><div>${esc(m.a)} ${sp.person_a_username?`<span class="muted">(@${esc(sp.person_a_username)})</span>`:''}</div>
         <div class="k">Người B</div><div>${esc(m.b)} ${sp.person_b_username?`<span class="muted">(@${esc(sp.person_b_username)})</span>`:''}</div>
         <div class="k">Chuỗi 🔥</div><div>${sp.streak||0} (kỷ lục ${sp.longest||0})</div>
         <div class="k">Ngày yêu</div><div>${sp.start_date?fmtDate(sp.start_date):'—'}</div>
         <div class="k">Hoạt động cuối</div><div>${sp.last_active?fmtDate(sp.last_active):'—'}</div>
-        <div class="k">Tài khoản</div><div>${users.map(u=>esc(u.username)).join(', ')||'—'}</div>
-      </div>
-
-      ${canEdit()?`<div class="card" style="background:var(--bg2);margin:12px 0">
+        <div class="k">Tài khoản</div><div>${users.map(u=>esc(u.username)).join(', ')||'—'}</div></div>
+      ${canEdit()?`<div class="card" style="background:var(--bg2);margin:14px 0">
         <div class="sec-title" style="margin-top:0">✏️ Sửa nhanh</div>
-        <label class="f">Tên phòng</label>
-        <input id="e_name" value="${esc(sp.name||'')}" />
+        <label class="f">Tên phòng</label><input id="e_name" value="${esc(sp.name||'')}" />
         <div style="display:flex;gap:10px;flex-wrap:wrap">
           <div style="flex:1;min-width:140px"><label class="f">Ngày bắt đầu yêu</label><input id="e_start" type="date" value="${esc(sp.start_date||'')}" /></div>
           <div style="flex:1;min-width:100px"><label class="f">Chuỗi 🔥</label><input id="e_streak" type="number" min="0" value="${sp.streak||0}" /></div>
-          <div style="flex:1;min-width:120px"><label class="f">Tông màu</label>
-            <select id="e_theme">${['blush','sage','dusk','sky','sand'].map(t=>`<option value="${t}" ${(sp.theme||'blush')===t?'selected':''}>${t}</option>`).join('')}</select>
-          </div>
-        </div>
-        <button class="btn pri sm" style="margin-top:12px" data-act="save-space" data-id="${esc(sp.id)}">Lưu thay đổi</button>
-      </div>`:''}
-
-      <div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(90px,1fr))">
+          <div style="flex:1;min-width:120px"><label class="f">Tông màu</label><select id="e_theme">${['blush','sage','dusk','sky','sand'].map(t=>`<option value="${t}" ${(sp.theme||'blush')===t?'selected':''}>${t}</option>`).join('')}</select></div></div>
+        <button class="btn pri sm" style="margin-top:12px" data-act="save-space" data-id="${esc(sp.id)}">Lưu thay đổi</button></div>`:''}
+      <div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(88px,1fr));margin:14px 0">
         <div class="stat"><div class="n">${decks.length}</div><div class="l">Bộ thẻ</div></div>
         <div class="stat"><div class="n">${cards.length}</div><div class="l">Thẻ từ</div></div>
         <div class="stat"><div class="n">${quizzes.length}</div><div class="l">Bài dò</div></div>
         <div class="stat"><div class="n">${notes.length}</div><div class="l">Ghi chú</div></div>
         <div class="stat"><div class="n">${duels.length}</div><div class="l">Trận đấu</div></div>
-        <div class="stat"><div class="n">${daily.length}</div><div class="l">Câu hỏi</div></div>
-      </div>
-
-      ${list('📚 Bộ thẻ','',decks, d=>`<li><b>${esc(d.name||'(không tên)')}</b> <span class="muted">· ${bySpace(A.data.cards,sid).filter(c=>c.deck_id===d.id).length} thẻ</span></li>`)}
-      ${list('📝 Bài dò','',quizzes, x=>`<li>${esc(x.title||'(không tựa)')} <span class="pill ${x.status==='answered'?'ok':'warn'}">${esc(x.status||'')}</span> ${x.status==='answered'?`<span class="muted">${x.score||0}/${x.total||0}</span>`:''}</li>`)}
-      ${list('🗒️ Ghi chú','',notes, n=>`<li>${n.done?'<span class="muted">✓ </span>':''}${esc((n.text||'').slice(0,80))||'(trống)'} ${n.remind_at?`<span class="pill">⏰ ${fmtDate(n.remind_at)}</span>`:''}</li>`)}
-      ${list('⚔️ Trận đấu','',duels, x=>`<li>${esc(x.title||'trận')} <span class="pill">${esc(x.status||'')}</span> <span class="muted">${x.score_a||0} - ${x.score_b||0}</span></li>`)}
-      ${list('☀️ Câu hỏi mỗi ngày','',daily.slice(0,12), x=>`<li><span class="muted">${esc(x.day||'')}</span> ${esc((x.question||'').slice(0,70))}</li>`)}
-
+        <div class="stat"><div class="n">${daily.length}</div><div class="l">Câu hỏi</div></div></div>
+      ${list('📚 Bộ thẻ',decks,d=>`<li><b>${esc(d.name||'(không tên)')}</b> <span class="muted">· ${cards.filter(c=>c.deck_id===d.id).length} thẻ</span></li>`)}
+      ${list('📝 Bài dò',quizzes,x=>`<li>${esc(x.title||'(không tựa)')} <span class="pill ${x.status==='answered'?'ok':'warn'}">${esc(x.status||'')}</span> ${x.status==='answered'?`<span class="muted">${x.score||0}/${x.total||0}</span>`:''}</li>`)}
+      ${list('🗒️ Ghi chú',notes,n=>`<li>${n.done?'<span class="muted">✓ </span>':''}${esc((n.text||'').slice(0,80))||'(trống)'} ${n.remind_at?`<span class="pill">⏰ ${fmtDate(n.remind_at)}</span>`:''}</li>`)}
+      ${list('⚔️ Trận đấu',duels,x=>`<li>${esc(x.title||'trận')} <span class="pill">${esc(x.status||'')}</span> <span class="muted">${x.score_a||0} - ${x.score_b||0}</span></li>`)}
+      ${list('☀️ Câu hỏi mỗi ngày',daily.slice(0,12),x=>`<li><span class="muted">${esc(x.day||'')}</span> ${esc((x.question||'').slice(0,70))}</li>`)}
       <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
-        ${canEdit()?`<button class="btn danger" data-act="del-space" data-id="${esc(sp.id)}">🗑️ Xóa phòng (kèm toàn bộ nội dung)</button>`:''}
-        <div class="spacer"></div>
-        <button class="btn ghost" data-act="close-modal">Đóng</button>
-      </div>`;
-    $('#modal').innerHTML = `<div class="overlay" data-act="overlay"><div class="modal" data-act="stop">${body}</div></div>`;
+        ${canEdit()?`<button class="btn danger" data-act="del-space" data-id="${esc(sp.id)}">🗑️ Xóa phòng (kèm nội dung)</button>`:''}
+        <div class="spacer"></div><button class="btn ghost" data-act="close-modal">Đóng</button></div>`;
+    $('#modal').innerHTML=`<div class="overlay" data-act="overlay"><div class="modal" data-act="stop">${body}</div></div>`;
+  }
+
+  /* ====== Modal: chủ đề thư viện ====== */
+  function openNewTopicModal(){
+    if(!requireEdit()) return;
+    $('#modal').innerHTML=`<div class="overlay" data-act="overlay"><div class="modal" data-act="stop">
+      <button class="x" data-act="close-modal">×</button>
+      <h2>Thêm chủ đề thư viện</h2><div class="sub">Đưa vào thư viện dùng chung toàn hệ thống</div>
+      <label class="f">Tên chủ đề</label><input id="t_title" placeholder="vd: Từ vựng chủ đề Du lịch" />
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:150px"><label class="f">Loại</label><select id="t_kind">${Object.keys(KIND_LABEL).map(k=>`<option value="${k}">${KIND_LABEL[k]}</option>`).join('')}</select></div>
+        <div style="flex:1;min-width:150px"><label class="f">Trạng thái</label><select id="t_status"><option value="published">Đang phát (mọi người thấy)</option><option value="draft">Nháp (chỉ admin)</option></select></div>
+      </div>
+      <label class="f">Nguồn (tuỳ chọn)</label><input id="t_source" placeholder="thủ công / link / tên PDF…" value="thủ công" />
+      <label class="f">Dán từ hàng loạt (tuỳ chọn) — mỗi dòng: <b>từ = nghĩa</b> (có thể thêm = ví dụ)</label>
+      <textarea id="t_bulk" placeholder="apple = quả táo\nnegotiate = đàm phán = We negotiated a deal."></textarea>
+      <div style="display:flex;gap:10px;margin-top:16px"><div class="spacer"></div>
+        <button class="btn ghost" data-act="close-modal">Huỷ</button>
+        <button class="btn pri" data-act="create-topic">Tạo chủ đề</button></div>
+    </div></div>`;
+  }
+  function parseBulk(text){
+    return (text||'').split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{
+      const parts=l.split('=').map(s=>s.trim());
+      return { front:parts[0]||'', back:parts[1]||'', example:parts[2]||'' };
+    }).filter(x=>x.front);
+  }
+  function openTopicModal(tid){
+    const t=A.lib.topics.find(x=>x.id===tid); if(!t) return;
+    const words=wordsOf(tid).slice().sort((a,b)=>(a.pos||0)-(b.pos||0));
+    const wlist=words.map(w=>`<div class="wordrow">
+        <span class="w-front">${esc(w.front)}</span><span class="w-back">${esc(w.back||'')}${w.example?` <span class="muted mini">· ${esc(w.example)}</span>`:''}</span>
+        ${canEdit()?`<button class="btn sm danger" data-act="del-word" data-id="${esc(w.id)}" data-topic="${esc(tid)}">×</button>`:''}</div>`).join('');
+    const body=`<button class="x" data-act="close-modal">×</button>
+      <h2>${esc(t.title||'(chưa đặt tên)')}</h2>
+      <div class="sub">${KIND_LABEL[t.kind]||t.kind} · ${words.length} từ · ${t.status==='published'?'đang phát':'nháp'}${t.source?' · nguồn: '+esc(t.source):''}</div>
+      ${canEdit()?`<div class="card" style="background:var(--bg2);margin:8px 0 14px">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+          <div style="flex:2;min-width:140px"><label class="f">Tên</label><input id="et_title" value="${esc(t.title||'')}" /></div>
+          <div style="flex:1;min-width:120px"><label class="f">Loại</label><select id="et_kind">${Object.keys(KIND_LABEL).map(k=>`<option value="${k}" ${t.kind===k?'selected':''}>${KIND_LABEL[k]}</option>`).join('')}</select></div>
+          <div style="flex:1;min-width:130px"><label class="f">Trạng thái</label><select id="et_status"><option value="published" ${t.status==='published'?'selected':''}>Đang phát</option><option value="draft" ${t.status!=='published'?'selected':''}>Nháp</option></select></div>
+          <button class="btn pri sm" data-act="save-topic" data-id="${esc(tid)}">Lưu</button>
+        </div></div>`:''}
+      <div class="sec-title">🔤 Danh sách từ <span class="badge">${words.length}</span></div>
+      <div style="max-height:min(46vh,420px);overflow:auto;border:1.5px solid var(--line);border-radius:12px;padding:4px 12px;background:var(--card)">
+        ${wlist||'<div class="muted mini" style="padding:14px 2px">Chưa có từ nào.</div>'}
+      </div>
+      ${canEdit()?`<div class="card" style="margin-top:14px">
+        <div class="sec-title" style="margin-top:0">➕ Thêm từ</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+          <div style="flex:1;min-width:110px"><label class="f">Từ / cụm</label><input id="w_front" placeholder="apple" /></div>
+          <div style="flex:1;min-width:110px"><label class="f">Nghĩa</label><input id="w_back" placeholder="quả táo" /></div>
+          <div style="flex:1.4;min-width:130px"><label class="f">Ví dụ (tuỳ chọn)</label><input id="w_ex" placeholder="I ate an apple." /></div>
+          <button class="btn pri sm" data-act="add-word" data-id="${esc(tid)}">Thêm</button>
+        </div>
+        <label class="f">Hoặc dán hàng loạt (mỗi dòng: từ = nghĩa = ví dụ)</label>
+        <textarea id="w_bulk" placeholder="grape = quả nho\ncontract = hợp đồng"></textarea>
+        <button class="btn sm" style="margin-top:8px" data-act="bulk-word" data-id="${esc(tid)}">Thêm hàng loạt</button>
+      </div>`:''}
+      <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap">
+        ${canEdit()?`<button class="btn danger" data-act="del-topic" data-id="${esc(tid)}">🗑️ Xóa chủ đề</button>`:''}
+        <div class="spacer"></div><button class="btn ghost" data-act="close-modal">Đóng</button></div>`;
+    $('#modal').innerHTML=`<div class="overlay" data-act="overlay"><div class="modal" data-act="stop">${body}</div></div>`;
   }
   function closeModal(){ $('#modal').innerHTML=''; }
 
-  /* ====== HÀNH ĐỘNG ====== */
+  /* ====== HÀNH ĐỘNG: auth ====== */
   async function doLogin(){
     const u=$('#au').value.trim(), p=$('#ap').value;
     if(!u||!p){ toast('Nhập đủ tên và mật khẩu'); return; }
     let adm; try{ adm=await getAdmin(u); }catch(e){ toast('Lỗi kết nối: '+e.message); return; }
-    if(!adm || adm.passcode!==hashPass(p)){ $('#loginnote').textContent='Sai tên đăng nhập hoặc mật khẩu.'; return; }
+    if(!adm||adm.passcode!==hashPass(p)){ const n=$('#loginnote'); if(n)n.textContent='Sai tên đăng nhập hoặc mật khẩu.'; return; }
     A.admin=u; A.role=roleOf(adm); saveSession(u); await enterApp();
   }
   async function doSetup(){
@@ -490,121 +593,121 @@
     if(!u||!p){ toast('Nhập đủ tên và mật khẩu'); return; }
     if(p!==p2){ toast('Hai mật khẩu chưa khớp'); return; }
     if(p.length<4){ toast('Mật khẩu tối thiểu 4 ký tự'); return; }
-    // Tài khoản quản trị ĐẦU TIÊN luôn là Chủ hệ thống (owner)
     try{ await createAdmin({ username:u, passcode:hashPass(p), role:'owner', created_at:new Date().toISOString() }); }
     catch(e){ toast('Không tạo được: '+e.message); return; }
     noAdminYet=false; A.admin=u; A.role='owner'; saveSession(u); toast('Đã tạo tài khoản quản trị 🎉'); await enterApp();
   }
-  async function loadAdminsList(){ try{ A.admins=await listAdmins(); }catch(e){ A.admins=[]; } }
   async function enterApp(){
-    render();
+    A.navOpen=false; render();
     try{ await refresh(); }catch(e){ toast('Lỗi tải dữ liệu: '+e.message); }
+    await loadLibrary();
     if(canManageAdmins()) await loadAdminsList();
     render();
   }
 
-  async function resetPin(username){
-    if(!requireEdit()) return;
-    const pin=prompt('Đặt PIN/mật khẩu MỚI cho "'+username+'":');
-    if(pin==null) return; if(!pin.trim()){ toast('PIN trống'); return; }
-    try{ const {error}=await sb.from('users').update({passcode:hashPass(pin.trim())}).eq('username',username); if(error) throw error;
-      toast('Đã đặt lại PIN cho '+username); }
-    catch(e){ toast('Lỗi: '+e.message); }
-  }
-  async function unpairUser(username){
-    if(!requireEdit()) return;
+  /* ====== HÀNH ĐỘNG: người dùng ====== */
+  async function resetPin(username){ if(!requireEdit()) return;
+    const pin=prompt('Đặt PIN/mật khẩu MỚI cho "'+username+'":'); if(pin==null) return; if(!pin.trim()){ toast('PIN trống'); return; }
+    try{ const {error}=await sb.from('users').update({passcode:hashPass(pin.trim())}).eq('username',username); if(error) throw error; toast('Đã đặt lại PIN cho '+username); }
+    catch(e){ toast('Lỗi: '+e.message); } }
+  async function unpairUser(username){ if(!requireEdit()) return;
     const u=A.data.users.find(x=>x.username===username); if(!u) return;
-    if(!confirm('Gỡ ghép đôi cho "'+username+'"? Tài khoản sẽ rời khỏi phòng '+(u.space_id||'')+'.\n(Không xóa dữ liệu phòng, chỉ tách người này ra.)')) return;
-    try{
-      const {error}=await sb.from('users').update({space_id:null, person:null}).eq('username',username); if(error) throw error;
-      // Gỡ tham chiếu trong space (nếu người này là A hoặc B)
-      if(u.space_id){
-        const sp=A.data.spaces.find(s=>s.id===u.space_id);
-        if(sp){ const patch={};
-          if(sp.person_a_username===username){ patch.person_a_username=null; }
-          if(sp.person_b_username===username){ patch.person_b_username=null; }
-          if(Object.keys(patch).length){ await sb.from('spaces').update(patch).eq('id',u.space_id); }
-        }
-      }
+    if(!confirm('Gỡ ghép đôi cho "'+username+'"? Rời khỏi phòng '+(u.space_id||'')+'. (Không xóa dữ liệu phòng.)')) return;
+    try{ const {error}=await sb.from('users').update({space_id:null,person:null}).eq('username',username); if(error) throw error;
+      if(u.space_id){ const sp=A.data.spaces.find(s=>s.id===u.space_id); if(sp){ const patch={};
+        if(sp.person_a_username===username) patch.person_a_username=null; if(sp.person_b_username===username) patch.person_b_username=null;
+        if(Object.keys(patch).length) await sb.from('spaces').update(patch).eq('id',u.space_id); } }
       toast('Đã gỡ ghép '+username); await refresh(); render();
-    }catch(e){ toast('Lỗi: '+e.message); }
-  }
-  async function delUser(username){
-    if(!requireEdit()) return;
-    if(!confirm('XÓA hẳn tài khoản "'+username+'"?\nThao tác này không hoàn tác được. Dữ liệu phòng KHÔNG bị xóa.')) return;
+    }catch(e){ toast('Lỗi: '+e.message); } }
+  async function delUser(username){ if(!requireEdit()) return;
+    if(!confirm('XÓA hẳn tài khoản "'+username+'"? Không hoàn tác. Dữ liệu phòng KHÔNG bị xóa.')) return;
     try{ const {error}=await sb.from('users').delete().eq('username',username); if(error) throw error;
-      // Gỡ tham chiếu username trong spaces
       const u=A.data.users.find(x=>x.username===username);
-      if(u&&u.space_id){ const sp=A.data.spaces.find(s=>s.id===u.space_id);
-        if(sp){ const patch={};
-          if(sp.person_a_username===username) patch.person_a_username=null;
-          if(sp.person_b_username===username) patch.person_b_username=null;
-          if(Object.keys(patch).length) await sb.from('spaces').update(patch).eq('id',u.space_id);
-        } }
+      if(u&&u.space_id){ const sp=A.data.spaces.find(s=>s.id===u.space_id); if(sp){ const patch={};
+        if(sp.person_a_username===username) patch.person_a_username=null; if(sp.person_b_username===username) patch.person_b_username=null;
+        if(Object.keys(patch).length) await sb.from('spaces').update(patch).eq('id',u.space_id); } }
       toast('Đã xóa tài khoản '+username); await refresh(); render();
-    }catch(e){ toast('Lỗi: '+e.message); }
-  }
+    }catch(e){ toast('Lỗi: '+e.message); } }
 
-  async function saveSpace(sid){
-    if(!requireEdit()) return;
-    const patch={
-      name:$('#e_name').value.trim()||null,
-      start_date:$('#e_start').value||null,
-      streak:parseInt($('#e_streak').value,10)||0,
-      theme:$('#e_theme').value,
-    };
+  /* ====== HÀNH ĐỘNG: phòng ====== */
+  async function saveSpace(sid){ if(!requireEdit()) return;
+    const patch={ name:$('#e_name').value.trim()||null, start_date:$('#e_start').value||null, streak:parseInt($('#e_streak').value,10)||0, theme:$('#e_theme').value };
     try{ const {error}=await sb.from('spaces').update(patch).eq('id',sid); if(error) throw error;
-      toast('Đã lưu phòng'); await refresh(); closeModal(); openSpaceModal(sid); render();
-    }catch(e){ toast('Lỗi: '+e.message); }
-  }
-  async function delSpace(sid){
-    if(!requireEdit()) return;
+      toast('Đã lưu phòng'); await refresh(); openSpaceModal(sid); render(); }
+    catch(e){ toast('Lỗi: '+e.message); } }
+  async function delSpace(sid){ if(!requireEdit()) return;
     const sp=A.data.spaces.find(s=>s.id===sid);
-    if(!confirm('XÓA phòng "'+(sp?.name||sid)+'" (mã '+sid+')?\n\nSẽ xóa TOÀN BỘ: bộ thẻ, thẻ từ, bài dò, ghi chú, trận đấu, câu hỏi mỗi ngày của phòng này. Hai tài khoản thành viên sẽ bị gỡ khỏi phòng.\n\nKHÔNG hoàn tác được.')) return;
-    try{
-      // FK on delete cascade lo phần decks/cards/quizzes/notes/duels/daily/push_subscriptions.
-      // Ta tự dọn: gỡ user khỏi phòng + xóa lời mời liên quan.
-      const members=A.data.users.filter(u=>u.space_id===sid);
-      for(const u of members){ await sb.from('users').update({space_id:null,person:null}).eq('username',u.username); }
+    if(!confirm('XÓA phòng "'+(sp?.name||sid)+'" (mã '+sid+')?\nSẽ xóa toàn bộ nội dung phòng. Hai thành viên bị gỡ khỏi phòng. Không hoàn tác.')) return;
+    try{ const members=A.data.users.filter(u=>u.space_id===sid);
+      for(const u of members) await sb.from('users').update({space_id:null,person:null}).eq('username',u.username);
       await sb.from('invites').delete().eq('space_id',sid);
       const {error}=await sb.from('spaces').delete().eq('id',sid); if(error) throw error;
       toast('Đã xóa phòng '+sid); closeModal(); await refresh(); render();
-    }catch(e){ toast('Lỗi: '+e.message); }
-  }
+    }catch(e){ toast('Lỗi: '+e.message); } }
 
-  /* ---- Quản lý quản trị viên (chỉ owner) ---- */
-  async function addAdmin(){
-    if(!requireOwner()) return;
+  /* ====== HÀNH ĐỘNG: thư viện ====== */
+  async function createTopic(){ if(!requireEdit()) return;
+    const title=$('#t_title').value.trim(); if(!title){ toast('Nhập tên chủ đề'); return; }
+    const kind=$('#t_kind').value, status=$('#t_status').value, source=$('#t_source').value.trim()||null;
+    const id=genId();
+    try{ let e1=(await sb.from('library_topics').insert({ id, title, kind, status, source, created_by:A.admin, created_at:new Date().toISOString() })).error; if(e1) throw e1;
+      const bulk=parseBulk($('#t_bulk').value);
+      if(bulk.length){ const rows=bulk.map((w,i)=>({ id:genId(), topic_id:id, front:w.front, back:w.back, example:w.example||null, pos:i })); const e2=(await sb.from('library_words').insert(rows)).error; if(e2) throw e2; }
+      toast('Đã tạo chủ đề “'+title+'”'+(bulk.length?` (+${bulk.length} từ)`:'')); closeModal(); await loadLibrary(); A.tab='library'; render();
+    }catch(e){ toast('Lỗi: '+e.message); } }
+  async function saveTopic(tid){ if(!requireEdit()) return;
+    const patch={ title:$('#et_title').value.trim()||null, kind:$('#et_kind').value, status:$('#et_status').value };
+    try{ const {error}=await sb.from('library_topics').update(patch).eq('id',tid); if(error) throw error;
+      toast('Đã lưu chủ đề'); await loadLibrary(); openTopicModal(tid); render(); }
+    catch(e){ toast('Lỗi: '+e.message); } }
+  async function delTopic(tid){ if(!requireEdit()) return;
+    const t=A.lib.topics.find(x=>x.id===tid);
+    if(!confirm('Xóa chủ đề "'+(t?.title||tid)+'" và toàn bộ từ trong đó? Không hoàn tác.')) return;
+    try{ const {error}=await sb.from('library_topics').delete().eq('id',tid); if(error) throw error;
+      toast('Đã xóa chủ đề'); closeModal(); await loadLibrary(); render(); }
+    catch(e){ toast('Lỗi: '+e.message); } }
+  async function addWord(tid){ if(!requireEdit()) return;
+    const front=$('#w_front').value.trim(); if(!front){ toast('Nhập từ'); return; }
+    const back=$('#w_back').value.trim(), example=$('#w_ex').value.trim()||null;
+    const pos=wordsOf(tid).length;
+    try{ const {error}=await sb.from('library_words').insert({ id:genId(), topic_id:tid, front, back, example, pos, created_at:new Date().toISOString() }); if(error) throw error;
+      await loadLibrary(); openTopicModal(tid); render(); }
+    catch(e){ toast('Lỗi: '+e.message); } }
+  async function bulkWord(tid){ if(!requireEdit()) return;
+    const bulk=parseBulk($('#w_bulk').value); if(!bulk.length){ toast('Chưa có dòng hợp lệ'); return; }
+    const base=wordsOf(tid).length;
+    const rows=bulk.map((w,i)=>({ id:genId(), topic_id:tid, front:w.front, back:w.back, example:w.example||null, pos:base+i, created_at:new Date().toISOString() }));
+    try{ const {error}=await sb.from('library_words').insert(rows); if(error) throw error;
+      toast('Đã thêm '+rows.length+' từ'); await loadLibrary(); openTopicModal(tid); render(); }
+    catch(e){ toast('Lỗi: '+e.message); } }
+  async function delWord(wid,tid){ if(!requireEdit()) return;
+    try{ const {error}=await sb.from('library_words').delete().eq('id',wid); if(error) throw error;
+      await loadLibrary(); openTopicModal(tid); render(); }
+    catch(e){ toast('Lỗi: '+e.message); } }
+
+  /* ====== HÀNH ĐỘNG: quản trị viên ====== */
+  async function addAdmin(){ if(!requireOwner()) return;
     const u=$('#na_user').value.trim(), p=$('#na_pass').value, role=$('#na_role').value;
     if(!u||!p){ toast('Nhập đủ tên và mật khẩu'); return; }
     if(p.length<4){ toast('Mật khẩu tối thiểu 4 ký tự'); return; }
-    if(!ROLES.includes(role)){ toast('Vai trò không hợp lệ'); return; }
     if(A.admins.some(a=>a.username===u)){ toast('Tên quản trị này đã tồn tại'); return; }
     try{ await createAdmin({ username:u, passcode:hashPass(p), role, created_at:new Date().toISOString() }); }
     catch(e){ toast('Không thêm được: '+e.message); return; }
-    toast('Đã thêm quản trị viên '+u); await loadAdminsList(); render();
-  }
-  async function delAdmin(username){
-    if(!requireOwner()) return;
+    toast('Đã thêm quản trị viên '+u); await loadAdminsList(); render(); }
+  async function delAdmin(username){ if(!requireOwner()) return;
     if(username===A.admin){ toast('Không thể tự xóa chính mình'); return; }
-    const owners=A.admins.filter(a=>roleOf(a)==='owner');
-    const target=A.admins.find(a=>a.username===username);
-    if(target && roleOf(target)==='owner' && owners.length<=1){ toast('Phải còn ít nhất 1 Chủ hệ thống'); return; }
-    if(!confirm('Xóa quản trị viên "'+username+'"? Tài khoản này sẽ không đăng nhập được trang quản trị nữa.')) return;
+    const owners=A.admins.filter(a=>roleOf(a)==='owner'); const target=A.admins.find(a=>a.username===username);
+    if(target&&roleOf(target)==='owner'&&owners.length<=1){ toast('Phải còn ít nhất 1 Chủ hệ thống'); return; }
+    if(!confirm('Xóa quản trị viên "'+username+'"?')) return;
     try{ await deleteAdmin(username); }catch(e){ toast('Lỗi: '+e.message); return; }
-    toast('Đã xóa quản trị viên '+username); await loadAdminsList(); render();
-  }
-  async function changeAdminRole(username, role){
-    if(!requireOwner()) return;
-    if(!ROLES.includes(role)) return;
+    toast('Đã xóa '+username); await loadAdminsList(); render(); }
+  async function changeAdminRole(username,role){ if(!requireOwner()) return; if(!ROLES.includes(role)) return;
     const target=A.admins.find(a=>a.username===username); if(!target) return;
     const owners=A.admins.filter(a=>roleOf(a)==='owner');
-    // Không cho hạ cấp Chủ hệ thống cuối cùng (kể cả chính mình) → tránh khóa hệ thống
-    if(roleOf(target)==='owner' && role!=='owner' && owners.length<=1){ toast('Phải còn ít nhất 1 Chủ hệ thống'); await loadAdminsList(); render(); return; }
+    if(roleOf(target)==='owner'&&role!=='owner'&&owners.length<=1){ toast('Phải còn ít nhất 1 Chủ hệ thống'); await loadAdminsList(); render(); return; }
     try{ await updateAdmin(username,{role}); }catch(e){ toast('Lỗi: '+e.message); return; }
-    if(username===A.admin) A.role=role;   // tự đổi vai trò mình → cập nhật quyền hiện tại
-    toast('Đã đổi vai trò '+username+' → '+ROLE_LABEL[role]); await loadAdminsList(); render();
-  }
+    if(username===A.admin) A.role=role;
+    toast('Đã đổi vai trò '+username+' → '+ROLE_LABEL[role]); await loadAdminsList(); render(); }
 
   /* ====== Event delegation ====== */
   document.addEventListener('click', async (e)=>{
@@ -612,34 +715,37 @@
     const act=el.getAttribute('data-act'), id=el.getAttribute('data-id');
     switch(act){
       case 'stop': break;
-      case 'overlay': closeModal(); break;
-      case 'close-modal': closeModal(); break;
+      case 'overlay': case 'close-modal': closeModal(); break;
+      case 'toggle-nav': A.navOpen=!A.navOpen; document.body.classList.toggle('nav-open',A.navOpen); break;
+      case 'nav': A.tab=id; A.q=''; A.navOpen=false; render(); if(id==='library'&&(!A.lib)) { await loadLibrary(); render(); } break;
       case 'do-login': doLogin(); break;
       case 'do-setup': doSetup(); break;
-      case 'logout': clearSession(); A.admin=null; A.data=null; render(); break;
-      case 'reload': toast('Đang tải lại…'); try{ await refresh(); }catch(err){ toast('Lỗi: '+err.message); } render(); break;
-      case 'tab': A.tab=id; A.q=''; render(); break;
+      case 'logout': clearSession(); A.admin=null; A.data=null; A.lib=null; render(); break;
+      case 'reload': toast('Đang tải lại…'); try{ await refresh(); await loadLibrary(); if(canManageAdmins()) await loadAdminsList(); }catch(err){ toast('Lỗi: '+err.message); } render(); break;
       case 'open-space': openSpaceModal(id); break;
       case 'reset-pin': resetPin(id); break;
       case 'unpair-user': unpairUser(id); break;
       case 'del-user': delUser(id); break;
       case 'save-space': saveSpace(id); break;
       case 'del-space': delSpace(id); break;
+      case 'new-topic': openNewTopicModal(); break;
+      case 'create-topic': createTopic(); break;
+      case 'open-topic': openTopicModal(id); break;
+      case 'save-topic': saveTopic(id); break;
+      case 'del-topic': delTopic(id); break;
+      case 'add-word': addWord(id); break;
+      case 'bulk-word': bulkWord(id); break;
+      case 'del-word': delWord(id, el.getAttribute('data-topic')); break;
       case 'add-admin': addAdmin(); break;
       case 'del-admin': delAdmin(id); break;
     }
   });
-  document.addEventListener('change', (e)=>{
-    if(e.target.classList.contains('rolesel')){ changeAdminRole(e.target.getAttribute('data-user'), e.target.value); }
-  });
-  document.addEventListener('input', (e)=>{
-    if(e.target.matches('[data-act="search"]')){ A.q=e.target.value;
-      const body=$('#tabbody'); if(body) body.innerHTML=tabBody();
-      const inp=$('[data-act="search"]'); if(inp){ inp.focus(); const v=inp.value; inp.value=''; inp.value=v; } }
-  });
+  document.addEventListener('change',(e)=>{ if(e.target.classList.contains('rolesel')) changeAdminRole(e.target.getAttribute('data-user'), e.target.value); });
+  document.addEventListener('input',(e)=>{ if(e.target.matches('[data-act="search"]')){ A.q=e.target.value;
+    const pg=$('#page'); if(pg) pg.innerHTML=tabBody();
+    const inp=$('[data-act="search"]'); if(inp){ inp.focus(); const v=inp.value; inp.value=''; inp.value=v; } } });
   document.addEventListener('keydown',(e)=>{
-    if(e.key==='Enter'){ if($('#ap')&&document.activeElement&&(document.activeElement.id==='ap'||document.activeElement.id==='ap2'||document.activeElement.id==='au')){
-      noAdminYet?doSetup():doLogin(); } }
+    if(e.key==='Enter'){ const a=document.activeElement; if(a&&(a.id==='au'||a.id==='ap'||a.id==='ap2')){ noAdminYet?doSetup():doLogin(); } }
     if(e.key==='Escape') closeModal();
   });
 
@@ -649,19 +755,16 @@
     let admins=[];
     try{ admins=await listAdmins(); }
     catch(e){
-      // Bảng admins chưa tồn tại → hướng dẫn chạy SQL
       $('#app').innerHTML=`<div class="login"><div class="card">
         <h2>Cần thiết lập cơ sở dữ liệu</h2>
-        <div class="warnbox">Chưa có bảng <b>admins</b> trong Supabase. Mở Supabase → SQL Editor → chạy đoạn trong <b>schema.sql</b> (đã bổ sung bảng admins), rồi tải lại trang này.</div>
+        <div class="warnbox">Chưa có bảng <b>admins</b> trong Supabase. Mở Supabase → SQL Editor → chạy <b>schema.sql</b> rồi tải lại.</div>
         <div class="note">Lỗi: ${esc(e.message)}</div>
-        <button class="btn pri" style="width:100%;margin-top:12px" onclick="location.reload()">Tải lại</button>
+        <button class="btn pri" style="width:100%;margin-top:12px;justify-content:center" onclick="location.reload()">Tải lại</button>
       </div></div>`;
       return;
     }
-    noAdminYet = admins.length===0;
-    A.admins = admins;
-    const sess=loadSession();
-    const me = sess && admins.find(a=>a.username===sess);
+    noAdminYet=admins.length===0; A.admins=admins;
+    const sess=loadSession(); const me=sess&&admins.find(a=>a.username===sess);
     if(me){ A.admin=me.username; A.role=roleOf(me); await enterApp(); return; }
     render();
   })();
