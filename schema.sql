@@ -172,6 +172,29 @@ create table if not exists admins (
 );
 alter table admins add column if not exists role text default 'manager';   -- bổ sung cho DB đã tạo bảng admins từ trước
 
+-- ============================================================
+--  THƯ VIỆN CHUNG TOÀN HỆ THỐNG (admin quản lý, mọi cặp đôi dùng chung)
+--  Đích đến của nội dung nhập tay / crawl / OCR PDF.
+-- ============================================================
+create table if not exists library_topics (
+  id          text primary key,
+  title       text,
+  kind        text default 'vocab',       -- 'vocab' | 'colloc' | 'grammar'
+  source      text,                        -- nguồn: thủ công / link / tên PDF…
+  status      text default 'published',    -- 'draft' (chỉ admin) | 'published' (mọi người)
+  created_by  text,
+  created_at  timestamptz default now()
+);
+create table if not exists library_words (
+  id          text primary key,
+  topic_id    text references library_topics(id) on delete cascade,
+  front       text,                        -- từ / cụm tiếng Anh
+  back        text,                        -- nghĩa tiếng Việt
+  example     text,
+  pos         int default 0,               -- thứ tự trong chủ đề
+  created_at  timestamptz default now()
+);
+
 -- Cache ví dụ AI theo TỪ (toàn cục, không theo phòng) để khỏi gọi AI lại tốn token
 create table if not exists word_examples (
   word         text primary key,   -- từ/cụm tiếng Anh, viết thường
@@ -191,7 +214,7 @@ create table if not exists word_examples (
 do $$
 declare t text;
 begin
-  foreach t in array array['users','spaces','invites','decks','cards','quizzes','notes','daily','duels','push_subscriptions','word_examples','admins'] loop
+  foreach t in array array['users','spaces','invites','decks','cards','quizzes','notes','daily','duels','push_subscriptions','word_examples','admins','library_topics','library_words'] loop
     execute format('alter table %I enable row level security;', t);
     execute format('drop policy if exists "allow all" on %I;', t);
     execute format('create policy "allow all" on %I for all using (true) with check (true);', t);
