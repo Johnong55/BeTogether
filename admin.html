@@ -225,6 +225,11 @@
   const SUPABASE_ANON_KEY = "sb_publishable_YDj6liDtYbMFq38GhwCwIQ_KlS-lNwI";
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+  /* Backend crawl trên VPS (thư mục vps-crawl). Để TRỐNG nếu chưa dựng → thẻ Crawl vẫn hiện "Sắp có".
+     Khi đã chạy VPS + Cloudflare Tunnel: điền URL public HTTPS + đúng CRAWL_API_KEY trong vps-crawl/.env */
+  const CRAWL_API_BASE = "";   // vd "https://crawl.your-domain.com"
+  const CRAWL_API_KEY  = "";
+
   const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const hashPass = (s)=>{ let h=5381; for(let i=0;i<s.length;i++) h=((h<<5)+h+s.charCodeAt(i))>>>0; return 'h'+h.toString(36); };
   const genId = ()=> Date.now().toString(36)+Math.random().toString(36).slice(2,7);
@@ -563,12 +568,23 @@
 
   /* ---- Nguồn tri thức ---- */
   function viewIngest(){
-    return `<div class="infobox" style="margin-bottom:16px">Nhập tri thức từ nguồn ngoài vào Thư viện chung. Crawl &amp; OCR đang dựng khung (sắp có); nhập thủ công đã dùng được.</div>
-      <div class="ing-grid">
-        <div class="card"><div class="sec-title" style="margin-top:0">Crawl từ nguồn <span class="tag warn">Sắp có</span></div>
+    const crawlOn=CRAWL_API_BASE&&canEdit();
+    const crawlCard= crawlOn? `<div class="card"><div class="sec-title" style="margin-top:0">Crawl từ nguồn <span class="tag ok">Dùng được</span></div>
+          <p class="mini muted" style="margin:2px 0 12px">Dán link trang web → VPS crawl nội dung → AI bóc tách từ vựng + tóm tắt → vào Thư viện chung.</p>
+          <label class="f">Đường dẫn nguồn</label><input id="cr_url" placeholder="https://…" />
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:2px">
+            <div style="flex:1;min-width:150px"><label class="f">Chế độ</label><select id="cr_mode"><option value="both">Từ vựng + Tóm tắt</option><option value="vocab">Chỉ từ vựng</option><option value="summary">Chỉ tóm tắt</option></select></div>
+            <div style="flex:1;min-width:130px"><label class="f">Trạng thái</label><select id="cr_status"><option value="draft">Nháp (duyệt sau)</option><option value="published">Đăng ngay</option></select></div></div>
+          <button class="btn pri block" style="margin-top:12px" data-act="crawl-run">Bóc tách &amp; lưu vào thư viện</button>
+          <div class="note">Chạy trên VPS — có thể mất 10–40 giây/trang.</div></div>`
+      : `<div class="card"><div class="sec-title" style="margin-top:0">Crawl từ nguồn <span class="tag warn">${CRAWL_API_BASE?'Chỉ quyền sửa':'Sắp có'}</span></div>
           <p class="mini muted" style="margin:2px 0 12px">Dán link trang bài học → tự tải, bóc tách từ + nghĩa + ví dụ → đưa vào Thư viện chung để duyệt.</p>
-          <label class="f">Đường dẫn nguồn</label><input placeholder="https://… (sắp có)" disabled />
-          <button class="btn block" style="margin-top:12px" disabled>Bóc tách (đang phát triển)</button></div>
+          <label class="f">Đường dẫn nguồn</label><input placeholder="https://… (${CRAWL_API_BASE?'cần quyền sửa':'chưa dựng VPS'})" disabled />
+          <button class="btn block" style="margin-top:12px" disabled>Bóc tách</button>
+          ${CRAWL_API_BASE?'':'<div class="note">Cần dựng backend ở thư mục vps-crawl và điền CRAWL_API_BASE.</div>'}</div>`;
+    return `<div class="infobox" style="margin-bottom:16px">Nhập tri thức từ nguồn ngoài vào Thư viện chung. ${crawlOn?'Crawl đã bật;':'Crawl &amp; OCR đang dựng khung (sắp có);'} nhập thủ công đã dùng được.</div>
+      <div class="ing-grid">
+        ${crawlCard}
         <div class="card"><div class="sec-title" style="margin-top:0">Quét PDF (OCR) <span class="tag warn">Sắp có</span></div>
           <p class="mini muted" style="margin:2px 0 12px">Tải PDF/ảnh giáo trình → OCR trích chữ → biên tập thành bộ từ → đưa vào Thư viện chung.</p>
           <div class="drop">Kéo/thả PDF hoặc ảnh vào đây<br><span class="mini">(sắp có)</span></div>
@@ -730,6 +746,23 @@
     try{ const {error}=await sb.from('library_words').insert(rows); if(error) throw error; toast('Đã thêm '+rows.length+' từ'); await loadLibrary(); openTopicModal(tid); render(); }catch(e){ toast('Lỗi: '+e.message); } }
   async function delWord(wid,tid){ if(!requireEdit()) return; try{ const {error}=await sb.from('library_words').delete().eq('id',wid); if(error) throw error; await loadLibrary(); openTopicModal(tid); render(); }catch(e){ toast('Lỗi: '+e.message); } }
 
+  /* Crawl 1 URL qua backend VPS (vps-crawl) → AI bóc tách → lưu vào library_* */
+  async function crawlRun(){ if(!requireEdit()) return;
+    if(!CRAWL_API_BASE){ toast('Chưa cấu hình CRAWL_API_BASE'); return; }
+    const url=($('#cr_url').value||'').trim(); if(!/^https?:\/\//.test(url)){ toast('Nhập URL hợp lệ (http/https)'); return; }
+    const mode=$('#cr_mode').value, status=$('#cr_status').value;
+    const btn=$('[data-act="crawl-run"]'); if(btn){ btn.disabled=true; btn.textContent='Đang crawl & bóc tách…'; }
+    try{
+      const res=await fetch(CRAWL_API_BASE.replace(/\/$/,'')+'/crawl',{ method:'POST',
+        headers:{ 'Content-Type':'application/json', 'X-API-Key':CRAWL_API_KEY },
+        body:JSON.stringify({ url, mode, status }) });
+      const data=await res.json().catch(()=>({}));
+      if(!res.ok) throw new Error(data.detail||data.error||('HTTP '+res.status));
+      toast('Đã tạo “'+(data.title||'chủ đề')+'” (+'+(data.word_count||0)+' từ)');
+      await loadLibrary(); A.tab='library'; A.fresh=true; render();
+    }catch(e){ toast('Lỗi crawl: '+e.message); if(btn){ btn.disabled=false; btn.textContent='Bóc tách & lưu vào thư viện'; } }
+  }
+
   async function addAdmin(){ if(!requireOwner()) return; const u=$('#na_user').value.trim(), p=$('#na_pass').value, role=$('#na_role').value;
     if(!u||!p){ toast('Nhập đủ tên và mật khẩu'); return; } if(p.length<4){ toast('Mật khẩu tối thiểu 4 ký tự'); return; } if(A.admins.some(a=>a.username===u)){ toast('Tên này đã tồn tại'); return; }
     try{ await createAdmin({ username:u, passcode:hashPass(p), role, created_at:new Date().toISOString() }); }catch(e){ toast('Không thêm được: '+e.message); return; }
@@ -769,6 +802,7 @@
       case 'del-user': delUser(id); break;
       case 'save-space': saveSpace(id); break;
       case 'del-space': delSpace(id); break;
+      case 'crawl-run': crawlRun(); break;
       case 'new-topic': openNewTopicModal(); break;
       case 'create-topic': createTopic(); break;
       case 'open-topic': openTopicModal(id); break;
