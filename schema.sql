@@ -194,6 +194,9 @@ create table if not exists library_words (
   pos         int default 0,               -- thứ tự trong chủ đề
   created_at  timestamptz default now()
 );
+-- Bổ sung cho chủ đề tạo từ CRAWL/OCR: bản tóm tắt tiếng Việt + link nguồn
+alter table library_topics add column if not exists summary    text;
+alter table library_topics add column if not exists source_url text;
 
 -- Cache ví dụ AI theo TỪ (toàn cục, không theo phòng) để khỏi gọi AI lại tốn token
 create table if not exists word_examples (
