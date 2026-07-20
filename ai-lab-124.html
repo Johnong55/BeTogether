@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>AI đọc tài liệu ✨ — cùng nhau</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --p1:#e08a9b; --p2:#f2b3c0; --accent:#8fb7a2;
+    --bg1:#fcf7f4; --bg2:#f6ebe9; --card:#fffdfc; --ink:#473a40; --soft:#9c8a90;
+    --line:#eedee0; --chip:#f6ebe9; --edge:#453a3f; --ok:#5da37c; --no:#d97878;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  body{ font-family:'Nunito',sans-serif; color:var(--ink); min-height:100vh;
+    background:linear-gradient(160deg,var(--bg1),var(--bg2)); padding:18px 14px 60px; }
+  .wrap{ max-width:720px; margin:0 auto; }
+  h1,h2,h3{ font-family:'Fraunces',serif; font-weight:600; letter-spacing:-.01em; }
+  h1{ font-size:26px; } h2{ font-size:18px; margin-bottom:10px; }
+  .sub{ color:var(--soft); font-size:14px; margin:4px 0 18px; }
+  .card{ background:var(--card); border-radius:20px; padding:16px; box-shadow:4px 4px 0 var(--edge);
+    border:2px solid var(--edge); margin-bottom:15px; }
+  textarea{ width:100%; font-family:inherit; font-size:15px; color:var(--ink); background:var(--card);
+    border:2px solid var(--edge); border-radius:14px; padding:11px 12px; min-height:130px; resize:vertical; outline:none; }
+  textarea:focus{ box-shadow:2px 2px 0 var(--edge); }
+  .btn{ display:inline-flex; align-items:center; justify-content:center; gap:7px; font-family:'Nunito';
+    font-weight:800; font-size:15px; padding:11px 18px; border-radius:13px; border:2px solid var(--edge);
+    background:linear-gradient(135deg,var(--p1),var(--p2)); color:#fff; box-shadow:3px 3px 0 var(--edge);
+    cursor:pointer; transition:transform .15s; }
+  .btn:active{ transform:translate(2px,2px); box-shadow:1px 1px 0 var(--edge); }
+  .btn.soft{ background:var(--chip); color:var(--ink); font-size:13px; padding:8px 13px; }
+  .btn[disabled]{ opacity:.55; pointer-events:none; }
+  .chip{ padding:7px 12px; border-radius:11px; border:2px solid var(--edge); background:var(--card);
+    font-weight:800; font-size:13px; cursor:pointer; display:inline-flex; gap:6px; align-items:center;
+    color:var(--ink); box-shadow:2px 2px 0 var(--edge); }
+  .chip.on{ background:linear-gradient(135deg,var(--p1),var(--p2)); color:#fff; }
+  .row{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .muted{ color:var(--soft); font-size:13px; }
+  .drop{ border:2px dashed var(--edge); border-radius:14px; padding:14px; text-align:center; cursor:pointer;
+    background:var(--chip); font-weight:700; font-size:14px; margin-top:10px; }
+  .drop.drag{ background:var(--p2); color:#fff; }
+  .filetag{ display:inline-flex; gap:8px; align-items:center; background:var(--chip); border:2px solid var(--edge);
+    border-radius:11px; padding:6px 10px; font-size:13px; font-weight:700; margin-top:10px; }
+  .filetag button{ border:none; background:none; cursor:pointer; font-size:14px; }
+  .steps{ list-style:none; }
+  .steps li{ display:flex; gap:10px; align-items:flex-start; padding:7px 0; font-size:14px; font-weight:700; }
+  .steps .ico{ width:24px; text-align:center; flex:none; }
+  .steps .hint{ display:block; font-weight:400; font-size:12.5px; color:var(--soft); }
+  .steps li.wait{ opacity:.45; }
+  .tldr{ background:var(--chip); border:2px solid var(--edge); border-radius:14px; padding:12px; font-size:15px; line-height:1.55; }
+  ul.points{ margin:12px 0 0 4px; list-style:none; }
+  ul.points li{ padding:5px 0 5px 26px; position:relative; font-size:14.5px; line-height:1.5; }
+  ul.points li::before{ content:'💡'; position:absolute; left:0; top:5px; font-size:14px; }
+  .terms{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  .term{ background:var(--card); border:2px solid var(--edge); box-shadow:2px 2px 0 var(--edge);
+    border-radius:11px; padding:6px 10px; font-size:13px; }
+  .term b{ color:var(--p1); }
+  .q{ border:2px solid var(--edge); border-radius:16px; padding:13px; margin-bottom:13px; background:var(--card); box-shadow:3px 3px 0 var(--edge); }
+  .q .qt{ font-weight:800; font-size:15px; margin-bottom:10px; line-height:1.45; }
+  .opt{ display:block; width:100%; text-align:left; font-family:inherit; font-size:14.5px; font-weight:700; color:var(--ink);
+    background:var(--chip); border:2px solid var(--edge); border-radius:12px; padding:10px 12px; margin-bottom:8px; cursor:pointer; }
+  .opt.correct{ background:#dff0e5; border-color:var(--ok); color:#2f6b4c; }
+  .opt.wrong{ background:#fae3e3; border-color:var(--no); color:#a04848; }
+  .opt[disabled]{ cursor:default; }
+  .explain{ background:var(--chip); border-radius:11px; padding:9px 11px; font-size:13.5px; line-height:1.5; margin-top:4px; }
+  .score{ text-align:center; font-size:17px; font-weight:800; padding:6px 0 2px; }
+  .toast{ position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:var(--edge); color:#fff;
+    padding:11px 18px; border-radius:13px; font-size:14px; font-weight:700; z-index:99; max-width:88vw;
+    opacity:0; transition:opacity .25s; pointer-events:none; }
+  .toast.show{ opacity:1; }
+  .spin{ display:inline-block; animation:sp 1s linear infinite; }
+  @keyframes sp{ to{ transform:rotate(360deg); } }
+  .hidden{ display:none !important; }
+  label.lbl{ font-weight:800; font-size:13px; display:block; margin:14px 0 7px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>AI đọc tài liệu ✨</h1>
+  <p class="sub">Dán chữ hoặc đưa tệp (PDF / ảnh chụp / .txt) — AI sẽ tóm tắt và tạo bộ câu hỏi giúp hai đứa hiểu bài nhanh hơn 💕</p>
+
+  <div class="card">
+    <h2>1 · Đưa tài liệu vào 📄</h2>
+    <textarea id="txt" placeholder="Dán nội dung tài liệu vào đây…&#10;(hoặc chọn tệp bên dưới)"></textarea>
+    <div class="drop" id="drop">📎 Bấm để chọn tệp — hoặc kéo thả vào đây<br><span class="muted">PDF · ảnh chụp/scan (JPG, PNG) · .txt .md .csv .html — tối đa 10MB</span></div>
+    <input type="file" id="file" class="hidden" accept=".txt,.md,.csv,.html,.htm,.pdf,image/*">
+    <div id="filetag"></div>
+    <label class="lbl">Số câu hỏi muốn tạo</label>
+    <div class="row" id="ncount">
+      <button class="chip" data-n="5">5 câu</button>
+      <button class="chip on" data-n="8">8 câu</button>
+      <button class="chip" data-n="12">12 câu</button>
+    </div>
+    <div style="margin-top:16px"><button class="btn" id="go">Phân tích ✨</button></div>
+  </div>
+
+  <div class="card hidden" id="pipe">
+    <h2>AI đang làm việc… <span class="spin">🌸</span></h2>
+    <ol class="steps" id="steps"></ol>
+  </div>
+
+  <div class="card hidden" id="sumcard">
+    <h2>Tóm tắt 📝</h2>
+    <div class="tldr" id="tldr"></div>
+    <ul class="points" id="points"></ul>
+    <div class="terms" id="terms"></div>
+  </div>
+
+  <div class="card hidden" id="quizcard">
+    <h2>Bộ câu hỏi kiểm tra hiểu bài 🎯</h2>
+    <p class="muted" style="margin-bottom:12px">Chọn đáp án — chọn xong sẽ hiện giải thích ngay bên dưới.</p>
+    <div id="quiz"></div>
+    <div class="score hidden" id="score"></div>
+    <div class="row" style="justify-content:center; margin-top:8px">
+      <button class="btn soft hidden" id="redo">Làm lại 🔄</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Cấu hình (khớp với functions/api/lab/*.js) ───────────────────────────────
+const LAB_KEY = 'cn-lab-124-tim';
+const API = { extract: '/api/lab/extract', analyze: '/api/lab/analyze' };
+const CHUNK = 6000, OVERLAP = 250, MAX_DOC = 60000;
+
+const $ = (s) => document.querySelector(s);
+let FILE = null;          // {name, blob, isImage} — tệp đã chọn (ưu tiên hơn ô dán chữ)
+let QUIZ = null;          // {questions, answers:{i:pick}}
+let BUSY = false;
+
+// ── Chọn tệp / kéo thả ───────────────────────────────────────────────────────
+$('#drop').addEventListener('click', () => $('#file').click());
+$('#drop').addEventListener('dragover', (e) => { e.preventDefault(); $('#drop').classList.add('drag'); });
+$('#drop').addEventListener('dragleave', () => $('#drop').classList.remove('drag'));
+$('#drop').addEventListener('drop', (e) => { e.preventDefault(); $('#drop').classList.remove('drag'); if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]); });
+$('#file').addEventListener('change', (e) => { if (e.target.files[0]) setFile(e.target.files[0]); e.target.value = ''; });
+
+function setFile(f) {
+  if (f.size > 10 * 1024 * 1024) return toast('Tệp quá lớn (tối đa 10MB) 😥');
+  FILE = { name: f.name, blob: f, isImage: (f.type || '').startsWith('image/') };
+  $('#filetag').innerHTML = '<span class="filetag">📄 ' + esc(f.name) + ' <button id="unfile">✖</button></span>';
+  $('#unfile').addEventListener('click', () => { FILE = null; $('#filetag').innerHTML = ''; });
+}
+
+$('#ncount').addEventListener('click', (e) => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  document.querySelectorAll('#ncount .chip').forEach((c) => c.classList.remove('on'));
+  b.classList.add('on');
+});
+
+// ── Pipeline: đọc tệp → làm sạch → chia đoạn → tóm tắt (map/reduce) → câu hỏi ─
+$('#go').addEventListener('click', run);
+
+async function run() {
+  if (BUSY) return;
+  const pasted = $('#txt').value.trim();
+  if (!FILE && pasted.length < 40) return toast('Dán thêm nội dung hoặc chọn một tệp đã nha 🥺');
+  BUSY = true; $('#go').disabled = true;
+  QUIZ = null;
+  $('#sumcard').classList.add('hidden'); $('#quizcard').classList.add('hidden');
+  buildSteps();
+  $('#pipe').classList.remove('hidden');
+  $('#pipe').scrollIntoView({ behavior: 'smooth' });
+  try {
+    // 1) Đọc tài liệu
+    step('read', 'run');
+    let text = FILE ? await extractFile(FILE) : pasted;
+    step('read', 'ok');
+
+    // 2) Làm sạch & chia đoạn
+    step('clean', 'run');
+    text = cleanText(text);
+    if (text.length < 40) throw new Error('Tài liệu ngắn quá, AI không có gì để đọc 😅');
+    let truncated = false;
+    if (text.length > MAX_DOC) { text = text.slice(0, MAX_DOC); truncated = true; }
+    const chunks = chunkText(text);
+    step('clean', 'ok', text.length.toLocaleString('vi') + ' ký tự · ' + chunks.length + ' phần' + (truncated ? ' (tài liệu rất dài, đã lấy 60k ký tự đầu)' : ''));
+
+    // 3+4) Tóm tắt: 1 phần → gọi thẳng; nhiều phần → tóm từng phần rồi tổng hợp
+    let summary;
+    if (chunks.length === 1) {
+      step('map', 'run'); step('reduce', 'run');
+      summary = await analyze({ task: 'summary_full', text: chunks[0] });
+      step('map', 'ok'); step('reduce', 'ok');
+    } else {
+      step('map', 'run');
+      const notes = [];
+      for (let i = 0; i < chunks.length; i++) {
+        step('map', 'run', 'phần ' + (i + 1) + '/' + chunks.length + '…');
+        const r = await analyze({ task: 'summary_chunk', text: chunks[i], part: i + 1, total: chunks.length });
+        notes.push('— Phần ' + (i + 1) + ' —\n' + r.notes);
+      }
+      step('map', 'ok');
+      step('reduce', 'run');
+      summary = await analyze({ task: 'summary_merge', notes: notes.join('\n\n') });
+      step('reduce', 'ok');
+    }
+    renderSummary(summary);
+
+    // 5) Sinh bộ câu hỏi từ tóm tắt + trích đoạn gốc
+    step('quiz', 'run');
+    const count = parseInt(document.querySelector('#ncount .chip.on').dataset.n, 10) || 8;
+    const summaryTxt = summary.tldr + '\n' + summary.points.map((p) => '- ' + p).join('\n');
+    const r = await analyze({ task: 'questions', summary: summaryTxt, excerpts: excerptsOf(text), count });
+    step('quiz', 'ok', r.questions.length + ' câu');
+    renderQuiz(r.questions);
+    setTimeout(() => $('#pipe').classList.add('hidden'), 700);
+    $('#sumcard').scrollIntoView({ behavior: 'smooth' });
+  } catch (e) {
+    stepFailRunning();
+    toast('Ơ, có lỗi rồi: ' + (e.message || e) + ' 😥 Thử lại nha!');
+  }
+  BUSY = false; $('#go').disabled = false;
+}
+
+// ── Bước 1: đọc tệp (txt đọc tại chỗ, PDF/ảnh gửi lên /api/lab/extract) ──────
+async function extractFile(f) {
+  const plain = /\.(txt|md|csv|html?)$/i.test(f.name);
+  if (plain && !f.isImage) return await f.blob.text();
+  let blob = f.blob, type = f.blob.type || 'application/octet-stream';
+  if (f.isImage) { const c = await compressImage(f.blob); if (c) { blob = c; type = 'image/jpeg'; } }
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 150000);
+  try {
+    const res = await fetch(API.extract, {
+      method: 'POST', body: blob, signal: ctrl.signal,
+      headers: { 'x-lab-key': LAB_KEY, 'content-type': type, 'x-file-type': type, 'x-file-name': encodeURIComponent(f.name) },
+    });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok || !j.text) throw new Error(j.error || 'Không đọc được tệp (' + res.status + ')');
+    return j.text;
+  } finally { clearTimeout(t); }
+}
+
+// Ảnh chụp thu về tối đa 1600px JPEG cho nhẹ trước khi gửi OCR
+function compressImage(blob) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(blob);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const max = 1600, sc = Math.min(1, max / Math.max(img.width, img.height));
+      const cv = document.createElement('canvas');
+      cv.width = Math.round(img.width * sc); cv.height = Math.round(img.height * sc);
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      cv.toBlob((b) => resolve(b), 'image/jpeg', 0.85);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+    img.src = url;
+  });
+}
+
+// ── Bước 2: làm sạch + chia đoạn theo ranh giới đoạn văn, có phần gối đầu ────
+function cleanText(s) {
+  return String(s || '')
+    .replace(/\r\n?/g, '\n')
+    .replace(/[ \t\u00A0]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
+    .trim();
+}
+
+function chunkText(text) {
+  if (text.length <= CHUNK + 1000) return [text];
+  const paras = text.split(/\n\n+/);
+  const chunks = []; let cur = '';
+  for (const p of paras) {
+    if (cur && (cur.length + p.length + 2) > CHUNK) {
+      chunks.push(cur);
+      cur = cur.slice(-OVERLAP) + '\n\n' + p; // gối đầu để không đứt mạch ý giữa 2 phần
+    } else cur = cur ? cur + '\n\n' + p : p;
+    while (cur.length > CHUNK + 2000) { chunks.push(cur.slice(0, CHUNK)); cur = cur.slice(CHUNK - OVERLAP); }
+  }
+  if (cur.trim()) chunks.push(cur);
+  return chunks;
+}
+
+// Trích đoạn gốc gửi kèm khi ra đề: lấy phần đầu + một lát ở giữa cho phủ đều
+function excerptsOf(text) {
+  if (text.length <= 12000) return text;
+  const mid = Math.floor(text.length / 2);
+  return text.slice(0, 7000) + '\n\n[…]\n\n' + text.slice(mid, mid + 4000);
+}
+
+// ── Gọi /api/lab/analyze ─────────────────────────────────────────────────────
+async function analyze(body) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 120000);
+  try {
+    const res = await fetch(API.analyze, {
+      method: 'POST', signal: ctrl.signal,
+      headers: { 'content-type': 'application/json', 'x-lab-key': LAB_KEY },
+      body: JSON.stringify(body),
+    });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(j.error || 'AI bận mất rồi (' + res.status + ')');
+    return j;
+  } finally { clearTimeout(t); }
+}
+
+// ── Hiển thị các bước pipeline ───────────────────────────────────────────────
+const STEP_DEFS = [
+  ['read', 'Đọc tài liệu', 'trích chữ từ tệp / lấy nội dung đã dán'],
+  ['clean', 'Làm sạch & chia đoạn', 'bỏ ký tự thừa, cắt thành phần vừa sức AI'],
+  ['map', 'Tóm tắt từng phần', 'AI đọc kỹ từng phần một'],
+  ['reduce', 'Tổng hợp tóm tắt', 'gộp lại thành tóm tắt + ý chính + từ khóa'],
+  ['quiz', 'Sinh bộ câu hỏi', 'tạo trắc nghiệm kiểm tra hiểu bài'],
+];
+function buildSteps() {
+  $('#steps').innerHTML = STEP_DEFS.map(([id, name, hint]) =>
+    '<li class="wait" id="st-' + id + '"><span class="ico">⚪</span><span>' + name +
+    '<span class="hint">' + hint + '</span><span class="hint st-note"></span></span></li>').join('');
+}
+function step(id, state, note) {
+  const li = $('#st-' + id); if (!li) return;
+  li.classList.toggle('wait', false);
+  li.querySelector('.ico').textContent = state === 'run' ? '⏳' : state === 'ok' ? '✅' : '❌';
+  if (note != null) li.querySelector('.st-note').textContent = note;
+}
+function stepFailRunning() {
+  document.querySelectorAll('#steps .ico').forEach((i) => { if (i.textContent === '⏳') i.textContent = '❌'; });
+}
+
+// ── Kết quả: tóm tắt + từ khóa ───────────────────────────────────────────────
+function renderSummary(s) {
+  $('#tldr').textContent = s.tldr;
+  $('#points').innerHTML = s.points.map((p) => '<li>' + esc(p) + '</li>').join('');
+  $('#terms').innerHTML = (s.terms || []).map((t) =>
+    '<span class="term"><b>' + esc(t.term) + '</b>' + (t.vi ? ' — ' + esc(t.vi) : '') + '</span>').join('');
+  $('#sumcard').classList.remove('hidden');
+}
+
+// ── Kết quả: bộ câu hỏi tương tác ────────────────────────────────────────────
+function renderQuiz(questions) {
+  QUIZ = { questions, answers: {} };
+  $('#quiz').innerHTML = questions.map((q, i) =>
+    '<div class="q" data-q="' + i + '"><div class="qt">' + (i + 1) + '. ' + esc(q.q) + '</div>' +
+    q.options.map((o, j) => '<button class="opt" data-q="' + i + '" data-o="' + j + '">' + LETTERS[j] + '. ' + esc(o) + '</button>').join('') +
+    '<div class="explain hidden" id="ex-' + i + '"></div></div>').join('');
+  $('#score').classList.add('hidden'); $('#redo').classList.add('hidden');
+  $('#quizcard').classList.remove('hidden');
+}
+const LETTERS = ['A', 'B', 'C', 'D'];
+
+$('#quiz').addEventListener('click', (e) => {
+  const b = e.target.closest('.opt'); if (!b || !QUIZ) return;
+  const qi = +b.dataset.q, oi = +b.dataset.o;
+  if (QUIZ.answers[qi] != null) return;
+  QUIZ.answers[qi] = oi;
+  const q = QUIZ.questions[qi];
+  const box = document.querySelector('.q[data-q="' + qi + '"]');
+  box.querySelectorAll('.opt').forEach((el) => {
+    el.disabled = true;
+    const j = +el.dataset.o;
+    if (j === q.answer) el.classList.add('correct');
+    else if (j === oi) el.classList.add('wrong');
+  });
+  const ex = $('#ex-' + qi);
+  ex.innerHTML = (oi === q.answer ? '🎉 <b>Chính xác!</b> ' : '💪 <b>Chưa đúng.</b> Đáp án: <b>' + LETTERS[q.answer] + '</b>. ') + esc(q.explain || '');
+  ex.classList.remove('hidden');
+  if (Object.keys(QUIZ.answers).length === QUIZ.questions.length) showScore();
+});
+
+function showScore() {
+  const right = QUIZ.questions.filter((q, i) => QUIZ.answers[i] === q.answer).length;
+  const total = QUIZ.questions.length;
+  const p = right / total;
+  $('#score').innerHTML = (p === 1 ? '👑 Tuyệt đối luôn! ' : p >= 0.7 ? '🌟 Giỏi quá! ' : p >= 0.4 ? '🌱 Ổn rồi, đọc lại tóm tắt chút nha! ' : '🫂 Không sao, học lại cùng nhau nè! ') + right + '/' + total + ' câu đúng';
+  $('#score').classList.remove('hidden');
+  $('#redo').classList.remove('hidden');
+}
+
+$('#redo').addEventListener('click', () => { if (QUIZ) renderQuiz(shuffle(QUIZ.questions)); });
+
+function shuffle(arr) {
+  // xáo cả thứ tự câu lẫn thứ tự lựa chọn (giữ đúng chỉ số đáp án)
+  const qs = arr.map((q) => {
+    const idx = q.options.map((_, j) => j).sort(() => Math.random() - 0.5);
+    return { q: q.q, options: idx.map((j) => q.options[j]), answer: idx.indexOf(q.answer), explain: q.explain };
+  });
+  return qs.sort(() => Math.random() - 0.5);
+}
+
+// ── Tiện ích ─────────────────────────────────────────────────────────────────
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+let toastT = null;
+function toast(m) {
+  const el = $('#toast'); el.textContent = m; el.classList.add('show');
+  clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 3800);
+}
+</script>
+</body>
+</html>
