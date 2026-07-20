@@ -20,8 +20,8 @@ export async function onRequestPost({ request, env }) {
   const task = String(body.task || '');
   try {
     if (task === 'summary_full') {
-      const out = await runJSON(env, SUM_SYSTEM, 'TÀI LIỆU:\n"""\n' + clip(body.text) + '\n"""', validSummary);
-      return Response.json(out);
+      const { result, model } = await runJSON(env, SUM_SYSTEM, 'TÀI LIỆU:\n"""\n' + clip(body.text) + '\n"""', validSummary);
+      return Response.json({ ...result, model });
     }
     if (task === 'summary_chunk') {
       const sys = 'Bạn tóm tắt MỘT PHẦN của một tài liệu dài (phần ' + (body.part || '?') + '/' + (body.total || '?') + '). ' +
@@ -32,10 +32,10 @@ export async function onRequestPost({ request, env }) {
       return Response.json({ notes });
     }
     if (task === 'summary_merge') {
-      const out = await runJSON(env, SUM_SYSTEM,
+      const { result, model } = await runJSON(env, SUM_SYSTEM,
         'Dưới đây là ghi chú tóm tắt TỪNG PHẦN của cùng một tài liệu dài. Hãy tổng hợp lại thành một tóm tắt chung:\n"""\n' + clip(body.notes) + '\n"""',
         validSummary);
-      return Response.json(out);
+      return Response.json({ ...result, model });
     }
     if (task === 'questions') {
       const n = Math.max(3, Math.min(15, parseInt(body.count, 10) || 8));
@@ -45,11 +45,11 @@ export async function onRequestPost({ request, env }) {
         'Trả về DUY NHẤT một JSON object đúng dạng: {"questions":[{"q":"câu hỏi","options":["4 lựa chọn"],"answer":0,"explain":"giải thích ngắn vì sao đáp án đúng"}]}. ' +
         'Mỗi câu ĐÚNG 4 lựa chọn, "answer" là chỉ số 0-3 của lựa chọn đúng, vị trí đáp án đúng phải phân bố ngẫu nhiên giữa các câu. Không markdown, không chữ nào ngoài JSON.';
       const user = 'TÓM TẮT TÀI LIỆU:\n' + clip(body.summary, 6000) + '\n\nTRÍCH ĐOẠN GỐC:\n"""\n' + clip(body.excerpts, 12000) + '\n"""';
-      const out = await runJSON(env, sys, user, (v) => {
+      const { result, model } = await runJSON(env, sys, user, (v) => {
         const qs = Array.isArray(v && v.questions) ? v.questions.map(normQuestion).filter(Boolean) : [];
         return qs.length ? { questions: qs } : null;
       });
-      return Response.json(out);
+      return Response.json({ ...result, model });
     }
     return Response.json({ error: 'unknown task' }, { status: 400 });
   } catch (e) {
@@ -100,11 +100,12 @@ async function runText(env, system, user) {
 
 async function runJSON(env, system, user, validate) {
   // Thử main → parse; parse hỏng hoặc lỗi mạng model → thử fallback; cả hai hỏng mới ném lỗi.
+  // Trả kèm `model` đã tạo ra kết quả (để trang lưu lại phục vụ so sánh/đánh giá).
   let lastErr = null;
   try {
     const out = await env.AI.run(MODEL_MAIN, { instructions: system, input: user });
     const v = validate(looseJson(extractText(out)));
-    if (v) return v;
+    if (v) return { result: v, model: MODEL_MAIN };
     lastErr = new Error('main model: bad JSON');
   } catch (e) { lastErr = e; }
   try {
@@ -113,7 +114,7 @@ async function runJSON(env, system, user, validate) {
       max_tokens: 2600, temperature: 0.4,
     });
     const v = validate(looseJson(extractText(out)));
-    if (v) return v;
+    if (v) return { result: v, model: MODEL_FALLBACK };
     throw new Error('fallback model: bad JSON');
   } catch (e) {
     throw (lastErr && String(lastErr.message || lastErr) !== 'main model: bad JSON') ? lastErr : e;

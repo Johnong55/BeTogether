@@ -75,6 +75,23 @@
   @keyframes sp{ to{ transform:rotate(360deg); } }
   .hidden{ display:none !important; }
   label.lbl{ font-weight:800; font-size:13px; display:block; margin:14px 0 7px; }
+  .hrow{ border:2px solid var(--edge); border-radius:14px; padding:11px 12px; margin-bottom:10px; background:var(--card); box-shadow:2px 2px 0 var(--edge); }
+  .hrow .hmeta{ font-size:12px; color:var(--soft); font-weight:700; display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .hrow .htldr{ font-size:13.5px; line-height:1.5; margin:7px 0; }
+  .badge{ background:var(--chip); border:1.5px solid var(--edge); border-radius:8px; padding:1px 7px; font-size:11.5px; }
+  .badge.model{ background:#eaf3ee; }
+  .stars{ font-size:20px; letter-spacing:2px; cursor:pointer; user-select:none; }
+  .stars span{ opacity:.3; }
+  .stars span.on{ opacity:1; }
+  .hrow .hactions{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:6px; }
+  .noteinput{ font-size:13px; padding:7px 9px; min-height:0; }
+  .overlay{ position:fixed; inset:0; background:rgba(40,30,35,.45); display:none; align-items:flex-end; justify-content:center; z-index:80; }
+  .overlay.show{ display:flex; }
+  .sheet{ background:var(--card); border:2px solid var(--edge); border-radius:20px 20px 0 0; width:100%; max-width:720px;
+    max-height:86vh; overflow:auto; padding:18px 16px 30px; box-shadow:0 -4px 0 var(--edge); }
+  .qview{ border:1.5px solid var(--edge); border-radius:12px; padding:10px; margin-bottom:9px; font-size:13.5px; }
+  .qview .opt2{ padding:4px 8px; border-radius:8px; margin:3px 0; }
+  .qview .opt2.ok{ background:#dff0e5; font-weight:800; }
 </style>
 </head>
 <body>
@@ -118,19 +135,36 @@
       <button class="btn soft hidden" id="redo">Làm lại 🔄</button>
     </div>
   </div>
+
+  <div class="card" id="histcard">
+    <div class="row" style="justify-content:space-between">
+      <h2 style="margin:0">Lịch sử &amp; đánh giá 🗂️</h2>
+      <button class="btn soft" id="refreshHist">Tải lại ↻</button>
+    </div>
+    <p class="muted" style="margin:6px 0 12px">Mỗi lần phân tích được lưu lại để so sánh chất lượng — chấm sao và ghi nhận xét cho từng lần.</p>
+    <div id="hist"><p class="muted">Đang tải…</p></div>
+  </div>
 </div>
+
+<div class="overlay" id="overlay"><div class="sheet" id="sheet"></div></div>
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ── Cấu hình (khớp với functions/api/lab/*.js) ───────────────────────────────
 const LAB_KEY = 'cn-lab-124-tim';
 const API = { extract: '/api/lab/extract', analyze: '/api/lab/analyze' };
 const CHUNK = 6000, OVERLAP = 250, MAX_DOC = 60000;
+// Supabase — dùng chung với app chính (publishable key, an toàn công khai)
+const SUPABASE_URL = 'https://vklsqexomaconbzoufmu.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_YDj6liDtYbMFq38GhwCwIQ_KlS-lNwI';
+const SB = (window.supabase && window.supabase.createClient) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
 const $ = (s) => document.querySelector(s);
 let FILE = null;          // {name, blob, isImage} — tệp đã chọn (ưu tiên hơn ô dán chữ)
 let QUIZ = null;          // {questions, answers:{i:pick}}
 let BUSY = false;
+let LAST = null;          // dữ liệu lần chạy vừa xong (đã/đang lưu)
 
 // ── Chọn tệp / kéo thả ───────────────────────────────────────────────────────
 $('#drop').addEventListener('click', () => $('#file').click());
@@ -160,7 +194,9 @@ async function run() {
   const pasted = $('#txt').value.trim();
   if (!FILE && pasted.length < 40) return toast('Dán thêm nội dung hoặc chọn một tệp đã nha 🥺');
   BUSY = true; $('#go').disabled = true;
-  QUIZ = null;
+  QUIZ = null; LAST = null;
+  const t0 = Date.now();
+  const source = FILE ? (FILE.isImage ? 'image' : /\.pdf$/i.test(FILE.name) ? 'pdf' : 'file') : 'paste';
   $('#sumcard').classList.add('hidden'); $('#quizcard').classList.add('hidden');
   buildSteps();
   $('#pipe').classList.remove('hidden');
@@ -210,6 +246,18 @@ async function run() {
     renderQuiz(r.questions);
     setTimeout(() => $('#pipe').classList.add('hidden'), 700);
     $('#sumcard').scrollIntoView({ behavior: 'smooth' });
+
+    // 6) Lưu lại lần chạy để dành so sánh & đánh giá
+    LAST = {
+      id: (crypto.randomUUID ? crypto.randomUUID() : 'r' + Date.now() + Math.random().toString(36).slice(2)),
+      source, file_name: FILE ? FILE.name : null,
+      char_count: text.length, chunks: chunks.length,
+      model: shortModel(summary.model), model_q: shortModel(r.model),
+      input_excerpt: text.slice(0, 3000),
+      tldr: summary.tldr, points: summary.points, terms: summary.terms || [],
+      questions: r.questions, ms: Date.now() - t0,
+    };
+    saveRun(LAST);
   } catch (e) {
     stepFailRunning();
     toast('Ơ, có lỗi rồi: ' + (e.message || e) + ' 😥 Thử lại nha!');
@@ -384,6 +432,110 @@ function shuffle(arr) {
   });
   return qs.sort(() => Math.random() - 0.5);
 }
+
+// ── Lưu vào Supabase + Lịch sử & đánh giá ────────────────────────────────────
+function shortModel(m) { return String(m || '').replace('@cf/', '').replace(/-instruct.*$/, '').replace(/-fp8-fast$/, ''); }
+
+async function saveRun(rec) {
+  if (!SB) return;
+  try {
+    const { error } = await SB.from('lab_runs').insert(rec);
+    if (error) throw error;
+    toast('Đã lưu vào kho đánh giá 🗂️');
+    loadHistory();
+  } catch (e) {
+    const msg = String(e.message || e);
+    toast(/relation|does not exist|schema cache|column/i.test(msg) ? 'Chưa lưu được — cần chạy SQL bảng lab_runs 🛠️' : 'Chưa lưu được: ' + msg);
+  }
+}
+
+async function loadHistory() {
+  if (!SB) { $('#hist').innerHTML = '<p class="muted">Không có kết nối cơ sở dữ liệu.</p>'; return; }
+  try {
+    const { data, error } = await SB.from('lab_runs')
+      .select('id,created_at,source,file_name,char_count,chunks,model,model_q,tldr,questions,rating,note,ms')
+      .order('created_at', { ascending: false }).limit(40);
+    if (error) throw error;
+    renderHistory(data || []);
+  } catch (e) {
+    const msg = String(e.message || e);
+    $('#hist').innerHTML = /relation|does not exist|schema cache/i.test(msg)
+      ? '<p class="muted">Chưa có bảng <b>lab_runs</b>. Chạy đoạn SQL trong <code>schema.sql</code> ở Supabase để bật lưu trữ nha.</p>'
+      : '<p class="muted">Không tải được lịch sử: ' + esc(msg) + '</p>';
+  }
+}
+
+const SRC_LABEL = { paste: '📋 Dán chữ', pdf: '📄 PDF', image: '🖼️ Ảnh', file: '📎 Tệp' };
+let HIST = [];
+function renderHistory(rows) {
+  HIST = rows;
+  if (!rows.length) { $('#hist').innerHTML = '<p class="muted">Chưa có lần phân tích nào được lưu. Phân tích một tài liệu ở trên đi nha ✨</p>'; return; }
+  $('#hist').innerHTML = rows.map((r) => {
+    const when = new Date(r.created_at).toLocaleString('vi');
+    const nq = Array.isArray(r.questions) ? r.questions.length : 0;
+    return '<div class="hrow" data-id="' + r.id + '">' +
+      '<div class="hmeta">' +
+        '<span class="badge">' + (SRC_LABEL[r.source] || r.source || '?') + '</span>' +
+        (r.file_name ? '<span class="badge">' + esc(r.file_name) + '</span>' : '') +
+        '<span class="badge model">🤖 ' + esc(r.model || '?') + (r.model_q && r.model_q !== r.model ? ' / ' + esc(r.model_q) : '') + '</span>' +
+        '<span class="badge">' + (r.char_count || 0).toLocaleString('vi') + ' ký tự · ' + nq + ' câu</span>' +
+        '<span>' + when + '</span>' +
+      '</div>' +
+      '<div class="htldr">' + esc(r.tldr || '') + '</div>' +
+      '<div class="hactions">' +
+        '<span class="stars" data-id="' + r.id + '">' + [1, 2, 3, 4, 5].map((n) => '<span data-v="' + n + '" class="' + (r.rating >= n ? 'on' : '') + '">★</span>').join('') + '</span>' +
+        '<button class="btn soft" data-view="' + r.id + '">Xem lại 👀</button>' +
+        '<button class="btn soft" data-del="' + r.id + '">Xoá 🗑️</button>' +
+      '</div>' +
+      '<input class="noteinput" data-note="' + r.id + '" placeholder="Ghi nhận xét đánh giá…" value="' + esc(r.note || '') + '">' +
+    '</div>';
+  }).join('');
+}
+
+$('#refreshHist').addEventListener('click', loadHistory);
+
+$('#hist').addEventListener('click', (e) => {
+  const star = e.target.closest('.stars span[data-v]');
+  if (star) { const id = star.parentElement.dataset.id; return rateRun(id, +star.dataset.v); }
+  const view = e.target.closest('[data-view]'); if (view) return openRun(view.dataset.view);
+  const del = e.target.closest('[data-del]'); if (del) return delRun(del.dataset.del);
+});
+$('#hist').addEventListener('change', (e) => {
+  const n = e.target.closest('.noteinput'); if (n) noteRun(n.dataset.note, n.value);
+});
+
+async function rateRun(id, v) {
+  const row = HIST.find((r) => r.id === id); if (row && row.rating === v) v = 0; // bấm lại sao đang có = bỏ
+  const stars = document.querySelector('.stars[data-id="' + id + '"]');
+  if (stars) stars.querySelectorAll('span').forEach((s) => s.classList.toggle('on', +s.dataset.v <= v));
+  if (row) row.rating = v;
+  try { await SB.from('lab_runs').update({ rating: v || null }).eq('id', id); } catch (e) { toast('Chưa lưu được điểm 😥'); }
+}
+async function noteRun(id, note) {
+  try { await SB.from('lab_runs').update({ note }).eq('id', id); toast('Đã lưu nhận xét ✍️'); } catch (e) { toast('Chưa lưu được nhận xét 😥'); }
+}
+async function delRun(id) {
+  if (!confirm('Xoá lần phân tích này khỏi kho đánh giá?')) return;
+  try { await SB.from('lab_runs').delete().eq('id', id); loadHistory(); } catch (e) { toast('Chưa xoá được 😥'); }
+}
+
+function openRun(id) {
+  const r = HIST.find((x) => x.id === id); if (!r) return;
+  const terms = ''; // bảng nhẹ không tải terms; hiện tldr + câu hỏi kèm đáp án đúng
+  const qs = (Array.isArray(r.questions) ? r.questions : []).map((q, i) =>
+    '<div class="qview"><b>' + (i + 1) + '. ' + esc(q.q) + '</b>' +
+    q.options.map((o, j) => '<div class="opt2' + (j === q.answer ? ' ok' : '') + '">' + LETTERS[j] + '. ' + esc(o) + (j === q.answer ? ' ✅' : '') + '</div>').join('') +
+    (q.explain ? '<div class="muted" style="margin-top:4px">💡 ' + esc(q.explain) + '</div>' : '') + '</div>').join('');
+  $('#sheet').innerHTML = '<div class="row" style="justify-content:space-between"><h2 style="margin:0">Xem lại 👀</h2>' +
+    '<button class="btn soft" data-close="1">Đóng ✕</button></div>' +
+    '<p class="muted" style="margin:6px 0 12px">🤖 ' + esc(r.model || '?') + (r.model_q && r.model_q !== r.model ? ' (câu hỏi: ' + esc(r.model_q) + ')' : '') + ' · ' + (r.char_count || 0).toLocaleString('vi') + ' ký tự · ' + Math.round((r.ms || 0) / 100) / 10 + 's</p>' +
+    '<div class="tldr">' + esc(r.tldr || '') + '</div>' +
+    '<h2 style="margin:16px 0 8px">Bộ câu hỏi (' + (Array.isArray(r.questions) ? r.questions.length : 0) + ')</h2>' + qs;
+  $('#overlay').classList.add('show');
+}
+$('#overlay').addEventListener('click', (e) => { if (e.target.id === 'overlay' || e.target.closest('[data-close]')) $('#overlay').classList.remove('show'); });
+
+if (SB) loadHistory(); else $('#hist').innerHTML = '<p class="muted">Không tải được thư viện Supabase (mạng?).</p>';
 
 // ── Tiện ích ─────────────────────────────────────────────────────────────────
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }

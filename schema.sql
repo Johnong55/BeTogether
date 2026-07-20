@@ -206,6 +206,27 @@ create table if not exists word_examples (
   created_at   timestamptz default now()
 );
 
+-- Lưu mỗi lần chạy "AI đọc tài liệu" (trang ẩn ai-lab-124.html) để dành SO SÁNH & ĐÁNH GIÁ
+-- chất lượng AI. Không theo phòng (dùng chung, phục vụ đánh giá nội bộ).
+create table if not exists lab_runs (
+  id            text primary key,
+  created_at    timestamptz default now(),
+  source        text,               -- 'paste' | 'pdf' | 'image' | 'file'
+  file_name     text,
+  char_count    int,                -- độ dài tài liệu sau khi làm sạch
+  chunks        int,                -- số phần đã chia
+  model         text,               -- model tạo TÓM TẮT (gpt-oss / llama…)
+  model_q       text,               -- model tạo BỘ CÂU HỎI
+  input_excerpt text,               -- ~3000 ký tự đầu của tài liệu, để đối chiếu
+  tldr          text,
+  points        jsonb,              -- mảng ý chính
+  terms         jsonb,              -- mảng {term, vi}
+  questions     jsonb,              -- mảng {q, options, answer, explain}
+  ms            int,                -- thời gian xử lý phía client (mili-giây)
+  rating        int,                -- ĐÁNH GIÁ tay 1-5 sao (điền sau ở khu Lịch sử)
+  note          text                -- ghi chú đánh giá (điền sau)
+);
+
 -- ============================================================
 --  QUYỀN TRUY CẬP (RLS)
 --  Web riêng tư cho hai người: truy cập bằng anon key, bảo vệ
@@ -214,7 +235,7 @@ create table if not exists word_examples (
 do $$
 declare t text;
 begin
-  foreach t in array array['users','spaces','invites','decks','cards','quizzes','notes','daily','duels','push_subscriptions','word_examples','admins','library_topics','library_words'] loop
+  foreach t in array array['users','spaces','invites','decks','cards','quizzes','notes','daily','duels','push_subscriptions','word_examples','admins','library_topics','library_words','lab_runs'] loop
     execute format('alter table %I enable row level security;', t);
     execute format('drop policy if exists "allow all" on %I;', t);
     execute format('create policy "allow all" on %I for all using (true) with check (true);', t);
