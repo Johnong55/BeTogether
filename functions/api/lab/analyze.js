@@ -44,7 +44,13 @@ export async function onRequestPost({ request, env }) {
       const diff = String(body.difficulty || 'medium');
       const qtype = String(body.qtype || 'mc');
       const focus = String(body.focus || '').slice(0, 300).trim();
-      const DIFF_HINT = {
+      // Gợi ý độ khó nói về "lựa chọn gây nhiễu" sẽ đá nhau với kiểu Đúng–Sai (chỉ có 2 mục cố định),
+      // model gặp mâu thuẫn thì quay về trắc nghiệm 4 lựa chọn — nên tách riêng bộ gợi ý cho tf.
+      const DIFF_HINT = qtype === 'tf' ? {
+        easy: 'Độ khó CƠ BẢN: phát biểu về các ý chính dễ nhớ, đúng/sai rõ ràng.',
+        medium: 'Độ khó VỪA SỨC: phát biểu kiểm tra mức độ hiểu nội dung, phân biệt được nếu đã đọc kỹ.',
+        hard: 'Độ khó THỬ THÁCH: phát biểu đòi hỏi suy luận/so sánh từ nội dung, sai lệch tinh vi ở chi tiết (vẫn KHÔNG hỏi ngoài tài liệu).',
+      } : {
         easy: 'Độ khó CƠ BẢN: hỏi các ý chính dễ nhớ, lựa chọn sai khác biệt rõ ràng với đáp án đúng.',
         medium: 'Độ khó VỪA SỨC: kiểm tra mức độ hiểu nội dung, lựa chọn sai hợp lý nhưng phân biệt được nếu đã đọc kỹ.',
         hard: 'Độ khó THỬ THÁCH: ưu tiên câu suy luận/so sánh/vận dụng từ nội dung tài liệu, lựa chọn gây nhiễu sát nghĩa, đòi hỏi đọc thật kỹ (vẫn KHÔNG hỏi ngoài tài liệu).',
