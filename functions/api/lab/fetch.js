@@ -120,8 +120,6 @@ export function htmlToText(html, baseUrl) {
   const desc = decodeEntities(pick(src, /<meta[^>]+name=["']description["'][^>]+content=["']([^"']*)/i) || pick(src, /<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']*)/i) || '').trim();
   const siteName = decodeEntities(pick(src, /<meta[^>]+property=["']og:site_name["'][^>]+content=["']([^"']*)/i) || '').trim();
 
-  const links = collectLinks(src, baseUrl);
-
   // bỏ phần không phải nội dung đọc được
   let s = src
     .replace(/<!--[\s\S]*?-->/g, ' ')
@@ -131,6 +129,12 @@ export function htmlToText(html, baseUrl) {
   // ưu tiên vùng nội dung chính nếu trang có đánh dấu
   const main = longestMatch(s, /<article\b[^>]*>([\s\S]*?)<\/article>/gi) || longestMatch(s, /<main\b[^>]*>([\s\S]*?)<\/main>/gi);
   if (main && main.length > 600) s = main;
+
+  // Liên kết lấy TRONG vùng nội dung, không lấy cả trang — nếu quét toàn trang thì menu/chân
+  // trang (Wikipedia không bọc trong <nav> nên không bị strip) sẽ đè hết liên kết bài viết thật.
+  // Vùng nội dung quá ít liên kết (trang mục lục) thì mới lùi về quét toàn trang.
+  let links = collectLinks(s, baseUrl);
+  if (links.length < 3) links = collectLinks(src, baseUrl);
 
   const text = tagsToText(s);
   return { title, desc, siteName, text, links };
@@ -189,12 +193,14 @@ function scoreLink(url, label, sameSite) {
   let s = sameSite ? 3 : 0;
   const words = label.split(/\s+/).filter(Boolean).length;
   if (words >= 4) s += 3; else if (words >= 2) s += 1;          // chữ dài = bài viết thật, không phải nút
-  if (/^(trang chủ|home|đăng nhập|login|liên hệ|contact|giới thiệu|about|xem thêm|next|prev)$/i.test(label)) s -= 4;
+  if (/^(trang chủ|home|đăng nhập|login|liên hệ|contact|giới thiệu|about|xem thêm|next|prev|sửa|edit|xem|nguồn|source)$/i.test(label)) s -= 5;
   let path = '';
-  try { path = new URL(url).pathname; } catch (e) {}
+  try { path = decodeURIComponent(new URL(url).pathname); } catch (e) { try { path = new URL(url).pathname; } catch (e2) {} }
   const depth = path.split('/').filter(Boolean).length;
   if (depth >= 2) s += 2; else if (depth === 0) s -= 3;         // trang gốc thường là mục lục
   if (/\/(tag|category|chuyen-muc|page|author)\//i.test(path)) s -= 2;
+  // Trang phụ trợ của wiki/CMS (Wikipedia:…, Special:…, Trợ giúp:…, Bản mẫu:…) không phải bài viết
+  if (/\/[^/]*:[^/]*$/.test(path)) s -= 5;
   if (path.length > 25) s += 1;
   return s;
 }
