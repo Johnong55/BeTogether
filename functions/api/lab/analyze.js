@@ -4,7 +4,9 @@
 //   task='summary_full'  { text }                     → { tldr, points[], terms[] }
 //   task='summary_chunk' { text, part, total }        → { notes }   (tóm tắt 1 phần của tài liệu dài)
 //   task='summary_merge' { notes }                    → { tldr, points[], terms[] }
-//   task='questions'     { summary, excerpts, count } → { questions:[{q,options[4],answer,explain}] }
+//   task='questions'     { summary, excerpts, count, difficulty?, qtype?, focus? }
+//                        difficulty: easy|medium|hard · qtype: mc|tf|mix (tf = Đúng–Sai, options 2 mục)
+//                        → { questions:[{q,options[2|4],answer,explain}] }
 // Model chính: gpt-oss-120b (mạnh nhất trên Workers AI hiện tại, dùng Responses API: input/instructions,
 // output là MẢNG có type:'message'). Lỗi/deprecate (5028) → tự fallback llama-3.3-70b (messages API).
 
@@ -39,12 +41,27 @@ export async function onRequestPost({ request, env }) {
     }
     if (task === 'questions') {
       const n = Math.max(3, Math.min(15, parseInt(body.count, 10) || 8));
-      const sys = 'Bạn là giáo viên ra đề trắc nghiệm. Dựa vào TÓM TẮT và TRÍCH ĐOẠN của một tài liệu, tạo ĐÚNG ' + n +
+      const diff = String(body.difficulty || 'medium');
+      const qtype = String(body.qtype || 'mc');
+      const focus = String(body.focus || '').slice(0, 300).trim();
+      const DIFF_HINT = {
+        easy: 'Độ khó CƠ BẢN: hỏi các ý chính dễ nhớ, lựa chọn sai khác biệt rõ ràng với đáp án đúng.',
+        medium: 'Độ khó VỪA SỨC: kiểm tra mức độ hiểu nội dung, lựa chọn sai hợp lý nhưng phân biệt được nếu đã đọc kỹ.',
+        hard: 'Độ khó THỬ THÁCH: ưu tiên câu suy luận/so sánh/vận dụng từ nội dung tài liệu, lựa chọn gây nhiễu sát nghĩa, đòi hỏi đọc thật kỹ (vẫn KHÔNG hỏi ngoài tài liệu).',
+      };
+      const TYPE_HINT = {
+        mc: 'Tất cả câu hỏi là TRẮC NGHIỆM 4 lựa chọn ("options" đúng 4 mục, "answer" là chỉ số 0-3).',
+        tf: 'Tất cả câu hỏi là ĐÚNG–SAI: "q" là một phát biểu về nội dung tài liệu, "options" ĐÚNG 2 mục ["Đúng","Sai"], "answer" là 0 hoặc 1. Trộn đều phát biểu đúng và phát biểu sai.',
+        mix: 'Trộn khoảng một nửa câu TRẮC NGHIỆM 4 lựa chọn (options 4 mục, answer 0-3) và một nửa câu ĐÚNG–SAI (q là một phát biểu, options đúng 2 mục ["Đúng","Sai"], answer 0 hoặc 1).',
+      };
+      const sys = 'Bạn là giáo viên ra đề. Dựa vào TÓM TẮT và TRÍCH ĐOẠN của một tài liệu, tạo ĐÚNG ' + n +
         ' câu hỏi kiểm tra mức độ HIỂU nội dung tài liệu đó (không hỏi mẹo, không hỏi kiến thức ngoài tài liệu, không bịa). ' +
+        (DIFF_HINT[diff] || DIFF_HINT.medium) + ' ' + (TYPE_HINT[qtype] || TYPE_HINT.mc) + ' ' +
         'Câu hỏi và lựa chọn bằng tiếng Việt, giữ nguyên thuật ngữ/tên riêng gốc nếu có. ' +
-        'Trả về DUY NHẤT một JSON object đúng dạng: {"questions":[{"q":"câu hỏi","options":["4 lựa chọn"],"answer":0,"explain":"giải thích ngắn vì sao đáp án đúng"}]}. ' +
-        'Mỗi câu ĐÚNG 4 lựa chọn, "answer" là chỉ số 0-3 của lựa chọn đúng, vị trí đáp án đúng phải phân bố ngẫu nhiên giữa các câu. Không markdown, không chữ nào ngoài JSON.';
-      const user = 'TÓM TẮT TÀI LIỆU:\n' + clip(body.summary, 6000) + '\n\nTRÍCH ĐOẠN GỐC:\n"""\n' + clip(body.excerpts, 12000) + '\n"""';
+        'Trả về DUY NHẤT một JSON object đúng dạng: {"questions":[{"q":"câu hỏi","options":["các lựa chọn"],"answer":0,"explain":"giải thích ngắn vì sao đáp án đúng"}]}. ' +
+        '"answer" là chỉ số của lựa chọn đúng, vị trí đáp án đúng phải phân bố ngẫu nhiên giữa các câu. Không markdown, không chữ nào ngoài JSON.';
+      const user = 'TÓM TẮT TÀI LIỆU:\n' + clip(body.summary, 6000) + '\n\nTRÍCH ĐOẠN GỐC:\n"""\n' + clip(body.excerpts, 12000) + '\n"""' +
+        (focus ? '\n\nYÊU CẦU THÊM TỪ NGƯỜI HỌC (ưu tiên bám theo nếu hợp lý, vẫn chỉ dựa vào tài liệu): ' + focus : '');
       const { result, model } = await runJSON(env, sys, user, (v) => {
         const qs = Array.isArray(v && v.questions) ? v.questions.map(normQuestion).filter(Boolean) : [];
         return qs.length ? { questions: qs } : null;
