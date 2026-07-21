@@ -211,9 +211,9 @@ create table if not exists word_examples (
 create table if not exists lab_runs (
   id            text primary key,
   created_at    timestamptz default now(),
-  source        text,               -- 'paste' | 'pdf' | 'image' | 'file'
+  source        text,               -- 'paste' | 'pdf' | 'image' | 'file' | 'link' | 'multi'
   file_name     text,
-  char_count    int,                -- độ dài tài liệu sau khi làm sạch
+  char_count    int,                -- độ dài tài liệu sau khi làm sạch (cộng mọi nguồn)
   chunks        int,                -- số phần đã chia
   model         text,               -- model tạo TÓM TẮT (gpt-oss / llama…)
   model_q       text,               -- model tạo BỘ CÂU HỎI
@@ -224,8 +224,15 @@ create table if not exists lab_runs (
   questions     jsonb,              -- mảng {q, options, answer, explain}
   ms            int,                -- thời gian xử lý phía client (mili-giây)
   rating        int,                -- ĐÁNH GIÁ tay 1-5 sao (điền sau ở khu Lịch sử)
-  note          text                -- ghi chú đánh giá (điền sau)
+  note          text,               -- ghi chú đánh giá (điền sau)
+  sources       jsonb,              -- mảng {kind,label,url,chars,tldr,points} — nhiều nguồn một lần
+  synthesis     jsonb               -- {themes:[…], connections:[{from,to,kind,note}]} khi có ≥2 nguồn
 );
+
+-- Bổ sung 2 cột trên cho bảng lab_runs đã tạo từ trước (chạy lại an toàn).
+-- Chưa chạy đoạn này thì trang vẫn dùng được, chỉ là không lưu phần nhiều nguồn.
+alter table lab_runs add column if not exists sources   jsonb;
+alter table lab_runs add column if not exists synthesis jsonb;
 
 -- ============================================================
 --  QUYỀN TRUY CẬP (RLS)

@@ -4,6 +4,9 @@
 //   task='summary_full'  { text }                     → { tldr, points[], terms[] }
 //   task='summary_chunk' { text, part, total }        → { notes }   (tóm tắt 1 phần của tài liệu dài)
 //   task='summary_merge' { notes }                    → { tldr, points[], terms[] }
+//   task='synthesis'     { sources:[{label,tldr,points}] }
+//                        → { tldr, points[], themes[], connections[], terms[] }  (≥2 nguồn: chỉ ra
+//                          các nguồn liên quan nhau ra sao; from/to/sources là SỐ THỨ TỰ nguồn từ 1)
 //   task='questions'     { summary, excerpts, count, difficulty?, qtype?, focus? }
 //                        difficulty: easy|medium|hard · qtype: mc|tf|mix (tf = Đúng–Sai, options 2 mục)
 //                        → { questions:[{q,options[2|4],answer,explain}] }
@@ -37,6 +40,29 @@ export async function onRequestPost({ request, env }) {
       const { result, model } = await runJSON(env, SUM_SYSTEM,
         'Dưới đây là ghi chú tóm tắt TỪNG PHẦN của cùng một tài liệu dài. Hãy tổng hợp lại thành một tóm tắt chung:\n"""\n' + clip(body.notes) + '\n"""',
         validSummary);
+      return Response.json({ ...result, model });
+    }
+    if (task === 'synthesis') {
+      // Nhiều nguồn (đường dẫn/tệp/chữ dán) → tổng hợp CHUNG + chỉ ra chúng liên quan nhau thế nào.
+      const list = Array.isArray(body.sources) ? body.sources.slice(0, 12) : [];
+      if (list.length < 2) return Response.json({ error: 'cần ít nhất 2 nguồn' }, { status: 400 });
+      const block = list.map((s, i) => {
+        const pts = Array.isArray(s.points) ? s.points.map((p) => '  - ' + String(p)).join('\n') : '';
+        return 'NGUỒN ' + (i + 1) + ' — ' + String(s.label || 'không tên').slice(0, 200) + '\n' +
+          '  Tóm tắt: ' + String(s.tldr || '').slice(0, 1200) + (pts ? '\n' + pts : '');
+      }).join('\n\n');
+      const sys = 'Bạn là trợ lý nghiên cứu. Người dùng đưa NHIỀU nguồn tài liệu (trang web, tệp, đoạn chữ) đã được tóm tắt riêng. ' +
+        'Nhiệm vụ: đọc tất cả rồi giải thích CHÚNG NÓI VỀ CÁI GÌ và LIÊN QUAN VỚI NHAU RA SAO. ' +
+        'Chỉ dựa vào nội dung được cung cấp, KHÔNG bịa thêm. Viết tiếng Việt, giữ nguyên thuật ngữ/tên riêng gốc. ' +
+        'Trả về DUY NHẤT một JSON object đúng dạng: {' +
+        '"tldr":"2-4 câu nói gọn toàn bộ các nguồn cộng lại đang nói về chuyện gì",' +
+        '"points":["4-8 ý chính rút ra từ TOÀN BỘ các nguồn"],' +
+        '"themes":[{"title":"chủ đề chung","detail":"giải thích ngắn","sources":[1,2]}],' +
+        '"connections":[{"from":1,"to":2,"kind":"bổ sung|trùng ý|khác biệt|mâu thuẫn|nhân quả","note":"cụ thể là liên quan thế nào"}],' +
+        '"terms":[{"term":"thuật ngữ quan trọng xuất hiện ở các nguồn","vi":"giải nghĩa thật ngắn"}]}. ' +
+        '"sources"/"from"/"to" là SỐ THỨ TỰ nguồn (bắt đầu từ 1). "themes" tối đa 6, "connections" tối đa 8, "terms" tối đa 12. ' +
+        'Nếu hai nguồn thật sự không liên quan gì nhau thì nói thẳng điều đó trong "note". Không markdown, không chữ nào ngoài JSON.';
+      const { result, model } = await runJSON(env, sys, 'CÁC NGUỒN:\n\n' + clip(block, 18000), (v) => validSynthesis(v, list.length));
       return Response.json({ ...result, model });
     }
     if (task === 'questions') {
@@ -92,6 +118,29 @@ function validSummary(v) {
   return {
     tldr: v.tldr.trim(),
     points: v.points.map((p) => String(p || '').trim()).filter(Boolean).slice(0, 10),
+    terms: (Array.isArray(v.terms) ? v.terms : []).map((t) => t && t.term ? { term: String(t.term).trim(), vi: String(t.vi || t.meaning || '').trim() } : null).filter(Boolean).slice(0, 12),
+  };
+}
+
+// Tổng hợp nhiều nguồn: bắt buộc có tldr + points; themes/connections/terms thiếu thì bỏ qua,
+// chỉ số nguồn ngoài khoảng 1..n bị loại để giao diện không trỏ vào nguồn không tồn tại.
+function validSynthesis(v, n) {
+  if (!v || typeof v.tldr !== 'string' || !v.tldr.trim() || !Array.isArray(v.points) || !v.points.length) return null;
+  const idx = (x) => { const i = parseInt(x, 10); return (i >= 1 && i <= n) ? i : null; };
+  return {
+    tldr: v.tldr.trim(),
+    points: v.points.map((p) => String(p || '').trim()).filter(Boolean).slice(0, 10),
+    themes: (Array.isArray(v.themes) ? v.themes : []).map((t) => {
+      if (!t || !t.title) return null;
+      const srcs = (Array.isArray(t.sources) ? t.sources : []).map(idx).filter(Boolean);
+      return { title: String(t.title).trim(), detail: String(t.detail || '').trim(), sources: [...new Set(srcs)] };
+    }).filter(Boolean).slice(0, 6),
+    connections: (Array.isArray(v.connections) ? v.connections : []).map((c) => {
+      if (!c) return null;
+      const from = idx(c.from), to = idx(c.to);
+      if (!from || !to || from === to) return null;
+      return { from, to, kind: String(c.kind || '').trim().slice(0, 40), note: String(c.note || '').trim() };
+    }).filter(Boolean).slice(0, 8),
     terms: (Array.isArray(v.terms) ? v.terms : []).map((t) => t && t.term ? { term: String(t.term).trim(), vi: String(t.vi || t.meaning || '').trim() } : null).filter(Boolean).slice(0, 12),
   };
 }

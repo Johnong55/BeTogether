@@ -42,12 +42,11 @@
   .hero .mark{ width:64px; height:64px; border-radius:20px; margin:0 auto 14px; display:grid; place-items:center; color:#fff;
     background:linear-gradient(135deg,var(--p1),var(--p2)); border:2px solid var(--edge); box-shadow:4px 4px 0 var(--edge); }
   .hero h1{ font-size:30px; }
-  .hero .sub{ color:var(--soft); font-size:14.5px; max-width:440px; margin:8px auto 0; line-height:1.55; }
+  .hero .sub{ color:var(--soft); font-size:14.5px; max-width:460px; margin:8px auto 0; line-height:1.55; }
   .hero .feats{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:16px; }
   .feat{ display:inline-flex; align-items:center; gap:6px; background:var(--card); border:2px solid var(--edge);
     border-radius:999px; padding:6px 13px; font-size:12.5px; font-weight:800; box-shadow:2px 2px 0 var(--edge); }
   .feat .ic{ width:15px; height:15px; color:var(--p1); }
-  /* vào trang: các khối trồi lên lần lượt */
   .rise{ animation:rise .55s var(--ease-smooth) both; }
   .d1{ animation-delay:.05s } .d2{ animation-delay:.12s } .d3{ animation-delay:.19s } .d4{ animation-delay:.26s }
   @keyframes rise{ from{ opacity:0; transform:translateY(14px); } to{ opacity:1; transform:none; } }
@@ -65,28 +64,25 @@
   /* ── Nhập liệu ──────────────────────────────────────────────── */
   .seg{ display:flex; background:var(--chip); border:2px solid var(--edge); border-radius:13px; padding:4px; gap:4px; margin:14px 0; }
   .seg button{ flex:1; border:2px solid transparent; background:none; padding:9px 6px; border-radius:9px; font-weight:800; color:var(--soft);
-    cursor:pointer; font-family:inherit; font-size:14px; display:inline-flex; align-items:center; justify-content:center; gap:7px;
+    cursor:pointer; font-family:inherit; font-size:13.5px; display:inline-flex; align-items:center; justify-content:center; gap:6px;
     transition:background .18s var(--ease-smooth), color .18s var(--ease-smooth); }
-  .seg button .ic{ width:17px; height:17px; }
+  .seg button .ic{ width:16px; height:16px; }
   .seg button.on{ background:var(--card); color:var(--p1); border-color:var(--edge); box-shadow:2px 2px 0 var(--edge); }
   textarea{ width:100%; font-family:inherit; font-size:15px; color:var(--ink); background:var(--card); line-height:1.55;
-    border:2px solid var(--edge); border-radius:14px; padding:12px 13px; min-height:150px; resize:vertical; outline:none;
+    border:2px solid var(--edge); border-radius:14px; padding:12px 13px; min-height:120px; resize:vertical; outline:none;
     transition:box-shadow .18s var(--ease-smooth); }
   textarea:focus{ box-shadow:3px 3px 0 var(--p2); }
-  .counter{ text-align:right; font-size:11.5px; font-weight:700; color:var(--soft); margin-top:5px; min-height:15px; }
+  textarea.urls{ min-height:96px; font-size:14px; }
+  .counter{ text-align:right; font-size:11.5px; font-weight:700; color:var(--soft); margin:5px 0 10px; min-height:15px; }
   .drop{ border:2px dashed var(--edge); border-radius:16px; padding:26px 14px; text-align:center; cursor:pointer;
     background:var(--chip); transition:transform .2s var(--ease-smooth), background .2s var(--ease-smooth); }
   .drop .ic{ width:30px; height:30px; color:var(--p1); margin-bottom:8px; }
   .drop b{ display:block; font-size:14.5px; }
   .drop span{ display:block; font-size:12.5px; color:var(--soft); margin-top:4px; }
   .drop.drag{ background:color-mix(in srgb,var(--p2) 28%, var(--card)); transform:scale(1.015); }
-  .filetag{ display:flex; align-items:center; gap:9px; background:var(--card); border:2px solid var(--edge); box-shadow:2px 2px 0 var(--edge);
-    border-radius:13px; padding:10px 12px; font-size:13.5px; font-weight:700; margin-top:10px; animation:rise .3s var(--ease-smooth); }
-  .filetag .ic{ color:var(--p1); }
-  .filetag button{ border:none; background:none; cursor:pointer; color:var(--soft); display:grid; place-items:center; padding:4px; border-radius:8px; }
-  .filetag button:active{ background:var(--chip); }
 
   .lbl{ font-size:12px; font-weight:800; color:var(--soft); text-transform:uppercase; letter-spacing:.05em; display:block; margin:16px 2px 8px; }
+  .lbl .plain{ text-transform:none; letter-spacing:0; font-weight:600; }
   .chips{ display:flex; flex-wrap:wrap; gap:8px; }
   .chip{ padding:8px 13px; border-radius:11px; border:2px solid var(--edge); background:var(--card); font-weight:800; font-family:inherit;
     font-size:13px; cursor:pointer; color:var(--ink); box-shadow:2px 2px 0 var(--edge);
@@ -107,6 +103,24 @@
   .btn.soft:active{ transform:translate(2px,2px); }
   .btn.soft .ic{ width:16px; height:16px; color:var(--p1); }
   .btn[disabled]{ opacity:.55; pointer-events:none; }
+
+  /* ── Danh sách nguồn ────────────────────────────────────────── */
+  .srclist{ display:flex; flex-direction:column; gap:9px; }
+  .src{ display:flex; align-items:flex-start; gap:10px; padding:11px 12px; border:2px solid var(--edge); border-radius:14px;
+    background:var(--card); box-shadow:2px 2px 0 var(--edge); animation:rise .32s var(--ease-smooth); }
+  .src.child{ margin-left:18px; box-shadow:1.5px 1.5px 0 var(--edge); border-style:dashed; }
+  .src .n{ width:24px; height:24px; border-radius:8px; flex:none; display:grid; place-items:center; font-size:12px; font-weight:800;
+    background:var(--chip); border:1.5px solid var(--edge); }
+  .src .nm{ font-weight:800; font-size:14px; line-height:1.35; word-break:break-word; }
+  .src .nm .ic{ color:var(--p1); }
+  .src .meta{ font-size:11.5px; color:var(--soft); font-weight:700; margin-top:3px; word-break:break-all; }
+  .src .meta.err{ color:var(--no); }
+  .src .st{ flex:none; display:grid; place-items:center; width:24px; height:24px; color:var(--soft); }
+  .src.ok .st{ color:var(--ok); } .src.err .st{ color:var(--no); }
+  .src .rm{ border:none; background:none; cursor:pointer; color:var(--soft); padding:3px; border-radius:8px; flex:none; }
+  .src .rm:active{ background:var(--chip); }
+  .srchead{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin:18px 0 9px; }
+  .srchead .lbl{ margin:0; }
 
   /* ── Tiến trình phân tích ───────────────────────────────────── */
   .pg-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:9px; }
@@ -141,6 +155,33 @@
     border-radius:11px; padding:6px 10px; font-size:13px; line-height:1.45; }
   .term b{ color:var(--p1); }
   .actions{ display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; padding-top:13px; border-top:1px solid var(--line); }
+
+  /* ── Liên kết giữa các nguồn ────────────────────────────────── */
+  .theme{ border:2px solid var(--edge); border-radius:14px; padding:12px; margin-bottom:10px; background:var(--card); box-shadow:2px 2px 0 var(--edge); }
+  .theme b{ font-size:14.5px; }
+  .theme p{ font-size:13.5px; line-height:1.55; margin-top:5px; }
+  .srcrefs{ display:flex; gap:5px; flex-wrap:wrap; margin-top:8px; }
+  .sref{ background:var(--chip); border:1.5px solid var(--edge); border-radius:999px; padding:2px 9px; font-size:11.5px; font-weight:800; }
+  .conn{ padding:11px 0; border-top:1px solid var(--line); }
+  .conn:first-of-type{ border-top:none; }
+  .conn .pair{ display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+  .conn .kind{ background:linear-gradient(135deg,var(--p1),var(--p2)); color:#fff; border:1.5px solid var(--edge);
+    border-radius:999px; padding:2px 9px; font-size:11px; font-weight:800; }
+  .conn .arrow{ color:var(--soft); font-weight:800; }
+  .conn .note{ font-size:13.5px; line-height:1.55; margin-top:6px; }
+
+  /* ── Tóm tắt từng nguồn ─────────────────────────────────────── */
+  .onesrc{ border:2px solid var(--edge); border-radius:14px; margin-bottom:10px; background:var(--card); box-shadow:2px 2px 0 var(--edge); overflow:hidden; }
+  .onesrc summary{ list-style:none; cursor:pointer; padding:12px; display:flex; align-items:center; gap:10px; font-weight:800; font-size:14px; }
+  .onesrc summary::-webkit-details-marker{ display:none; }
+  .onesrc summary .n{ width:24px; height:24px; border-radius:8px; flex:none; display:grid; place-items:center; font-size:12px;
+    background:var(--chip); border:1.5px solid var(--edge); }
+  .onesrc summary .chev{ color:var(--soft); transition:transform .25s var(--ease-smooth); flex:none; }
+  .onesrc[open] summary .chev{ transform:rotate(90deg); }
+  .onesrc .inner{ padding:0 12px 13px; }
+  .onesrc .inner .tldr{ margin-top:0; }
+  .srclink{ display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:800; color:var(--p1);
+    text-decoration:none; margin-top:10px; word-break:break-all; }
 
   /* ── Thẻ ghi nhớ (lật) ──────────────────────────────────────── */
   .flash{ perspective:1200px; -webkit-perspective:1200px; cursor:pointer; margin-top:12px; }
@@ -184,7 +225,6 @@
   .explain{ background:var(--chip); border-radius:11px; padding:10px 12px; font-size:13.5px; line-height:1.55; margin-top:4px; animation:rise .3s var(--ease-smooth); }
   .explain b.good{ color:#2f6b4c; } .explain b.bad{ color:#a04848; }
 
-  /* điểm số: vòng tròn vẽ dần */
   .scorebox{ display:flex; align-items:center; gap:16px; justify-content:center; padding:14px 6px 4px; animation:rise .45s var(--ease-smooth); }
   .ring{ position:relative; width:88px; height:88px; flex:none; }
   .ring svg{ width:100%; height:100%; transform:rotate(-90deg); }
@@ -199,6 +239,7 @@
   .htldr{ font-size:13.5px; line-height:1.55; margin:8px 0; }
   .badge{ background:var(--chip); border:1.5px solid var(--edge); border-radius:8px; padding:2px 8px; font-size:11.5px; }
   .badge.model{ background:#eaf3ee; }
+  .badge.multi{ background:linear-gradient(135deg,var(--p1),var(--p2)); color:#fff; }
   .stars{ font-size:20px; letter-spacing:2px; cursor:pointer; user-select:none; line-height:1; }
   .stars span{ opacity:.25; transition:opacity .15s, transform .15s; display:inline-block; }
   .stars span.on{ opacity:1; color:var(--accent); }
@@ -243,30 +284,53 @@
   <header class="hero rise">
     <div class="mark" id="hero-mark"></div>
     <h1>Đọc tài liệu</h1>
-    <p class="sub">Đưa tài liệu vào — nhận ngay tóm tắt dễ hiểu, bộ câu hỏi kiểm tra và thẻ ghi nhớ để hai đứa học nhanh hơn.</p>
+    <p class="sub">Bỏ vào nhiều đường dẫn, tệp và đoạn chữ cùng lúc — nhận tóm tắt từng nguồn, lời giải thích chúng liên quan nhau ra sao, và bộ câu hỏi kiểm tra.</p>
     <div class="feats" id="hero-feats"></div>
   </header>
 
-  <!-- Nhập tài liệu + tuỳ chọn -->
+  <!-- Nguồn dữ liệu + tuỳ chọn -->
   <section class="card rise d1">
-    <h2 class="ct"><span data-ic="doc"></span>Tài liệu của mình</h2>
+    <h2 class="ct"><span data-ic="layers"></span>Nguồn dữ liệu</h2>
     <div class="seg" id="srcseg">
-      <button class="on" data-src="paste"><span data-ic="edit"></span>Dán chữ</button>
+      <button class="on" data-src="link"><span data-ic="link"></span>Đường dẫn</button>
+      <button data-src="paste"><span data-ic="edit"></span>Dán chữ</button>
       <button data-src="file"><span data-ic="upload"></span>Tệp / ảnh</button>
     </div>
-    <div id="pane-paste">
+
+    <div id="pane-link">
+      <textarea class="urls" id="urls" placeholder="Dán đường dẫn vào đây — mỗi dòng một cái, bỏ bao nhiêu cũng được:&#10;https://vi.wikipedia.org/wiki/...&#10;https://blog.example.com/bai-viet"></textarea>
+      <div class="row" style="margin-top:10px">
+        <button class="btn soft" id="addlinks"><span data-ic="plus"></span>Thêm vào danh sách</button>
+        <span class="muted grow">Đọc thẳng nội dung trang, không cần cài gì thêm.</span>
+      </div>
+      <span class="lbl">Đọc thêm trang con cùng trang web <span class="plain">(lần theo liên kết trong bài)</span></span>
+      <div class="chips pick" id="crawl">
+        <button class="chip on" data-v="0">Không</button>
+        <button class="chip" data-v="2">2 trang</button>
+        <button class="chip" data-v="4">4 trang</button>
+      </div>
+    </div>
+
+    <div id="pane-paste" class="hidden">
       <textarea id="txt" placeholder="Dán nội dung tài liệu vào đây…"></textarea>
       <div class="counter" id="charc"></div>
+      <button class="btn soft" id="addtext"><span data-ic="plus"></span>Thêm đoạn chữ này</button>
     </div>
+
     <div id="pane-file" class="hidden">
       <div class="drop" id="drop">
         <span data-ic="upload"></span>
         <b>Bấm để chọn tệp — hoặc kéo thả vào đây</b>
-        <span>PDF · ảnh chụp/scan (JPG, PNG) · .txt .md .csv .html — tối đa 10MB</span>
+        <span>Chọn được nhiều tệp · PDF · ảnh chụp/scan · .txt .md .csv .html — mỗi tệp tối đa 10MB</span>
       </div>
-      <input type="file" id="file" class="hidden" accept=".txt,.md,.csv,.html,.htm,.pdf,image/*">
-      <div id="filetag"></div>
+      <input type="file" id="file" class="hidden" multiple accept=".txt,.md,.csv,.html,.htm,.pdf,image/*">
     </div>
+
+    <div class="srchead">
+      <span class="lbl" id="srccount">Chưa có nguồn nào</span>
+      <button class="btn soft hidden" id="clearsrc"><span data-ic="trash"></span>Xoá hết</button>
+    </div>
+    <div class="srclist" id="srclist"></div>
 
     <span class="lbl">Số câu hỏi</span>
     <div class="chips pick" id="ncount">
@@ -287,10 +351,10 @@
       <button class="chip" data-v="tf">Đúng – Sai</button>
       <button class="chip" data-v="mix">Trộn cả hai</button>
     </div>
-    <span class="lbl">Muốn tập trung phần nào? <span style="text-transform:none;letter-spacing:0;font-weight:600">(không bắt buộc)</span></span>
-    <input class="focusq" id="focusq" placeholder="vd: chỉ hỏi về chương 2, hoặc các định nghĩa quan trọng…">
+    <span class="lbl">Muốn tập trung phần nào? <span class="plain">(không bắt buộc)</span></span>
+    <input class="focusq" id="focusq" placeholder="vd: so sánh quan điểm giữa các nguồn, hoặc chỉ phần định nghĩa…">
 
-    <div style="margin-top:18px"><button class="btn block" id="go"><span data-ic="play"></span><span id="go-label">Phân tích tài liệu</span></button></div>
+    <div style="margin-top:18px"><button class="btn block" id="go"><span data-ic="play"></span><span id="go-label">Phân tích</span></button></div>
   </section>
 
   <!-- Tiến trình -->
@@ -300,9 +364,9 @@
     <ol class="steps" id="steps"></ol>
   </section>
 
-  <!-- Tóm tắt -->
+  <!-- Tổng hợp chung -->
   <section class="card hidden" id="sumcard">
-    <h2 class="ct"><span data-ic="note"></span>Tóm tắt</h2>
+    <h2 class="ct"><span data-ic="note"></span><span id="sumtitle">Tóm tắt</span></h2>
     <div class="tldr" id="tldr"></div>
     <ul class="points" id="points"></ul>
     <div class="terms" id="terms"></div>
@@ -313,7 +377,21 @@
     </div>
   </section>
 
-  <!-- Thẻ ghi nhớ từ khoá -->
+  <!-- Liên kết giữa các nguồn -->
+  <section class="card hidden" id="linkcard">
+    <h2 class="ct"><span data-ic="share"></span>Các nguồn liên quan nhau thế nào</h2>
+    <div id="themes"></div>
+    <div id="conns"></div>
+  </section>
+
+  <!-- Tóm tắt từng nguồn -->
+  <section class="card hidden" id="srccard">
+    <h2 class="ct"><span data-ic="layers"></span>Từng nguồn nói gì</h2>
+    <p class="muted" style="margin:6px 0 12px">Chạm vào một nguồn để mở tóm tắt riêng của nó.</p>
+    <div id="srcsums"></div>
+  </section>
+
+  <!-- Thẻ ghi nhớ -->
   <section class="card hidden" id="fcard">
     <h2 class="ct"><span data-ic="cards"></span>Thẻ ghi nhớ</h2>
     <p class="muted" style="margin-top:4px">Chạm thẻ để lật xem giải nghĩa — ôn nhanh các từ khoá quan trọng.</p>
@@ -365,8 +443,11 @@
 <script>
 // ── Cấu hình (khớp với functions/api/lab/*.js) ───────────────────────────────
 const LAB_KEY = 'cn-lab-124-tim';
-const API = { extract: '/api/lab/extract', analyze: '/api/lab/analyze' };
-const CHUNK = 6000, OVERLAP = 250, MAX_DOC = 60000;
+const API = { extract: '/api/lab/extract', analyze: '/api/lab/analyze', fetch: '/api/lab/fetch' };
+const CHUNK = 6000, OVERLAP = 250;
+const MAX_PER_SOURCE = 40000;   // trần ký tự MỖI nguồn (nhiều nguồn nên siết hơn hồi chỉ có 1)
+const MAX_TOTAL = 120000;       // trần ký tự cả mẻ
+const MAX_SOURCES = 10;         // kể cả trang con tự đọc thêm
 // Supabase — dùng chung với app chính (publishable key, an toàn công khai)
 const SUPABASE_URL = 'https://vklsqexomaconbzoufmu.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_YDj6liDtYbMFq38GhwCwIQ_KlS-lNwI';
@@ -394,30 +475,37 @@ const ICONS = {
   trash: '<path d="M4 7h16M9 7V5h6v2M6.5 7l1 12h9l1-12"/>',
   target: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/>',
   book: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5v-15Z"/><path d="M4 18.5A2.5 2.5 0 0 1 6.5 16H20"/><path d="M9 7.5h6"/>',
-  heart: '<path d="M12 20C6 16 4 12 4 8.6 4 6 6 4 8.4 4c1.6 0 2.8.9 3.6 2 .8-1.1 2-2 3.6-2C18 4 20 6 20 8.6 20 12 18 16 12 20Z"/>',
+  link: '<path d="M9.5 14.5 14.5 9.5"/><path d="M11 6.5 12.5 5a4 4 0 0 1 5.7 5.7L16.5 12.5M13 17.5 11.5 19a4 4 0 0 1-5.7-5.7L7.5 11.5"/>',
+  layers: '<path d="M12 3 3 7.5l9 4.5 9-4.5L12 3Z"/><path d="M3 12.5 12 17l9-4.5"/>',
+  share: '<circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="6" r="2.6"/><circle cx="18" cy="18" r="2.6"/><path d="M8.4 10.8 15.6 7.2M8.4 13.2l7.2 3.6"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  dot: '<circle cx="12" cy="12" r="4"/>',
 };
 function ic(name, cls) { return '<svg class="ic ' + (cls || '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[name] || '') + '</svg>'; }
 document.querySelectorAll('[data-ic]').forEach((el) => { el.outerHTML = ic(el.dataset.ic); });
 $('#hero-mark').innerHTML = ic('book', 'lg');
 $('#hero-feats').innerHTML =
-  '<span class="feat">' + ic('note') + 'Tóm tắt ý chính</span>' +
-  '<span class="feat">' + ic('check') + 'Bộ câu hỏi</span>' +
-  '<span class="feat">' + ic('cards') + 'Thẻ ghi nhớ</span>';
+  '<span class="feat">' + ic('link') + 'Đọc nhiều đường dẫn</span>' +
+  '<span class="feat">' + ic('share') + 'Nối các nguồn lại</span>' +
+  '<span class="feat">' + ic('check') + 'Bộ câu hỏi</span>';
 
-let FILE = null;          // {name, blob, isImage} — tệp đã chọn
-let SRC = 'paste';        // nguồn đang chọn: 'paste' | 'file'
-let QUIZ = null;          // {questions, answers:{i:pick}}
+// ── Trạng thái ──────────────────────────────────────────────────────────────
+// SOURCES: mỗi phần tử = {id, kind:'link'|'file'|'paste', label, url?, blob?, isImage?, raw?,
+//                         status:'idle'|'reading'|'ok'|'err', chars, err, parent?, text?, chunks?, summary?}
+let SOURCES = [];
+let PANE = 'link';
+let QUIZ = null;
 let BUSY = false;
-let LAST = null;          // dữ liệu lần chạy vừa xong (đã/đang lưu)
+let LAST = null;
 let FC = { list: [], i: 0 };
+let uid = 0;
 
-// ── Chọn nguồn: dán chữ / tệp ────────────────────────────────────────────────
+// ── Chọn kiểu nguồn đang thêm ───────────────────────────────────────────────
 $('#srcseg').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-src]'); if (!b) return;
-  SRC = b.dataset.src;
+  PANE = b.dataset.src;
   document.querySelectorAll('#srcseg button').forEach((x) => x.classList.toggle('on', x === b));
-  $('#pane-paste').classList.toggle('hidden', SRC !== 'paste');
-  $('#pane-file').classList.toggle('hidden', SRC !== 'file');
+  ['link', 'paste', 'file'].forEach((p) => $('#pane-' + p).classList.toggle('hidden', PANE !== p));
 });
 
 $('#txt').addEventListener('input', () => {
@@ -425,21 +513,91 @@ $('#txt').addEventListener('input', () => {
   $('#charc').textContent = n ? n.toLocaleString('vi') + ' ký tự' : '';
 });
 
-// ── Chọn tệp / kéo thả ───────────────────────────────────────────────────────
+// ── Thêm nguồn ──────────────────────────────────────────────────────────────
+function addSource(s) {
+  if (SOURCES.length >= MAX_SOURCES) { toast('Tối đa ' + MAX_SOURCES + ' nguồn một lần thôi nha'); return null; }
+  const item = Object.assign({ id: ++uid, status: 'idle', chars: 0 }, s);
+  SOURCES.push(item); renderSources();
+  return item;
+}
+
+$('#addlinks').addEventListener('click', () => {
+  const lines = $('#urls').value.split(/[\s,]+/).map((x) => x.trim()).filter(Boolean);
+  if (!lines.length) return toast('Dán ít nhất một đường dẫn đã nha');
+  let added = 0, dup = 0, bad = 0;
+  for (const raw of lines) {
+    const url = normUrl(raw);
+    if (!url) { bad++; continue; }
+    if (SOURCES.some((s) => s.url === url)) { dup++; continue; }
+    if (addSource({ kind: 'link', url, label: prettyUrl(url) })) added++;
+  }
+  $('#urls').value = '';
+  toast('Đã thêm ' + added + ' đường dẫn' + (dup ? ' · bỏ qua ' + dup + ' cái trùng' : '') + (bad ? ' · ' + bad + ' cái không hợp lệ' : ''));
+});
+
+$('#addtext').addEventListener('click', () => {
+  const t = $('#txt').value.trim();
+  if (t.length < 40) return toast('Đoạn chữ ngắn quá — cần ít nhất vài câu');
+  addSource({ kind: 'paste', raw: t, label: 'Đoạn chữ dán vào (' + t.length.toLocaleString('vi') + ' ký tự)' });
+  $('#txt').value = ''; $('#charc').textContent = '';
+});
+
 $('#drop').addEventListener('click', () => $('#file').click());
 $('#drop').addEventListener('dragover', (e) => { e.preventDefault(); $('#drop').classList.add('drag'); });
 $('#drop').addEventListener('dragleave', () => $('#drop').classList.remove('drag'));
-$('#drop').addEventListener('drop', (e) => { e.preventDefault(); $('#drop').classList.remove('drag'); if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]); });
-$('#file').addEventListener('change', (e) => { if (e.target.files[0]) setFile(e.target.files[0]); e.target.value = ''; });
+$('#drop').addEventListener('drop', (e) => { e.preventDefault(); $('#drop').classList.remove('drag'); addFiles(e.dataTransfer.files); });
+$('#file').addEventListener('change', (e) => { addFiles(e.target.files); e.target.value = ''; });
 
-function setFile(f) {
-  if (f.size > 10 * 1024 * 1024) return toast('Tệp quá lớn (tối đa 10MB)');
-  FILE = { name: f.name, blob: f, isImage: (f.type || '').startsWith('image/') };
-  $('#filetag').innerHTML = '<div class="filetag">' + ic('doc') + '<span class="grow">' + esc(f.name) + '</span><button id="unfile" aria-label="Bỏ tệp">' + ic('x', 'sm') + '</button></div>';
-  $('#unfile').addEventListener('click', () => { FILE = null; $('#filetag').innerHTML = ''; });
+function addFiles(list) {
+  for (const f of Array.from(list || [])) {
+    if (f.size > 10 * 1024 * 1024) { toast('Bỏ qua "' + f.name + '" — quá 10MB'); continue; }
+    addSource({ kind: 'file', blob: f, isImage: (f.type || '').startsWith('image/'), label: f.name });
+  }
 }
 
-// ── Chip chọn 1 trong nhóm (số câu / độ khó / kiểu câu hỏi) ──────────────────
+$('#clearsrc').addEventListener('click', () => { SOURCES = []; renderSources(); });
+
+$('#srclist').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-rm]'); if (!b) return;
+  const id = +b.dataset.rm;
+  SOURCES = SOURCES.filter((s) => s.id !== id && s.parent !== id);
+  renderSources();
+});
+
+const KIND_IC = { link: 'link', file: 'doc', paste: 'edit' };
+const SPIN = '<svg class="ic spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><circle cx="12" cy="12" r="8.5" stroke-dasharray="40 14"/></svg>';
+function renderSources() {
+  const n = SOURCES.length;
+  $('#srccount').textContent = n ? 'Đã thêm ' + n + ' nguồn' : 'Chưa có nguồn nào';
+  $('#clearsrc').classList.toggle('hidden', !n || BUSY);
+  $('#srclist').innerHTML = SOURCES.map((s, i) => {
+    const st = s.status === 'ok' ? ic('check') : s.status === 'err' ? ic('x') : s.status === 'reading' ? SPIN : ic('dot', 'sm');
+    const meta = s.status === 'err' ? '<div class="meta err">' + esc(s.err || 'không đọc được') + '</div>'
+      : s.chars ? '<div class="meta">' + s.chars.toLocaleString('vi') + ' ký tự' + (s.url ? ' · ' + esc(prettyUrl(s.url)) : '') + '</div>'
+      : s.url ? '<div class="meta">' + esc(s.url) + '</div>' : '';
+    return '<div class="src ' + s.status + (s.parent ? ' child' : '') + '">' +
+      '<span class="n">' + (i + 1) + '</span>' +
+      '<div class="grow"><div class="nm">' + ic(KIND_IC[s.kind], 'sm') + ' ' + esc(s.label) +
+        (s.parent ? ' <span class="muted">· trang con</span>' : '') + '</div>' + meta + '</div>' +
+      '<span class="st">' + st + '</span>' +
+      (BUSY ? '' : '<button class="rm" data-rm="' + s.id + '" aria-label="Bỏ nguồn này">' + ic('x', 'sm') + '</button>') +
+      '</div>';
+  }).join('');
+}
+
+function normUrl(raw) {
+  let s = String(raw || '').trim().replace(/[),.;]+$/, '');
+  if (!s || /\s/.test(s)) return '';
+  if (!/^https?:\/\//i.test(s)) { if (!/^[\w-]+(\.[\w-]+)+/.test(s)) return ''; s = 'https://' + s; }
+  try { const u = new URL(s); return (u.protocol === 'http:' || u.protocol === 'https:') && u.hostname.includes('.') ? u.toString() : ''; }
+  catch (e) { return ''; }
+}
+function prettyUrl(u) {
+  try { const x = new URL(u); return x.hostname.replace(/^www\./, '') + (x.pathname === '/' ? '' : decodeURIComponent(x.pathname).slice(0, 48)); }
+  catch (e) { return u; }
+}
+
+// ── Chip chọn 1 trong nhóm ──────────────────────────────────────────────────
 document.querySelectorAll('.chips.pick').forEach((g) => g.addEventListener('click', (e) => {
   const b = e.target.closest('.chip'); if (!b) return;
   g.querySelectorAll('.chip').forEach((c) => c.classList.remove('on'));
@@ -447,97 +605,167 @@ document.querySelectorAll('.chips.pick').forEach((g) => g.addEventListener('clic
 }));
 function picked(sel) { const b = document.querySelector(sel + ' .chip.on'); return b ? b.dataset.v : ''; }
 
-// ── Pipeline: đọc tệp → làm sạch → chia đoạn → tóm tắt (map/reduce) → câu hỏi ─
+// ── Chạy: đọc từng nguồn → tóm tắt từng nguồn → nối lại → ra đề ─────────────
 $('#go').addEventListener('click', run);
 
 async function run() {
   if (BUSY) return;
-  const pasted = $('#txt').value.trim();
-  if (SRC === 'file' && !FILE) return toast('Chọn một tệp trước đã nha');
-  if (SRC === 'paste' && pasted.length < 40) return toast('Dán thêm nội dung đã nha — cần ít nhất vài câu');
-  const useFile = SRC === 'file' ? FILE : null;
-  BUSY = true; $('#go').disabled = true;
-  $('#go-label').textContent = 'Đang phân tích…';
+  // đoạn chữ đang gõ dở mà chưa bấm "Thêm" thì tự tính là một nguồn cho đỡ hụt hẫng
+  const pending = $('#txt').value.trim();
+  if (pending.length >= 40 && !SOURCES.some((s) => s.raw === pending)) {
+    addSource({ kind: 'paste', raw: pending, label: 'Đoạn chữ dán vào (' + pending.length.toLocaleString('vi') + ' ký tự)' });
+    $('#txt').value = ''; $('#charc').textContent = '';
+  }
+  if (!SOURCES.length) return toast('Thêm ít nhất một nguồn đã nha');
+
+  BUSY = true; $('#go').disabled = true; $('#go-label').textContent = 'Đang phân tích…';
   QUIZ = null; LAST = null;
   const t0 = Date.now();
-  const source = useFile ? (useFile.isImage ? 'image' : /\.pdf$/i.test(useFile.name) ? 'pdf' : 'file') : 'paste';
-  ['#sumcard', '#fcard', '#quizcard'].forEach((s) => $(s).classList.add('hidden'));
+  SOURCES = SOURCES.filter((s) => !s.parent); // bỏ trang con của lần chạy trước
+  SOURCES.forEach((s) => { s.status = 'idle'; s.chars = 0; s.err = ''; s.text = ''; s.summary = null; });
+  renderSources();
+  ['#sumcard', '#linkcard', '#srccard', '#fcard', '#quizcard'].forEach((s) => $(s).classList.add('hidden'));
   buildSteps(); setProgress(0);
   $('#pipe').classList.remove('hidden'); $('#pipe').classList.add('reveal');
   $('#pipe').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  try {
-    // 1) Đọc tài liệu
-    step('read', 'run');
-    let text = useFile ? await extractFile(useFile) : pasted;
-    step('read', 'ok'); phase('read', 1);
 
-    // 2) Làm sạch & chia đoạn
+  try {
+    // 1) Đọc từng nguồn — một nguồn hỏng KHÔNG làm chết cả mẻ
+    step('read', 'run');
+    const crawl = parseInt(picked('#crawl'), 10) || 0;
+    for (let i = 0; i < SOURCES.length; i++) {
+      const s = SOURCES[i];
+      step('read', 'run', 'nguồn ' + (i + 1) + '/' + SOURCES.length + ': ' + s.label.slice(0, 40));
+      phase('read', i / SOURCES.length);
+      s.status = 'reading'; renderSources();
+      try {
+        const got = await readSource(s);
+        s.text = cleanText(got.text);
+        if (s.text.length < 40) throw new Error('gần như không có chữ');
+        if (s.text.length > MAX_PER_SOURCE) s.text = s.text.slice(0, MAX_PER_SOURCE);
+        s.chars = s.text.length;
+        if (got.title) s.label = got.title.slice(0, 90);
+        s.status = 'ok';
+        // đọc thêm trang con cùng trang web (chỉ với nguồn gốc là đường dẫn)
+        if (crawl > 0 && s.kind === 'link' && !s.parent && Array.isArray(got.links)) {
+          const kids = got.links.filter((l) => l.sameSite && !SOURCES.some((x) => x.url === l.url)).slice(0, crawl);
+          for (const k of kids) addSource({ kind: 'link', url: k.url, label: k.label || prettyUrl(k.url), parent: s.id });
+        }
+      } catch (e) {
+        s.status = 'err'; s.err = String((e && e.message) || e);
+      }
+      renderSources();
+    }
+    const good = SOURCES.filter((s) => s.status === 'ok');
+    if (!good.length) throw new Error('không đọc được nguồn nào');
+    const failed = SOURCES.length - good.length;
+    step('read', 'ok', good.length + ' nguồn đọc được' + (failed ? ' · ' + failed + ' nguồn lỗi' : ''));
+    phase('read', 1);
+
+    // 2) Chia đoạn từng nguồn, có trần tổng cho cả mẻ
     step('clean', 'run');
-    text = cleanText(text);
-    if (text.length < 40) throw new Error('Tài liệu ngắn quá, chưa đủ để đọc');
-    let truncated = false;
-    if (text.length > MAX_DOC) { text = text.slice(0, MAX_DOC); truncated = true; }
-    const chunks = chunkText(text);
-    step('clean', 'ok', text.length.toLocaleString('vi') + ' ký tự · ' + chunks.length + ' phần' + (truncated ? ' (tài liệu rất dài, đã lấy 60k ký tự đầu)' : ''));
+    let total = 0, totalChunks = 0;
+    for (const s of good) {
+      if (total + s.text.length > MAX_TOTAL) { s.text = s.text.slice(0, Math.max(0, MAX_TOTAL - total)); s.chars = s.text.length; }
+      total += s.text.length;
+      s.chunks = s.text.length >= 40 ? chunkText(s.text) : [];
+      totalChunks += s.chunks.length;
+    }
+    const usable = good.filter((s) => s.chunks.length);
+    if (!usable.length) throw new Error('nội dung quá ngắn để phân tích');
+    step('clean', 'ok', total.toLocaleString('vi') + ' ký tự · ' + totalChunks + ' phần');
     phase('clean', 1);
 
-    // 3+4) Tóm tắt: 1 phần → gọi thẳng; nhiều phần → tóm từng phần rồi tổng hợp
-    let summary;
-    if (chunks.length === 1) {
-      step('map', 'run'); step('reduce', 'run');
-      summary = await analyze({ task: 'summary_full', text: chunks[0] });
-      step('map', 'ok'); step('reduce', 'ok'); phase('reduce', 1);
-    } else {
-      step('map', 'run');
-      const notes = [];
-      for (let i = 0; i < chunks.length; i++) {
-        step('map', 'run', 'phần ' + (i + 1) + '/' + chunks.length + '…');
-        phase('map', i / chunks.length);
-        const r = await analyze({ task: 'summary_chunk', text: chunks[i], part: i + 1, total: chunks.length });
-        notes.push('— Phần ' + (i + 1) + ' —\n' + r.notes);
-      }
-      step('map', 'ok'); phase('map', 1);
-      step('reduce', 'run');
-      summary = await analyze({ task: 'summary_merge', notes: notes.join('\n\n') });
-      step('reduce', 'ok'); phase('reduce', 1);
+    // 3) Tóm tắt TỪNG nguồn
+    step('map', 'run');
+    for (let i = 0; i < usable.length; i++) {
+      const s = usable[i];
+      const head = 'nguồn ' + (i + 1) + '/' + usable.length;
+      step('map', 'run', head + '…');
+      phase('map', i / usable.length);
+      s.summary = await summarizeOne(s, (part, of) => step('map', 'run', head + ' · phần ' + part + '/' + of));
     }
-    renderSummary(summary);
+    step('map', 'ok', usable.length + ' nguồn');
+    phase('map', 1);
 
-    // 5) Sinh bộ câu hỏi từ tóm tắt + trích đoạn gốc (kèm tuỳ chọn của người học)
+    // 4) Nối các nguồn lại (chỉ khi có từ 2 nguồn trở lên)
+    let overall, synthesis = null;
+    if (usable.length >= 2) {
+      step('reduce', 'run');
+      synthesis = await analyze({
+        task: 'synthesis',
+        sources: usable.map((s) => ({ label: s.label, tldr: s.summary.tldr, points: s.summary.points })),
+      });
+      overall = synthesis;
+      step('reduce', 'ok', (synthesis.connections || []).length + ' mối liên hệ');
+    } else {
+      overall = usable[0].summary;
+      step('reduce', 'ok', 'chỉ có 1 nguồn — bỏ qua bước nối');
+    }
+    phase('reduce', 1);
+    renderSummary(overall, usable.length);
+    renderSynthesis(synthesis, usable);
+    renderPerSource(usable);
+
+    // 5) Ra đề trên TOÀN BỘ các nguồn
     step('quiz', 'run');
     const count = parseInt(picked('#ncount'), 10) || 8;
-    const difficulty = picked('#diff') || 'medium';
-    const qtype = picked('#qtype') || 'mc';
-    const focus = $('#focusq').value.trim().slice(0, 300);
-    const summaryTxt = summary.tldr + '\n' + summary.points.map((p) => '- ' + p).join('\n');
-    const r = await analyze({ task: 'questions', summary: summaryTxt, excerpts: excerptsOf(text), count, difficulty, qtype, focus });
+    const summaryTxt = overall.tldr + '\n' + overall.points.map((p) => '- ' + p).join('\n') +
+      (usable.length > 1 ? '\n\nTóm tắt riêng từng nguồn:\n' + usable.map((s, i) => 'Nguồn ' + (i + 1) + ' (' + s.label + '): ' + s.summary.tldr).join('\n') : '');
+    const r = await analyze({
+      task: 'questions', summary: summaryTxt, excerpts: excerptsOfAll(usable), count,
+      difficulty: picked('#diff') || 'medium', qtype: picked('#qtype') || 'mc', focus: $('#focusq').value.trim().slice(0, 300),
+    });
     step('quiz', 'ok', r.questions.length + ' câu'); phase('quiz', 1);
     renderQuiz(r.questions);
     setTimeout(() => $('#pipe').classList.add('hidden'), 800);
     $('#sumcard').scrollIntoView({ behavior: 'smooth' });
 
-    // 6) Lưu lại lần chạy để dành so sánh & đánh giá
+    // 6) Lưu lại để so sánh & đánh giá
     LAST = {
       id: (crypto.randomUUID ? crypto.randomUUID() : 'r' + Date.now() + Math.random().toString(36).slice(2)),
-      source, file_name: useFile ? useFile.name : null,
-      char_count: text.length, chunks: chunks.length,
-      model: shortModel(summary.model), model_q: shortModel(r.model),
-      input_excerpt: text.slice(0, 3000),
-      tldr: summary.tldr, points: summary.points, terms: summary.terms || [],
+      source: usable.length > 1 ? 'multi' : usable[0].kind,
+      file_name: usable.length > 1 ? usable.length + ' nguồn' : usable[0].label.slice(0, 120),
+      char_count: total, chunks: totalChunks,
+      model: shortModel(overall.model), model_q: shortModel(r.model),
+      input_excerpt: usable.map((s, i) => '[' + (i + 1) + '] ' + s.label + '\n' + s.text.slice(0, 800)).join('\n\n').slice(0, 3000),
+      tldr: overall.tldr, points: overall.points, terms: overall.terms || [],
       questions: r.questions, ms: Date.now() - t0,
+      sources: usable.map((s) => ({ kind: s.kind, label: s.label, url: s.url || null, chars: s.chars, tldr: s.summary.tldr, points: s.summary.points })),
+      synthesis: synthesis ? { themes: synthesis.themes || [], connections: synthesis.connections || [] } : null,
     };
     saveRun(LAST);
   } catch (e) {
     stepFailRunning();
-    toast('Ơ, có lỗi rồi: ' + (e.message || e) + ' — thử lại nha!');
+    toast('Ơ, có lỗi rồi: ' + ((e && e.message) || e) + ' — thử lại nha!');
   }
-  BUSY = false; $('#go').disabled = false;
-  $('#go-label').textContent = 'Phân tích tài liệu';
+  BUSY = false; $('#go').disabled = false; $('#go-label').textContent = 'Phân tích';
+  renderSources();
 }
 
-// ── Bước 1: đọc tệp (txt đọc tại chỗ, PDF/ảnh gửi lên /api/lab/extract) ──────
+// Lấy chữ của một nguồn (đường dẫn / tệp / chữ dán)
+async function readSource(s) {
+  if (s.kind === 'paste') return { text: s.raw };
+  if (s.kind === 'file') return { text: await extractFile(s) };
+  const r = await apiJson(API.fetch, { url: s.url }, 60000);
+  return { text: r.text, title: r.title, links: r.links || [] };
+}
+
+// Tóm tắt một nguồn: 1 phần gọi thẳng, nhiều phần thì tóm từng phần rồi gộp
+async function summarizeOne(s, onPart) {
+  if (s.chunks.length === 1) return await analyze({ task: 'summary_full', text: s.chunks[0] });
+  const notes = [];
+  for (let i = 0; i < s.chunks.length; i++) {
+    if (onPart) onPart(i + 1, s.chunks.length);
+    const r = await analyze({ task: 'summary_chunk', text: s.chunks[i], part: i + 1, total: s.chunks.length });
+    notes.push('— Phần ' + (i + 1) + ' —\n' + r.notes);
+  }
+  return await analyze({ task: 'summary_merge', notes: notes.join('\n\n') });
+}
+
+// ── Đọc tệp (txt đọc tại chỗ, PDF/ảnh gửi lên /api/lab/extract) ──────────────
 async function extractFile(f) {
-  const plain = /\.(txt|md|csv|html?)$/i.test(f.name);
+  const plain = /\.(txt|md|csv|html?)$/i.test(f.label);
   if (plain && !f.isImage) return await f.blob.text();
   let blob = f.blob, type = f.blob.type || 'application/octet-stream';
   if (f.isImage) { const c = await compressImage(f.blob); if (c) { blob = c; type = 'image/jpeg'; } }
@@ -546,10 +774,10 @@ async function extractFile(f) {
   try {
     const res = await fetch(API.extract, {
       method: 'POST', body: blob, signal: ctrl.signal,
-      headers: { 'x-lab-key': LAB_KEY, 'content-type': type, 'x-file-type': type, 'x-file-name': encodeURIComponent(f.name) },
+      headers: { 'x-lab-key': LAB_KEY, 'content-type': type, 'x-file-type': type, 'x-file-name': encodeURIComponent(f.label) },
     });
     const j = await res.json().catch(() => ({}));
-    if (!res.ok || !j.text) throw new Error(j.error || 'Không đọc được tệp (' + res.status + ')');
+    if (!res.ok || !j.text) throw new Error(j.error || 'không đọc được tệp (' + res.status + ')');
     return j.text;
   } finally { clearTimeout(t); }
 }
@@ -572,7 +800,7 @@ function compressImage(blob) {
   });
 }
 
-// ── Bước 2: làm sạch + chia đoạn theo ranh giới đoạn văn, có phần gối đầu ────
+// ── Làm sạch + chia đoạn ────────────────────────────────────────────────────
 function cleanText(s) {
   return String(s || '')
     .replace(/\r\n?/g, '\n')
@@ -597,48 +825,43 @@ function chunkText(text) {
   return chunks;
 }
 
-// Trích đoạn gốc gửi kèm khi ra đề: lấy phần đầu + một lát ở giữa cho phủ đều
-function excerptsOf(text) {
-  if (text.length <= 12000) return text;
-  const mid = Math.floor(text.length / 2);
-  return text.slice(0, 7000) + '\n\n[…]\n\n' + text.slice(mid, mid + 4000);
+// Trích đoạn gốc gửi kèm khi ra đề: chia đều hạn mức cho các nguồn
+function excerptsOfAll(list) {
+  const budget = Math.max(1500, Math.floor(12000 / list.length));
+  return list.map((s, i) => '[NGUỒN ' + (i + 1) + ' — ' + s.label + ']\n' + s.text.slice(0, budget)).join('\n\n');
 }
 
-// ── Gọi /api/lab/analyze ─────────────────────────────────────────────────────
-async function analyze(body) {
+// ── Gọi API ─────────────────────────────────────────────────────────────────
+function apiJson(path, body, ms) {
   const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), 120000);
-  try {
-    const res = await fetch(API.analyze, {
-      method: 'POST', signal: ctrl.signal,
-      headers: { 'content-type': 'application/json', 'x-lab-key': LAB_KEY },
-      body: JSON.stringify(body),
-    });
+  const t = setTimeout(() => ctrl.abort(), ms || 120000);
+  return fetch(path, {
+    method: 'POST', signal: ctrl.signal,
+    headers: { 'content-type': 'application/json', 'x-lab-key': LAB_KEY },
+    body: JSON.stringify(body),
+  }).then(async (res) => {
     const j = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(j.error || 'AI bận mất rồi (' + res.status + ')');
+    if (!res.ok) throw new Error(j.error || 'lỗi ' + res.status);
     return j;
-  } finally { clearTimeout(t); }
+  }).finally(() => clearTimeout(t));
 }
+function analyze(body) { return apiJson(API.analyze, body, 120000); }
 
-// ── Tiến trình: thanh % tổng + trạng thái từng bước ──────────────────────────
+// ── Tiến trình ──────────────────────────────────────────────────────────────
 const STEP_DEFS = [
-  ['read', 'Đọc tài liệu', 'trích chữ từ tệp / lấy nội dung đã dán'],
+  ['read', 'Đọc các nguồn', 'tải trang web / trích chữ từ tệp'],
   ['clean', 'Làm sạch & chia đoạn', 'bỏ ký tự thừa, cắt thành phần vừa sức'],
-  ['map', 'Đọc kỹ từng phần', 'ghi chú ý chính của từng phần một'],
-  ['reduce', 'Tổng hợp tóm tắt', 'gộp lại thành tóm tắt + ý chính + từ khoá'],
-  ['quiz', 'Soạn bộ câu hỏi', 'ra đề kiểm tra theo tuỳ chọn của mình'],
+  ['map', 'Đọc kỹ từng nguồn', 'tóm tắt riêng từng nguồn một'],
+  ['reduce', 'Nối các nguồn lại', 'tìm chủ đề chung và mối liên hệ giữa chúng'],
+  ['quiz', 'Soạn bộ câu hỏi', 'ra đề trên toàn bộ các nguồn'],
 ];
-// mỗi bước chiếm 1 dải % của thanh tổng
-const PHASES = { read: [0, .15], clean: [.15, .25], map: [.25, .7], reduce: [.7, .82], quiz: [.82, 1] };
+const PHASES = { read: [0, .3], clean: [.3, .35], map: [.35, .72], reduce: [.72, .85], quiz: [.85, 1] };
 function phase(id, frac) { const [a, b] = PHASES[id]; setProgress(a + (b - a) * Math.max(0, Math.min(1, frac))); }
 function setProgress(p) {
   $('#pg-fill').style.width = Math.round(p * 100) + '%';
   $('#pg-pct').textContent = Math.round(p * 100) + '%';
 }
-const ST_IC = {
-  wait: '', run: '<svg class="ic spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><circle cx="12" cy="12" r="8.5" stroke-dasharray="40 14"/></svg>',
-  ok: ic('check'), fail: ic('x'),
-};
+const ST_IC = { wait: '', run: SPIN, ok: ic('check'), fail: ic('x') };
 function buildSteps() {
   $('#steps').innerHTML = STEP_DEFS.map(([id, name, hint]) =>
     '<li class="wait" id="st-' + id + '"><span class="st-ic"></span><div><b>' + name +
@@ -654,8 +877,9 @@ function stepFailRunning() {
   document.querySelectorAll('#steps li.run').forEach((li) => { li.className = 'fail'; li.querySelector('.st-ic').innerHTML = ST_IC.fail; });
 }
 
-// ── Kết quả: tóm tắt + từ khoá + hành động ───────────────────────────────────
-function renderSummary(s) {
+// ── Kết quả: tổng hợp chung ─────────────────────────────────────────────────
+function renderSummary(s, nSources) {
+  $('#sumtitle').textContent = nSources > 1 ? 'Tổng hợp ' + nSources + ' nguồn' : 'Tóm tắt';
   $('#tldr').textContent = s.tldr;
   $('#points').innerHTML = s.points.map((p) => '<li>' + esc(p) + '</li>').join('');
   $('#terms').innerHTML = (s.terms || []).map((t) =>
@@ -664,6 +888,39 @@ function renderSummary(s) {
   $('#sumcard').classList.remove('hidden'); $('#sumcard').classList.add('reveal');
 }
 
+// ── Kết quả: liên kết giữa các nguồn ────────────────────────────────────────
+function renderSynthesis(syn, list) {
+  if (!syn || (!(syn.themes || []).length && !(syn.connections || []).length)) { $('#linkcard').classList.add('hidden'); return; }
+  const nameOf = (i) => (list[i - 1] ? list[i - 1].label : 'Nguồn ' + i);
+  $('#themes').innerHTML = (syn.themes || []).map((t) =>
+    '<div class="theme"><b>' + esc(t.title) + '</b>' + (t.detail ? '<p>' + esc(t.detail) + '</p>' : '') +
+    (t.sources && t.sources.length ? '<div class="srcrefs">' + t.sources.map((i) => '<span class="sref">' + i + '. ' + esc(nameOf(i).slice(0, 34)) + '</span>').join('') + '</div>' : '') +
+    '</div>').join('');
+  $('#conns').innerHTML = (syn.connections || []).length
+    ? '<span class="lbl">Mối liên hệ từng cặp</span>' + syn.connections.map((c) =>
+        '<div class="conn">' +
+        '<div class="pair"><span class="sref">' + c.from + '. ' + esc(nameOf(c.from).slice(0, 26)) + '</span>' +
+        '<span class="arrow">↔</span><span class="sref">' + c.to + '. ' + esc(nameOf(c.to).slice(0, 26)) + '</span>' +
+        (c.kind ? '<span class="kind">' + esc(c.kind) + '</span>' : '') + '</div>' +
+        (c.note ? '<div class="note">' + esc(c.note) + '</div>' : '') + '</div>').join('')
+    : '';
+  $('#linkcard').classList.remove('hidden'); $('#linkcard').classList.add('reveal');
+}
+
+// ── Kết quả: tóm tắt từng nguồn ─────────────────────────────────────────────
+function renderPerSource(list) {
+  if (list.length < 2) { $('#srccard').classList.add('hidden'); return; }
+  $('#srcsums').innerHTML = list.map((s, i) =>
+    '<details class="onesrc"' + (i === 0 ? ' open' : '') + '><summary><span class="n">' + (i + 1) + '</span>' +
+    '<span class="grow">' + esc(s.label) + '</span><span class="chev">' + ic('right', 'sm') + '</span></summary>' +
+    '<div class="inner"><div class="tldr">' + esc(s.summary.tldr) + '</div>' +
+    '<ul class="points">' + s.summary.points.map((p) => '<li>' + esc(p) + '</li>').join('') + '</ul>' +
+    (s.url ? '<a class="srclink" href="' + esc(s.url) + '" target="_blank" rel="noopener noreferrer">' + ic('link', 'sm') + esc(s.url) + '</a>' : '') +
+    '</div></details>').join('');
+  $('#srccard').classList.remove('hidden'); $('#srccard').classList.add('reveal');
+}
+
+// ── Chép / tải kết quả ──────────────────────────────────────────────────────
 $('#btn-copy').addEventListener('click', async () => {
   if (!LAST) return;
   const txt = LAST.tldr + '\n\n' + LAST.points.map((p) => '• ' + p).join('\n');
@@ -673,7 +930,29 @@ $('#btn-copy').addEventListener('click', async () => {
 
 $('#btn-export').addEventListener('click', () => {
   if (!LAST) return;
-  const md = ['# Tóm tắt tài liệu', '', LAST.tldr, '', '## Ý chính', ...LAST.points.map((p) => '- ' + p)];
+  const md = ['# Tổng hợp tài liệu', '', LAST.tldr, '', '## Ý chính', ...LAST.points.map((p) => '- ' + p)];
+  const srcs = LAST.sources || [];
+  if (srcs.length > 1) {
+    md.push('', '## Các nguồn');
+    srcs.forEach((s, i) => {
+      md.push('', '### ' + (i + 1) + '. ' + s.label + (s.url ? '\n' + s.url : ''));
+      md.push(s.tldr);
+      (s.points || []).forEach((p) => md.push('- ' + p));
+    });
+  }
+  if (LAST.synthesis) {
+    const nameOf = (i) => (srcs[i - 1] ? srcs[i - 1].label : 'Nguồn ' + i);
+    if ((LAST.synthesis.themes || []).length) {
+      md.push('', '## Chủ đề chung');
+      LAST.synthesis.themes.forEach((t) => md.push('- **' + t.title + '**' + (t.detail ? ' — ' + t.detail : '') +
+        (t.sources && t.sources.length ? ' _(nguồn ' + t.sources.join(', ') + ')_' : '')));
+    }
+    if ((LAST.synthesis.connections || []).length) {
+      md.push('', '## Mối liên hệ giữa các nguồn');
+      LAST.synthesis.connections.forEach((c) => md.push('- ' + nameOf(c.from) + ' ↔ ' + nameOf(c.to) +
+        (c.kind ? ' (' + c.kind + ')' : '') + (c.note ? ': ' + c.note : '')));
+    }
+  }
   if (LAST.terms.length) { md.push('', '## Từ khoá'); LAST.terms.forEach((t) => md.push('- **' + t.term + '**' + (t.vi ? ' — ' + t.vi : ''))); }
   if (LAST.questions && LAST.questions.length) {
     md.push('', '## Bộ câu hỏi');
@@ -686,7 +965,7 @@ $('#btn-export').addEventListener('click', () => {
   const blob = new Blob([md.join('\n')], { type: 'text/markdown;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'tom-tat-' + new Date().toISOString().slice(0, 10) + '.md';
+  a.download = 'tong-hop-' + new Date().toISOString().slice(0, 10) + '.md';
   a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   toast('Đã tải kết quả (.md)');
 });
@@ -713,7 +992,7 @@ $('#fc').addEventListener('click', () => $('#fc').classList.toggle('flip'));
 $('#fc-prev').addEventListener('click', () => { if (FC.i > 0) { FC.i--; fcShow(); } });
 $('#fc-next').addEventListener('click', () => { if (FC.i < FC.list.length - 1) { FC.i++; fcShow(); } });
 
-// ── Kết quả: bộ câu hỏi tương tác ────────────────────────────────────────────
+// ── Bộ câu hỏi tương tác ────────────────────────────────────────────────────
 const LETTERS = ['A', 'B', 'C', 'D'];
 function renderQuiz(questions) {
   QUIZ = { questions, answers: {} };
@@ -796,23 +1075,36 @@ function shortModel(m) { return String(m || '').replace('@cf/', '').replace(/-in
 
 async function saveRun(rec) {
   if (!SB) return;
+  // Cột sources/synthesis là bổ sung mới — DB chưa chạy SQL thì lưu bản rút gọn, đừng chặn người dùng.
   try {
     const { error } = await SB.from('lab_runs').insert(rec);
+    if (error && /column|schema cache/i.test(String(error.message || error))) {
+      const lite = Object.assign({}, rec); delete lite.sources; delete lite.synthesis;
+      const retry = await SB.from('lab_runs').insert(lite);
+      if (retry.error) throw retry.error;
+      toast('Đã lưu (chưa có cột sources/synthesis — chạy SQL để lưu đủ)');
+      loadHistory(); return;
+    }
     if (error) throw error;
     toast('Đã lưu vào kho đánh giá');
     loadHistory();
   } catch (e) {
     const msg = String(e.message || e);
-    toast(/relation|does not exist|schema cache|column/i.test(msg) ? 'Chưa lưu được — cần chạy SQL bảng lab_runs' : 'Chưa lưu được: ' + msg);
+    toast(/relation|does not exist|schema cache/i.test(msg) ? 'Chưa lưu được — cần chạy SQL bảng lab_runs' : 'Chưa lưu được: ' + msg);
   }
 }
 
+const COLS_FULL = 'id,created_at,source,file_name,char_count,chunks,model,model_q,tldr,questions,rating,note,ms,sources,synthesis';
+const COLS_LITE = 'id,created_at,source,file_name,char_count,chunks,model,model_q,tldr,questions,rating,note,ms';
+let HIST_COLS = COLS_FULL;
 async function loadHistory() {
   if (!SB) { $('#hist').innerHTML = '<p class="muted">Không có kết nối cơ sở dữ liệu.</p>'; return; }
   try {
-    const { data, error } = await SB.from('lab_runs')
-      .select('id,created_at,source,file_name,char_count,chunks,model,model_q,tldr,questions,rating,note,ms')
-      .order('created_at', { ascending: false }).limit(40);
+    let { data, error } = await SB.from('lab_runs').select(HIST_COLS).order('created_at', { ascending: false }).limit(40);
+    if (error && /column|schema cache/i.test(String(error.message || error))) {
+      HIST_COLS = COLS_LITE;
+      ({ data, error } = await SB.from('lab_runs').select(HIST_COLS).order('created_at', { ascending: false }).limit(40));
+    }
     if (error) throw error;
     renderHistory(data || []);
   } catch (e) {
@@ -823,23 +1115,25 @@ async function loadHistory() {
   }
 }
 
-const SRC_LABEL = { paste: 'Dán chữ', pdf: 'PDF', image: 'Ảnh chụp', file: 'Tệp' };
+const SRC_LABEL = { paste: 'Dán chữ', pdf: 'PDF', image: 'Ảnh chụp', file: 'Tệp', link: 'Đường dẫn', multi: 'Nhiều nguồn' };
 let HIST = [];
 function renderHistory(rows) {
   HIST = rows;
   if (!rows.length) {
-    $('#hist').innerHTML = '<div class="empty">' + ic('doc') + '<br>Chưa có lần phân tích nào được lưu.<br>Phân tích một tài liệu ở trên đi nha.</div>';
+    $('#hist').innerHTML = '<div class="empty">' + ic('doc') + '<br>Chưa có lần phân tích nào được lưu.<br>Thêm vài nguồn ở trên rồi phân tích thử nha.</div>';
     return;
   }
   $('#hist').innerHTML = rows.map((r) => {
     const when = new Date(r.created_at).toLocaleString('vi');
     const nq = Array.isArray(r.questions) ? r.questions.length : 0;
+    const ns = Array.isArray(r.sources) ? r.sources.length : 0;
+    const nc = r.synthesis && Array.isArray(r.synthesis.connections) ? r.synthesis.connections.length : 0;
     return '<div class="hrow" data-id="' + r.id + '">' +
       '<div class="hmeta">' +
-        '<span class="badge">' + (SRC_LABEL[r.source] || r.source || '?') + '</span>' +
-        (r.file_name ? '<span class="badge">' + esc(r.file_name) + '</span>' : '') +
+        '<span class="badge' + (ns > 1 ? ' multi' : '') + '">' + (ns > 1 ? ns + ' nguồn' : (SRC_LABEL[r.source] || r.source || '?')) + '</span>' +
+        (r.file_name && ns <= 1 ? '<span class="badge">' + esc(r.file_name) + '</span>' : '') +
         '<span class="badge model">' + esc(r.model || '?') + (r.model_q && r.model_q !== r.model ? ' / ' + esc(r.model_q) : '') + '</span>' +
-        '<span class="badge">' + (r.char_count || 0).toLocaleString('vi') + ' ký tự · ' + nq + ' câu</span>' +
+        '<span class="badge">' + (r.char_count || 0).toLocaleString('vi') + ' ký tự · ' + nq + ' câu' + (nc ? ' · ' + nc + ' liên hệ' : '') + '</span>' +
         '<span>' + when + '</span>' +
       '</div>' +
       '<div class="htldr">' + esc(r.tldr || '') + '</div>' +
@@ -883,6 +1177,17 @@ async function delRun(id) {
 
 function openRun(id) {
   const r = HIST.find((x) => x.id === id); if (!r) return;
+  const srcs = Array.isArray(r.sources) ? r.sources : [];
+  const nameOf = (i) => (srcs[i - 1] ? srcs[i - 1].label : 'Nguồn ' + i);
+  const srcHtml = srcs.length > 1 ? '<h2 class="ct" style="margin:16px 0 10px; font-size:16px">' + ic('layers') + 'Các nguồn (' + srcs.length + ')</h2>' +
+    srcs.map((s, i) => '<div class="qview"><b>' + (i + 1) + '. ' + esc(s.label) + '</b>' +
+      (s.url ? '<div class="muted" style="word-break:break-all">' + esc(s.url) + '</div>' : '') +
+      '<div style="margin-top:5px">' + esc(s.tldr || '') + '</div></div>').join('') : '';
+  const syn = r.synthesis || {};
+  const connHtml = (syn.connections || []).length ? '<h2 class="ct" style="margin:16px 0 10px; font-size:16px">' + ic('share') + 'Mối liên hệ</h2>' +
+    syn.connections.map((c) => '<div class="qview"><b>' + esc(nameOf(c.from)) + ' ↔ ' + esc(nameOf(c.to)) + '</b>' +
+      (c.kind ? ' <span class="badge">' + esc(c.kind) + '</span>' : '') +
+      (c.note ? '<div style="margin-top:5px">' + esc(c.note) + '</div>' : '') + '</div>').join('') : '';
   const qs = (Array.isArray(r.questions) ? r.questions : []).map((q, i) =>
     '<div class="qview"><b>' + (i + 1) + '. ' + esc(q.q) + '</b>' +
     q.options.map((o, j) => '<div class="opt2' + (j === q.answer ? ' okk' : '') + '">' +
@@ -892,8 +1197,8 @@ function openRun(id) {
     '<div class="row" style="justify-content:space-between"><h2 class="ct" style="margin:0">' + ic('eye') + 'Xem lại</h2>' +
     '<button class="btn soft" data-close="1">' + ic('x', 'sm') + 'Đóng</button></div>' +
     '<p class="muted" style="margin:8px 0 12px">' + esc(r.model || '?') + (r.model_q && r.model_q !== r.model ? ' (câu hỏi: ' + esc(r.model_q) + ')' : '') + ' · ' + (r.char_count || 0).toLocaleString('vi') + ' ký tự · ' + Math.round((r.ms || 0) / 100) / 10 + 's</p>' +
-    '<div class="tldr" style="margin-top:0">' + esc(r.tldr || '') + '</div>' +
-    '<h2 class="ct" style="margin:16px 0 10px; font-size:16px">Bộ câu hỏi (' + (Array.isArray(r.questions) ? r.questions.length : 0) + ')</h2>' + qs;
+    '<div class="tldr" style="margin-top:0">' + esc(r.tldr || '') + '</div>' + srcHtml + connHtml +
+    '<h2 class="ct" style="margin:16px 0 10px; font-size:16px">' + ic('check') + 'Bộ câu hỏi (' + (Array.isArray(r.questions) ? r.questions.length : 0) + ')</h2>' + qs;
   $('#overlay').classList.add('show');
 }
 $('#overlay').addEventListener('click', (e) => { if (e.target.id === 'overlay' || e.target.closest('[data-close]')) $('#overlay').classList.remove('show'); });
