@@ -140,7 +140,18 @@
   .res .rs{ font-size:12.5px; color:var(--soft); line-height:1.5; margin-top:4px; }
   .res .rm{ font-size:11.5px; color:var(--soft); font-weight:700; margin-top:6px; display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
   .lang{ background:var(--chip); border:1.5px solid var(--edge); border-radius:999px; padding:1px 8px; font-size:11px; font-weight:800; }
-  .res.added{ opacity:.5; pointer-events:none; }
+  /* Đã thêm vào nguồn thì mờ đi + không chọn lại được, NHƯNG link mở tài liệu vẫn phải bấm được
+     (dùng pointer-events:none cho cả thẻ như trước là khoá luôn cả link — chặn mất đường vào tài liệu) */
+  .res.added{ opacity:.6; }
+  .res.added .tick{ opacity:.35; }
+  .openlink{ display:inline-flex; align-items:center; gap:6px; max-width:100%; margin-top:9px;
+    font-size:12px; font-weight:800; color:var(--p1); text-decoration:none; background:var(--chip);
+    border:1.5px solid var(--edge); border-radius:999px; padding:6px 11px; box-shadow:1.5px 1.5px 0 var(--edge);
+    transition:transform .14s var(--ease-smooth), box-shadow .14s var(--ease-smooth); }
+  .openlink:active{ transform:translate(1.5px,1.5px); box-shadow:0 0 0 var(--edge); }
+  .openlink .ic{ width:14px; height:14px; flex:none; }
+  .openlink span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .src .openlink{ margin-top:6px; font-size:11.5px; padding:4px 9px; }
   .res .rt .ord{ display:inline-grid; place-items:center; width:20px; height:20px; border-radius:6px; margin-right:7px;
     background:linear-gradient(135deg,var(--p1),var(--p2)); color:#fff; font-size:11.5px; vertical-align:1px; }
   .res .rs.why{ color:var(--ink); }
@@ -534,6 +545,7 @@ const ICONS = {
   plus: '<path d="M12 5v14M5 12h14"/>',
   dot: '<circle cx="12" cy="12" r="4"/>',
   search: '<circle cx="11" cy="11" r="6.5"/><path d="M20.5 20.5 16 16"/>',
+  external: '<path d="M14 4h6v6"/><path d="M20 4 12 12"/><path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/>',
   spark: '<path d="M12 3.5l1.8 5 5 1.8-5 1.8L12 17l-1.8-5-5-1.8 5-1.8L12 3.5Z"/>',
 };
 function ic(name, cls) { return '<svg class="ic ' + (cls || '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[name] || '') + '</svg>'; }
@@ -634,7 +646,9 @@ function renderResults(q) {
         (r.level ? '<span class="lang">' + esc(r.level) + '</span>' : '') +
         (r.kind ? '<span class="lang">' + esc(r.kind) + '</span>' : '') +
         '<span>' + esc(r.site || '') + '</span>' +
-        (already ? '<span>· đã thêm rồi</span>' : '') + '</div></div></div>';
+        (already ? '<span>· đã thêm rồi</span>' : '') + '</div>' +
+        openLink(r.url, 'Mở tài liệu · ' + prettyUrl(r.url)) +
+        '</div></div>';
     }).join('');
   updateAddBar();
 }
@@ -644,9 +658,19 @@ function updateAddBar() {
   el.textContent = PICKED.size ? 'Thêm ' + PICKED.size + ' tài liệu đã chọn' : 'Thêm vào danh sách';
 }
 
+// Link mở thẳng tài liệu gốc ở tab mới. rel="noopener" bắt buộc: không có nó thì trang vừa mở
+// giữ được tham chiếu window.opener và chuyển hướng ngược trang mình được.
+function openLink(url, label) {
+  if (!url) return '';
+  return '<a class="openlink" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' +
+    ic('external') + '<span>' + esc(label || url) + '</span></a>';
+}
+
 $('#results').addEventListener('click', (e) => {
   if (e.target.closest('#addpicked')) return addPicked();
+  if (e.target.closest('a')) return;   // bấm link mở tài liệu thì để nó mở, không tính là chọn
   const row = e.target.closest('.res'); if (!row) return;
+  if (row.classList.contains('added')) return;
   const url = row.dataset.url;
   if (PICKED.has(url)) PICKED.delete(url); else PICKED.add(url);
   row.classList.toggle('on', PICKED.has(url));
@@ -736,7 +760,8 @@ function renderSources() {
     return '<div class="src ' + s.status + (s.parent ? ' child' : '') + '">' +
       '<span class="n">' + (i + 1) + '</span>' +
       '<div class="grow"><div class="nm">' + ic(KIND_IC[s.kind], 'sm') + ' ' + esc(s.label) +
-        (s.parent ? ' <span class="muted">· trang con</span>' : '') + '</div>' + meta + '</div>' +
+        (s.parent ? ' <span class="muted">· trang con</span>' : '') + '</div>' + meta +
+        openLink(s.url, 'Mở tài liệu') + '</div>' +
       '<span class="st">' + st + '</span>' +
       (BUSY ? '' : '<button class="rm" data-rm="' + s.id + '" aria-label="Bỏ nguồn này">' + ic('x', 'sm') + '</button>') +
       '</div>';
@@ -1111,7 +1136,7 @@ function renderPerSource(list) {
     '<span class="grow">' + esc(s.label) + '</span><span class="chev">' + ic('right', 'sm') + '</span></summary>' +
     '<div class="inner"><div class="tldr">' + esc(s.summary.tldr) + '</div>' +
     '<ul class="points">' + s.summary.points.map((p) => '<li>' + esc(p) + '</li>').join('') + '</ul>' +
-    (s.url ? '<a class="srclink" href="' + esc(s.url) + '" target="_blank" rel="noopener noreferrer">' + ic('link', 'sm') + esc(s.url) + '</a>' : '') +
+    openLink(s.url, 'Mở tài liệu gốc · ' + prettyUrl(s.url || '')) +
     '</div></details>').join('');
   $('#srccard').classList.remove('hidden'); $('#srccard').classList.add('reveal');
 }
@@ -1384,8 +1409,8 @@ function openRun(id) {
   const nameOf = (i) => (srcs[i - 1] ? srcs[i - 1].label : 'Nguồn ' + i);
   const srcHtml = srcs.length > 1 ? '<h2 class="ct" style="margin:16px 0 10px; font-size:16px">' + ic('layers') + 'Các nguồn (' + srcs.length + ')</h2>' +
     srcs.map((s, i) => '<div class="qview"><b>' + (i + 1) + '. ' + esc(s.label) + '</b>' +
-      (s.url ? '<div class="muted" style="word-break:break-all">' + esc(s.url) + '</div>' : '') +
-      '<div style="margin-top:5px">' + esc(s.tldr || '') + '</div></div>').join('') : '';
+      '<div style="margin-top:5px">' + esc(s.tldr || '') + '</div>' +
+      openLink(s.url, 'Mở tài liệu · ' + prettyUrl(s.url || '')) + '</div>').join('') : '';
   const syn = r.synthesis || {};
   const connHtml = (syn.connections || []).length ? '<h2 class="ct" style="margin:16px 0 10px; font-size:16px">' + ic('share') + 'Mối liên hệ</h2>' +
     syn.connections.map((c) => '<div class="qview"><b>' + esc(nameOf(c.from)) + ' ↔ ' + esc(nameOf(c.to)) + '</b>' +
