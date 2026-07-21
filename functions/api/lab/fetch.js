@@ -15,6 +15,8 @@ const LAB_KEY = 'cn-lab-124-tim';
 const MAX_BYTES = 4 * 1024 * 1024;   // trần tải về (trang tin thường < 1MB)
 const FETCH_TIMEOUT = 20000;
 const UA = 'Mozilla/5.0 (compatible; CungNhauReader/1.0; +https://cungnhau.pages.dev)';
+// Dấu hiệu trang chặn bot / bắt xác minh trình duyệt (Cloudflare, Akamai, captcha…)
+export const CHALLENGE = /(client challenge|just a moment|checking your browser|enable javascript|verify (you are|that you are) (a )?human|captcha|access denied|attention required|unusual traffic)/i;
 
 export async function onRequestPost({ request, env }) {
   if (request.headers.get('x-lab-key') !== LAB_KEY) return new Response('Not found', { status: 404 });
@@ -55,7 +57,12 @@ export async function onRequestPost({ request, env }) {
     }
 
     const page = htmlToText(body2, finalUrl);
-    if (page.text.length < 200) {
+    // Trang chặn bot trả về HTTP 200 kèm vài dòng "Client Challenge"/"Just a moment" — đủ dài để lọt
+    // ngưỡng độ dài nhưng hoàn toàn vô dụng. Phải bắt riêng, không thì AI đi tóm tắt trang báo lỗi.
+    if (CHALLENGE.test(page.text.slice(0, 700)) || CHALLENGE.test(page.title)) {
+      return Response.json({ error: 'Trang này chặn máy đọc tự động (bắt xác minh trình duyệt). Tải tệp lên thay nha.' }, { status: 422 });
+    }
+    if (page.text.length < 300) {
       return Response.json({
         error: 'Trang này hầu như không có chữ trong mã nguồn (thường là trang cần chạy JavaScript hoặc chặn máy đọc). ' +
           'Thử lưu trang thành PDF rồi tải tệp lên nha.',

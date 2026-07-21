@@ -13,7 +13,9 @@
 // — nên về mặt cấu trúc nó không thể bịa link kể cả khi muốn (giống cách 'synthesis' dùng chỉ số nguồn).
 //
 // Máy tìm kiếm: DuckDuckGo Lite (đã đo: gọi được từ Cloudflare, HTTP 200) — không cần khoá API.
-// Truy vấn nào DDG không ra gì thì thử lại bằng Mojeek (cũng đã đo là gọi được).
+// ⚠️ Mojeek từng được chọn làm đường lui rồi BỎ: gọi vẫn ra HTTP 200 nhưng nội dung là trang
+// Captcha (title "Captcha"), tức là đường lui giả. Đo bằng mã HTTP thôi là chưa đủ — phải nhìn
+// nội dung. Giờ thay bằng: chạy tuần tự có nghỉ + thử lại 1 lần khi một truy vấn ra rỗng.
 // Google/Bing/Brave đều đòi khoá trả tiền nên không dùng.
 
 import { runJSON } from './analyze.js';
@@ -25,8 +27,17 @@ const MAX_QUERIES = 5;
 const MAX_RESULTS = 24;
 const MAX_PICKS = 12;
 
-// Mạng xã hội / trang mua bán — hầu như không phải tài liệu học
-const JUNK = /(^|\.)(facebook|instagram|tiktok|twitter|x|pinterest|threads|shopee|lazada|tiki|amazon|ebay|reddit)\.(com|vn|net)$/i;
+// Loại thẳng ở chặng 'find' hai nhóm dưới đây — vì mục đích cuối cùng là ĐỌC ĐƯỢC nội dung,
+// tìm ra một link đẹp mà trình đọc không lấy được chữ thì cũng vô dụng.
+//  (1) mạng xã hội / mua bán: gần như không phải tài liệu học
+//  (2) trang xem tài liệu có tường phí hoặc chặn bot: đã đo thật — scribd trả trang "Client
+//      Challenge", slideshare/studylib không ra chữ nào. Trước khi lọc, 3/5 tài liệu AI chọn
+//      đứng đầu đều thuộc nhóm này.
+// Tên miền cấp 2 (bất kể đuôi .com/.vn/.net…)
+const SKIP_NAME = /(^|\.)(facebook|instagram|tiktok|twitter|x|pinterest|threads|reddit|shopee|lazada|tiki|amazon|ebay|scribd|slideshare|coursehero|studocu|studylib|chegg|quizlet|123doc|123docz|xemtailieu|luanvan)\.[a-z.]+$/i;
+// Tên miền phải khớp nguyên cả đuôi (viết chung vào SKIP_NAME sẽ hoá thành "academia.edu.xxx" — sai)
+const SKIP_FULL = /(^|\.)(academia\.edu|tailieu\.vn)$/i;
+export function skipSite(site) { return SKIP_NAME.test(site) || SKIP_FULL.test(site); }
 
 export async function onRequestPost({ request, env }) {
   if (request.headers.get('x-lab-key') !== LAB_KEY) return new Response('Not found', { status: 404 });
@@ -91,17 +102,25 @@ async function findStage(body) {
     .filter((x) => x.q).slice(0, MAX_QUERIES);
   if (!queries.length) throw new Error('Không có truy vấn nào để tìm');
 
-  const settled = await Promise.allSettled(queries.map((x) => searchOne(x.q)));
-  const lists = settled.filter((s) => s.status === 'fulfilled').map((s) => s.value);
-  if (!lists.length) throw new Error('Máy tìm kiếm không phản hồi, thử lại sau chút nha');
-  return { results: mergeResults(lists) };
+  const lists = await searchAll(queries);
+  const results = mergeResults(lists);
+  if (!results.length) throw new Error('Máy tìm kiếm đang chặn tạm (hỏi hơi dồn dập), đợi một chút rồi tìm lại nha');
+  return { results };
 }
 
-async function searchOne(q) {
-  let list = await ddgLite(q).catch(() => []);
-  if (!list.length) list = await mojeek(q).catch(() => []);
-  return list;
+// Chạy TUẦN TỰ, có nghỉ giữa các truy vấn: bắn 4-5 truy vấn song song vào DuckDuckGo từ cùng một IP
+// hay bị chặn tạm (đã gặp: cả mẻ trả về 0 kết quả). Truy vấn nào ra rỗng thì thử lại 1 lần.
+async function searchAll(queries) {
+  const lists = [];
+  for (let i = 0; i < queries.length; i++) {
+    if (i) await sleep(350);
+    let list = await ddgLite(queries[i].q).catch(() => []);
+    if (!list.length) { await sleep(700); list = await ddgLite(queries[i].q).catch(() => []); }
+    if (list.length) lists.push(list);
+  }
+  return lists;
 }
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function fetchText(url) {
   const ctrl = new AbortController();
@@ -115,9 +134,6 @@ async function fetchText(url) {
 
 async function ddgLite(q) {
   return parseDdg(await fetchText('https://lite.duckduckgo.com/lite/?q=' + encodeURIComponent(q)));
-}
-async function mojeek(q) {
-  return parseMojeek(await fetchText('https://www.mojeek.com/search?q=' + encodeURIComponent(q)));
 }
 
 // DuckDuckGo Lite bọc link thật trong /l/?uddg=<url đã mã hoá> — phải bóc ra mới dùng được.
@@ -141,25 +157,19 @@ export function parseDdg(html) {
 
 export function unwrapDdg(href) {
   if (!href) return '';
-  let h = href.startsWith('//') ? 'https:' + href : href;
+  const h = href.startsWith('//') ? 'https:' + href : href;
   try {
     const u = new URL(h, 'https://duckduckgo.com');
+    // ⚠️ Quảng cáo bị bọc HAI LỚP: uddg=... lại trỏ về chính duckduckgo.com/y.js?ad_domain=…
+    // Bóc xong PHẢI kiểm tra lại, không thì link quảng cáo lọt thẳng vào danh sách tài liệu.
     const wrapped = u.searchParams.get('uddg');
-    if (wrapped) return wrapped;
-    return /^https?:$/.test(u.protocol) && !/duckduckgo\.com$/.test(u.hostname) ? u.toString() : '';
+    return isRealTarget(wrapped ? new URL(wrapped, 'https://duckduckgo.com') : u);
   } catch (e) { return ''; }
 }
-
-export function parseMojeek(html) {
-  const out = [];
-  const re = /<a\b[^>]*class=['"]ob['"][^>]*href=['"]([^'"]+)['"][^>]*>([\s\S]*?)<\/a>/gi;
-  let m;
-  while ((m = re.exec(html))) {
-    const url = m[1].startsWith('http') ? m[1] : '';
-    const title = clean(m[2]);
-    if (url && title) out.push({ title, url, site: hostOf(url), snippet: '' });
-  }
-  return out;
+function isRealTarget(u) {
+  if (!/^https?:$/.test(u.protocol)) return '';
+  if (/(^|\.)duckduckgo\.com$/i.test(u.hostname)) return '';   // gồm cả /y.js quảng cáo
+  return u.toString();
 }
 
 // Gộp kết quả nhiều truy vấn: xen kẽ để truy vấn nào cũng có mặt ở phần đầu, bỏ URL trùng & trang rác
@@ -171,7 +181,7 @@ export function mergeResults(lists) {
       const r = list[i];
       if (!r || out.length >= MAX_RESULTS) continue;
       const key = r.url.split('#')[0].replace(/\/$/, '');
-      if (seen.has(key) || JUNK.test(r.site)) continue;
+      if (seen.has(key) || skipSite(r.site)) continue;
       seen.add(key);
       out.push({ ...r, url: key });
     }
@@ -191,6 +201,8 @@ async function curateStage(env, body) {
   const sys = 'Bạn giúp người học chọn tài liệu. Dưới đây là KẾT QUẢ TÌM KIẾM THẬT đã đánh số. ' +
     'Chọn tối đa ' + MAX_PICKS + ' tài liệu phù hợp NHẤT để học chủ đề, xếp theo THỨ TỰ NÊN ĐỌC (dễ trước, sâu sau). ' +
     'Bỏ hẳn những mục quảng cáo, rao vặt, trùng nội dung, hoặc không liên quan — thà chọn ít mà đúng. ' +
+    'Ưu tiên trang ĐỌC ĐƯỢC TRỰC TIẾP (bài viết đầy đủ, giáo trình/bài giảng công khai, tệp PDF, trang trường đại học, tài liệu chính thức) ' +
+    'hơn là trang chỉ giới thiệu/bán khoá học hay bắt đăng nhập mới xem được nội dung. ' +
     'TUYỆT ĐỐI chỉ nhắc tới tài liệu bằng SỐ THỨ TỰ trong danh sách, KHÔNG được tự viết ra đường dẫn nào. ' +
     'Trả về DUY NHẤT JSON: {"picks":[{"i":số thứ tự,"why":"một câu vì sao nên đọc cái này","level":"cơ bản|trung cấp|nâng cao",' +
     '"kind":"giáo trình|bài giảng|bài viết|tài liệu tham khảo|video|khác"}],"note":"1-2 câu gợi ý lộ trình học"}. ' +
