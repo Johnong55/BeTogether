@@ -170,7 +170,8 @@ async function runText(env, system, user) {
   }
 }
 
-async function runJSON(env, system, user, validate) {
+// Xuất ra ngoài để /api/lab/search dùng lại (khỏi chép đôi phần gọi model + fallback).
+export async function runJSON(env, system, user, validate) {
   // Thử main → parse; parse hỏng hoặc lỗi mạng model → thử fallback; cả hai hỏng mới ném lỗi.
   // Trả kèm `model` đã tạo ra kết quả (để trang lưu lại phục vụ so sánh/đánh giá).
   let lastErr = null;

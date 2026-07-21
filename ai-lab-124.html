@@ -141,6 +141,15 @@
   .res .rm{ font-size:11.5px; color:var(--soft); font-weight:700; margin-top:6px; display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
   .lang{ background:var(--chip); border:1.5px solid var(--edge); border-radius:999px; padding:1px 8px; font-size:11px; font-weight:800; }
   .res.added{ opacity:.5; pointer-events:none; }
+  .res .rt .ord{ display:inline-grid; place-items:center; width:20px; height:20px; border-radius:6px; margin-right:7px;
+    background:linear-gradient(135deg,var(--p1),var(--p2)); color:#fff; font-size:11.5px; vertical-align:1px; }
+  .res .rs.why{ color:var(--ink); }
+  .plan{ border:2px solid var(--edge); border-radius:14px; padding:12px; margin-bottom:12px;
+    background:linear-gradient(150deg, color-mix(in srgb,var(--p1) 12%, var(--card)), var(--card));
+    box-shadow:2px 2px 0 var(--edge); animation:rise .35s var(--ease-smooth); }
+  .plan b{ font-family:'Fraunces',serif; font-size:17px; margin-right:8px; }
+  .steps-learn{ display:flex; flex-wrap:wrap; gap:5px; margin-top:9px; }
+  .plan .pnote{ font-size:13px; line-height:1.55; margin-top:9px; padding-top:9px; border-top:1px solid var(--line); }
   .searching{ text-align:center; padding:24px 12px; color:var(--soft); font-weight:700; font-size:13.5px; }
   .searching .ic{ color:var(--p1); }
   .addbar{ display:flex; gap:8px; align-items:center; margin:4px 0 10px; }
@@ -323,8 +332,8 @@
 
     <div id="pane-search">
       <div class="searchbar">
-        <input class="focusq" id="sq" placeholder="Chủ đề muốn học — vd: ngân hàng, lạm phát…">
-        <button class="btn" id="dosearch"><span data-ic="search"></span>Tìm</button>
+        <input class="focusq" id="sq" placeholder="Muốn học gì? — vd: ngân hàng thương mại cho người mới bắt đầu">
+        <button class="btn" id="dosearch"><span data-ic="spark"></span>Tìm</button>
       </div>
       <span class="lbl">Ngôn ngữ tài liệu</span>
       <div class="chips pick" id="slang">
@@ -545,8 +554,11 @@ let BUSY = false;
 let LAST = null;
 let FC = { list: [], i: 0 };
 let uid = 0;
-let RESULTS = [];            // kết quả tìm tài liệu đang hiện
+let RESULTS = [];            // tài liệu AI đã chọn lọc, xếp theo thứ tự nên đọc
 let PICKED = new Set();      // url đang chọn trong danh sách kết quả
+let PLAN = null;             // kế hoạch học AI vạch ra {topic, level, subtopics, queries}
+let NOTE = '';               // gợi ý lộ trình học của AI
+let SEARCHING = false;
 let ANALYSIS = null;         // ngữ cảnh sau khi phân tích, để soạn đề LÚC NGƯỜI DÙNG BẤM NÚT
 let QGEN = false;
 
@@ -562,37 +574,66 @@ $('#srcseg').addEventListener('click', (e) => {
 $('#dosearch').addEventListener('click', doSearch);
 $('#sq').addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(); });
 
+// 3 chặng: AI hiểu yêu cầu & soạn truy vấn → máy tìm kiếm thật chạy truy vấn → AI chọn lọc & xếp
+// thứ tự đọc. Đường dẫn LUÔN đến từ máy tìm kiếm, AI chỉ chọn theo số thứ tự (xem search.js).
 async function doSearch() {
   const q = $('#sq').value.trim();
-  if (q.length < 2) return toast('Gõ chủ đề dài hơn chút nha');
-  $('#results').innerHTML = '<div class="searching">' + SPIN + '<br>Đang tìm tài liệu về "' + esc(q) + '"…</div>';
+  if (q.length < 2) return toast('Nói rõ hơn muốn học gì nha');
+  if (SEARCHING) return;
+  SEARCHING = true; $('#dosearch').disabled = true;
+  const say = (t) => { $('#results').innerHTML = '<div class="searching">' + SPIN + '<br>' + esc(t) + '</div>'; };
   try {
-    const r = await apiJson(API.search, { q, lang: picked('#slang') }, 40000);
-    RESULTS = r.results || []; PICKED.clear();
+    say('AI đang hiểu yêu cầu của bạn…');
+    PLAN = await apiJson(API.search, { stage: 'plan', q, lang: picked('#slang') }, 60000);
+
+    say('Đang tìm tài liệu theo ' + PLAN.queries.length + ' hướng: ' + PLAN.queries.map((x) => x.q).join(' · '));
+    const found = await apiJson(API.search, { stage: 'find', queries: PLAN.queries }, 60000);
+    if (!found.results.length) {
+      RESULTS = []; renderResults(q); return;
+    }
+
+    say('AI đang chọn lọc ' + found.results.length + ' kết quả tìm được…');
+    const cur = await apiJson(API.search, { stage: 'curate', q, plan: PLAN, results: found.results }, 90000);
+    RESULTS = cur.picks.map((p) => Object.assign({}, found.results[p.i - 1], { why: p.why, level: p.level, kind: p.kind }));
+    NOTE = cur.note || '';
+    PICKED.clear();
     renderResults(q);
   } catch (e) {
     $('#results').innerHTML = '<div class="empty">' + ic('search') + '<br>Không tìm được: ' + esc((e && e.message) || e) + '</div>';
   }
+  SEARCHING = false; $('#dosearch').disabled = false;
 }
 
-const LANG_LABEL = { vi: 'Tiếng Việt', en: 'Tiếng Anh' };
+function planBox() {
+  if (!PLAN) return '';
+  return '<div class="plan">' +
+    '<b>' + esc(PLAN.topic) + '</b>' + (PLAN.level ? '<span class="lang">' + esc(PLAN.level) + '</span>' : '') +
+    (PLAN.subtopics && PLAN.subtopics.length
+      ? '<div class="steps-learn">' + PLAN.subtopics.map((s, i) => '<span class="sref">' + (i + 1) + '. ' + esc(s) + '</span>').join('') + '</div>' : '') +
+    (NOTE ? '<p class="pnote">' + esc(NOTE) + '</p>' : '') +
+    '</div>';
+}
+
 function renderResults(q) {
   if (!RESULTS.length) {
-    $('#results').innerHTML = '<div class="empty">' + ic('search') + '<br>Không có tài liệu nào khớp "' + esc(q) + '".<br>Thử từ khoá khác hoặc đổi ngôn ngữ nha.</div>';
+    $('#results').innerHTML = planBox() + '<div class="empty">' + ic('search') +
+      '<br>Không tìm được tài liệu nào cho "' + esc(q) + '".<br>Thử nói khác đi hoặc đổi ngôn ngữ nha.</div>';
     return;
   }
-  $('#results').innerHTML =
+  $('#results').innerHTML = planBox() +
     '<div class="addbar"><button class="btn soft" id="addpicked">' + ic('plus') + '<span id="addpicked-label">Thêm vào danh sách</span></button>' +
-    '<span class="muted grow">Chạm để chọn tài liệu muốn đọc.</span></div>' +
-    RESULTS.map((r) => {
+    '<span class="muted grow">Xếp theo thứ tự nên đọc — chạm để chọn.</span></div>' +
+    RESULTS.map((r, i) => {
       const already = SOURCES.some((s) => s.url === r.url);
       return '<div class="res' + (PICKED.has(r.url) ? ' on' : '') + (already ? ' added' : '') + '" data-url="' + esc(r.url) + '">' +
         '<span class="tick">' + ic('check') + '</span>' +
-        '<div class="grow"><div class="rt">' + esc(r.title) + '</div>' +
+        '<div class="grow"><div class="rt"><span class="ord">' + (i + 1) + '</span>' + esc(r.title) + '</div>' +
+        (r.why ? '<div class="rs why">' + esc(r.why) + '</div>' : '') +
         (r.snippet ? '<div class="rs">' + esc(r.snippet) + '</div>' : '') +
-        '<div class="rm"><span class="lang">' + (LANG_LABEL[r.lang] || r.lang) + '</span>' +
-        '<span>' + esc(r.source) + '</span>' +
-        (r.words ? '<span>' + r.words.toLocaleString('vi') + ' từ</span>' : '') +
+        '<div class="rm">' +
+        (r.level ? '<span class="lang">' + esc(r.level) + '</span>' : '') +
+        (r.kind ? '<span class="lang">' + esc(r.kind) + '</span>' : '') +
+        '<span>' + esc(r.site || '') + '</span>' +
         (already ? '<span>· đã thêm rồi</span>' : '') + '</div></div></div>';
     }).join('');
   updateAddBar();
