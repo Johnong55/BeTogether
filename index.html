@@ -421,6 +421,34 @@
   .brand-mark{ width:62px; height:62px; border-radius:20px; margin:0 auto; display:grid; place-items:center; color:#fff;
     background:linear-gradient(135deg,var(--p1),var(--p2)); box-shadow:var(--shadow); }
   .brand-mark .ic{ width:34px; height:34px; }
+
+  /* ===== Màn chào (trước khi đăng nhập) ===== */
+  .land{ text-align:center; padding:calc(26px + env(safe-area-inset-top)) 0 4px; }
+  .land .mark{ width:78px; height:78px; border-radius:25px; margin:0 auto; display:grid; place-items:center; color:#fff;
+    background:linear-gradient(135deg,var(--p1),var(--p2)); border:2px solid var(--edge); box-shadow:4px 4px 0 var(--edge);
+    animation:markFloat 5s var(--ease-soft) infinite; }
+  .land .mark .ic{ width:44px; height:44px; }
+  @keyframes markFloat{ 0%,100%{ transform:translateY(0) rotate(-2deg); } 50%{ transform:translateY(-7px) rotate(2deg); } }
+  .land h1{ font-size:33px; margin:16px 0 0; }
+  .land .tag{ color:var(--soft); font-size:14px; margin-top:7px; line-height:1.55; }
+  .land-feats{ display:flex; gap:7px; justify-content:center; flex-wrap:wrap; margin-top:15px; }
+  .land-feat{ display:inline-flex; align-items:center; gap:6px; background:var(--card); border:2px solid var(--edge);
+    border-radius:999px; padding:6px 12px; font-size:12.5px; font-weight:800; box-shadow:2px 2px 0 var(--edge); }
+  .land-feat .ic{ width:15px; height:15px; color:var(--p1); }
+  /* các khối trồi lên lần lượt khi mở màn */
+  .stagger > *{ animation:rise .5s var(--ease-smooth) both; }
+  .stagger > *:nth-child(1){ animation-delay:.04s; }
+  .stagger > *:nth-child(2){ animation-delay:.12s; }
+  .stagger > *:nth-child(3){ animation-delay:.2s; }
+  .stagger > *:nth-child(4){ animation-delay:.28s; }
+  .stagger > *:nth-child(5){ animation-delay:.36s; }
+  @keyframes rise{ from{ opacity:0; transform:translateY(14px); } to{ opacity:1; transform:none; } }
+
+  /* Tôn trọng cài đặt "giảm chuyển động" của máy — tắt mọi animation/transition trang trí */
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{ animation-duration:.001ms !important; animation-iteration-count:1 !important;
+      transition-duration:.001ms !important; scroll-behavior:auto !important; }
+  }
 </style>
 </head>
 <body>
@@ -1382,11 +1410,17 @@ function nav(pop){ const pend=S.quizzes.filter(q=>q.to_person===S.me&&(q.status=
 
 /* ---------- AUTH ---------- */
 function viewAuth(){ const t=S.authTab;
-  return `<div class="screen">
-    <div class="brand-wrap"><div class="brand-mark">${icHands('lg')}</div>
-      <h1 style="margin:14px 0 2px;font-size:26px">cùng nhau</h1>
-      <p class="muted">học mỗi ngày · giữ chuỗi · không quên nhau</p></div>
-    <div class="seg" style="margin-top:18px">
+  return `<div class="screen stagger">
+    <div class="land"><div class="mark">${icHands('lg')}</div>
+      <h1>cùng nhau</h1>
+      <p class="tag">Góc nhỏ của hai đứa — học từ mỗi ngày,<br>giữ chuỗi và không quên nhau.</p>
+      <div class="land-feats">
+        <span class="land-feat">${ic('cards','sm')} Học từ vựng</span>
+        <span class="land-feat">${ic('swords','sm')} Rủ nhau đấu</span>
+        <span class="land-feat">${ic('flame','sm')} Giữ chuỗi</span>
+      </div>
+    </div>
+    <div class="seg" style="margin-top:20px">
       <button class="${t==='login'?'on':''}" data-act="atab" data-v="login">Đăng nhập</button>
       <button class="${t==='register'?'on':''}" data-act="atab" data-v="register">Tạo tài khoản</button>
     </div>
@@ -1394,7 +1428,8 @@ function viewAuth(){ const t=S.authTab;
       ${ t==='register'?`<label class="fld"><span class="lab">Tên hiển thị</span><input id="a_disp" placeholder="Tên của bạn" autocomplete="off"/></label>`:'' }
       <label class="fld"><span class="lab">Tên đăng nhập</span><input id="a_user" placeholder="vd: may.nguyen" autocapitalize="none" autocomplete="off"/></label>
       <label class="fld"><span class="lab">Mã PIN bí mật</span><input id="a_pin" type="password" placeholder="ít nhất 4 ký tự" autocomplete="off"/></label>
-      <button class="btn block" data-act="${t==='register'?'do-register':'do-login'}" style="margin-top:6px">${t==='register'?'Tạo tài khoản':'Đăng nhập'}</button>
+      <button class="btn block" data-act="${t==='register'?'do-register':'do-login'}" style="margin-top:6px">
+        ${ic(t==='register'?'heart':'lock')} ${t==='register'?'Tạo tài khoản':'Đăng nhập'}</button>
     </div>
     <p class="muted center">${useCloud?'Đồng bộ qua mạng đang bật':'Chế độ thử (lưu trên máy này)'}</p>
   </div>`; }
