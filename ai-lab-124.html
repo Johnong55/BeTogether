@@ -122,6 +122,29 @@
   .srchead{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin:18px 0 9px; }
   .srchead .lbl{ margin:0; }
 
+  /* ── Tìm tài liệu ───────────────────────────────────────────── */
+  .searchbar{ display:flex; gap:8px; align-items:stretch; }
+  .searchbar input{ flex:1; min-width:0; }
+  .searchbar .btn{ flex:none; padding:11px 16px; }
+  .res{ display:flex; gap:10px; align-items:flex-start; padding:11px 12px; border:2px solid var(--edge); border-radius:14px;
+    background:var(--card); box-shadow:2px 2px 0 var(--edge); margin-bottom:9px; cursor:pointer; animation:rise .3s var(--ease-smooth);
+    transition:transform .16s var(--ease-smooth), box-shadow .16s var(--ease-smooth), background .2s var(--ease-smooth); }
+  .res:active{ transform:translate(2px,2px); box-shadow:0 0 0 var(--edge); }
+  .res.on{ background:color-mix(in srgb,var(--p2) 20%, var(--card)); }
+  .res .tick{ width:22px; height:22px; border-radius:7px; border:2px solid var(--edge); flex:none; display:grid; place-items:center;
+    color:#fff; background:var(--card); transition:background .18s var(--ease-smooth); }
+  .res.on .tick{ background:var(--p1); border-color:var(--p1); }
+  .res .tick .ic{ width:13px; height:13px; opacity:0; transition:opacity .18s; }
+  .res.on .tick .ic{ opacity:1; }
+  .res .rt{ font-weight:800; font-size:14.5px; line-height:1.35; }
+  .res .rs{ font-size:12.5px; color:var(--soft); line-height:1.5; margin-top:4px; }
+  .res .rm{ font-size:11.5px; color:var(--soft); font-weight:700; margin-top:6px; display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+  .lang{ background:var(--chip); border:1.5px solid var(--edge); border-radius:999px; padding:1px 8px; font-size:11px; font-weight:800; }
+  .res.added{ opacity:.5; pointer-events:none; }
+  .searching{ text-align:center; padding:24px 12px; color:var(--soft); font-weight:700; font-size:13.5px; }
+  .searching .ic{ color:var(--p1); }
+  .addbar{ display:flex; gap:8px; align-items:center; margin:4px 0 10px; }
+
   /* ── Tiến trình phân tích ───────────────────────────────────── */
   .pg-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:9px; }
   .pg-head b{ font-family:'Fraunces',serif; font-size:18px; }
@@ -292,12 +315,27 @@
   <section class="card rise d1">
     <h2 class="ct"><span data-ic="layers"></span>Nguồn dữ liệu</h2>
     <div class="seg" id="srcseg">
-      <button class="on" data-src="link"><span data-ic="link"></span>Đường dẫn</button>
+      <button class="on" data-src="search"><span data-ic="search"></span>Tìm tài liệu</button>
+      <button data-src="link"><span data-ic="link"></span>Đường dẫn</button>
       <button data-src="paste"><span data-ic="edit"></span>Dán chữ</button>
-      <button data-src="file"><span data-ic="upload"></span>Tệp / ảnh</button>
+      <button data-src="file"><span data-ic="upload"></span>Tệp</button>
     </div>
 
-    <div id="pane-link">
+    <div id="pane-search">
+      <div class="searchbar">
+        <input class="focusq" id="sq" placeholder="Chủ đề muốn học — vd: ngân hàng, lạm phát…">
+        <button class="btn" id="dosearch"><span data-ic="search"></span>Tìm</button>
+      </div>
+      <span class="lbl">Ngôn ngữ tài liệu</span>
+      <div class="chips pick" id="slang">
+        <button class="chip on" data-v="both">Cả hai</button>
+        <button class="chip" data-v="vi">Tiếng Việt</button>
+        <button class="chip" data-v="en">Tiếng Anh</button>
+      </div>
+      <div id="results"></div>
+    </div>
+
+    <div id="pane-link" class="hidden">
       <textarea class="urls" id="urls" placeholder="Dán đường dẫn vào đây — mỗi dòng một cái, bỏ bao nhiêu cũng được:&#10;https://vi.wikipedia.org/wiki/...&#10;https://blog.example.com/bai-viet"></textarea>
       <div class="row" style="margin-top:10px">
         <button class="btn soft" id="addlinks"><span data-ic="plus"></span>Thêm vào danh sách</button>
@@ -332,29 +370,7 @@
     </div>
     <div class="srclist" id="srclist"></div>
 
-    <span class="lbl">Số câu hỏi</span>
-    <div class="chips pick" id="ncount">
-      <button class="chip" data-v="5">5 câu</button>
-      <button class="chip on" data-v="8">8 câu</button>
-      <button class="chip" data-v="12">12 câu</button>
-      <button class="chip" data-v="15">15 câu</button>
-    </div>
-    <span class="lbl">Độ khó</span>
-    <div class="chips pick" id="diff">
-      <button class="chip" data-v="easy">Cơ bản</button>
-      <button class="chip on" data-v="medium">Vừa sức</button>
-      <button class="chip" data-v="hard">Thử thách</button>
-    </div>
-    <span class="lbl">Kiểu câu hỏi</span>
-    <div class="chips pick" id="qtype">
-      <button class="chip on" data-v="mc">Trắc nghiệm</button>
-      <button class="chip" data-v="tf">Đúng – Sai</button>
-      <button class="chip" data-v="mix">Trộn cả hai</button>
-    </div>
-    <span class="lbl">Muốn tập trung phần nào? <span class="plain">(không bắt buộc)</span></span>
-    <input class="focusq" id="focusq" placeholder="vd: so sánh quan điểm giữa các nguồn, hoặc chỉ phần định nghĩa…">
-
-    <div style="margin-top:18px"><button class="btn block" id="go"><span data-ic="play"></span><span id="go-label">Phân tích</span></button></div>
+    <div style="margin-top:18px"><button class="btn block" id="go"><span data-ic="play"></span><span id="go-label">Tóm tắt &amp; phân tích</span></button></div>
   </section>
 
   <!-- Tiến trình -->
@@ -406,22 +422,50 @@
     </div>
   </section>
 
-  <!-- Bộ câu hỏi -->
+  <!-- Bộ câu hỏi — CHỈ tạo khi bấm nút, không tự sinh sau mỗi lần phân tích -->
   <section class="card hidden" id="quizcard">
     <h2 class="ct"><span data-ic="check"></span>Kiểm tra hiểu bài</h2>
-    <div class="quiz-track"><i id="quiz-fill"></i></div>
-    <div class="quiz-count" id="quiz-count"></div>
-    <div id="quiz"></div>
-    <div class="scorebox hidden" id="scorebox">
-      <div class="ring">
-        <svg viewBox="0 0 88 88"><circle class="track" cx="44" cy="44" r="36"/><circle class="val" id="ring-val" cx="44" cy="44" r="36"/></svg>
-        <div class="num" id="ring-num"></div>
+    <div id="quiz-intro">
+      <p class="muted" style="margin-top:6px">Muốn tự kiểm tra thì bấm nút bên dưới — chỉ lúc đó mới gọi AI soạn đề.</p>
+      <span class="lbl">Số câu hỏi</span>
+      <div class="chips pick" id="ncount">
+        <button class="chip" data-v="5">5 câu</button>
+        <button class="chip on" data-v="8">8 câu</button>
+        <button class="chip" data-v="12">12 câu</button>
+        <button class="chip" data-v="15">15 câu</button>
       </div>
-      <div class="scoremsg" id="scoremsg"></div>
+      <span class="lbl">Độ khó</span>
+      <div class="chips pick" id="diff">
+        <button class="chip" data-v="easy">Cơ bản</button>
+        <button class="chip on" data-v="medium">Vừa sức</button>
+        <button class="chip" data-v="hard">Thử thách</button>
+      </div>
+      <span class="lbl">Kiểu câu hỏi</span>
+      <div class="chips pick" id="qtype">
+        <button class="chip on" data-v="mc">Trắc nghiệm</button>
+        <button class="chip" data-v="tf">Đúng – Sai</button>
+        <button class="chip" data-v="mix">Trộn cả hai</button>
+      </div>
+      <span class="lbl">Muốn hỏi tập trung phần nào? <span class="plain">(không bắt buộc)</span></span>
+      <input class="focusq" id="focusq" placeholder="vd: so sánh quan điểm giữa các nguồn, hoặc chỉ phần định nghĩa…">
+      <div style="margin-top:16px"><button class="btn block" id="gen-quiz"><span data-ic="spark"></span><span id="gen-label">Tạo bộ câu hỏi</span></button></div>
     </div>
-    <div class="row hidden" id="quiz-actions" style="justify-content:center; margin-top:12px">
-      <button class="btn soft" id="redo"><span data-ic="refresh"></span>Làm lại tất cả</button>
-      <button class="btn soft hidden" id="redo-wrong"><span data-ic="target"></span>Làm lại câu sai</button>
+    <div id="quiz-body" class="hidden">
+      <div class="quiz-track"><i id="quiz-fill"></i></div>
+      <div class="quiz-count" id="quiz-count"></div>
+      <div id="quiz"></div>
+      <div class="scorebox hidden" id="scorebox">
+        <div class="ring">
+          <svg viewBox="0 0 88 88"><circle class="track" cx="44" cy="44" r="36"/><circle class="val" id="ring-val" cx="44" cy="44" r="36"/></svg>
+          <div class="num" id="ring-num"></div>
+        </div>
+        <div class="scoremsg" id="scoremsg"></div>
+      </div>
+      <div class="row hidden" id="quiz-actions" style="justify-content:center; margin-top:12px">
+        <button class="btn soft" id="redo"><span data-ic="refresh"></span>Làm lại tất cả</button>
+        <button class="btn soft hidden" id="redo-wrong"><span data-ic="target"></span>Làm lại câu sai</button>
+        <button class="btn soft" id="newquiz"><span data-ic="spark"></span>Soạn đề khác</button>
+      </div>
     </div>
   </section>
 
@@ -443,7 +487,7 @@
 <script>
 // ── Cấu hình (khớp với functions/api/lab/*.js) ───────────────────────────────
 const LAB_KEY = 'cn-lab-124-tim';
-const API = { extract: '/api/lab/extract', analyze: '/api/lab/analyze', fetch: '/api/lab/fetch' };
+const API = { extract: '/api/lab/extract', analyze: '/api/lab/analyze', fetch: '/api/lab/fetch', search: '/api/lab/search' };
 const CHUNK = 6000, OVERLAP = 250;
 const MAX_PER_SOURCE = 40000;   // trần ký tự MỖI nguồn (nhiều nguồn nên siết hơn hồi chỉ có 1)
 const MAX_TOTAL = 120000;       // trần ký tự cả mẻ
@@ -480,12 +524,14 @@ const ICONS = {
   share: '<circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="6" r="2.6"/><circle cx="18" cy="18" r="2.6"/><path d="M8.4 10.8 15.6 7.2M8.4 13.2l7.2 3.6"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   dot: '<circle cx="12" cy="12" r="4"/>',
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="M20.5 20.5 16 16"/>',
+  spark: '<path d="M12 3.5l1.8 5 5 1.8-5 1.8L12 17l-1.8-5-5-1.8 5-1.8L12 3.5Z"/>',
 };
 function ic(name, cls) { return '<svg class="ic ' + (cls || '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[name] || '') + '</svg>'; }
 document.querySelectorAll('[data-ic]').forEach((el) => { el.outerHTML = ic(el.dataset.ic); });
 $('#hero-mark').innerHTML = ic('book', 'lg');
 $('#hero-feats').innerHTML =
-  '<span class="feat">' + ic('link') + 'Đọc nhiều đường dẫn</span>' +
+  '<span class="feat">' + ic('search') + 'Tìm tài liệu theo chủ đề</span>' +
   '<span class="feat">' + ic('share') + 'Nối các nguồn lại</span>' +
   '<span class="feat">' + ic('check') + 'Bộ câu hỏi</span>';
 
@@ -493,20 +539,91 @@ $('#hero-feats').innerHTML =
 // SOURCES: mỗi phần tử = {id, kind:'link'|'file'|'paste', label, url?, blob?, isImage?, raw?,
 //                         status:'idle'|'reading'|'ok'|'err', chars, err, parent?, text?, chunks?, summary?}
 let SOURCES = [];
-let PANE = 'link';
+let PANE = 'search';
 let QUIZ = null;
 let BUSY = false;
 let LAST = null;
 let FC = { list: [], i: 0 };
 let uid = 0;
+let RESULTS = [];            // kết quả tìm tài liệu đang hiện
+let PICKED = new Set();      // url đang chọn trong danh sách kết quả
+let ANALYSIS = null;         // ngữ cảnh sau khi phân tích, để soạn đề LÚC NGƯỜI DÙNG BẤM NÚT
+let QGEN = false;
 
 // ── Chọn kiểu nguồn đang thêm ───────────────────────────────────────────────
 $('#srcseg').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-src]'); if (!b) return;
   PANE = b.dataset.src;
   document.querySelectorAll('#srcseg button').forEach((x) => x.classList.toggle('on', x === b));
-  ['link', 'paste', 'file'].forEach((p) => $('#pane-' + p).classList.toggle('hidden', PANE !== p));
+  ['search', 'link', 'paste', 'file'].forEach((p) => $('#pane-' + p).classList.toggle('hidden', PANE !== p));
 });
+
+// ── Tìm tài liệu theo chủ đề → chọn → thêm vào danh sách nguồn ───────────────
+$('#dosearch').addEventListener('click', doSearch);
+$('#sq').addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(); });
+
+async function doSearch() {
+  const q = $('#sq').value.trim();
+  if (q.length < 2) return toast('Gõ chủ đề dài hơn chút nha');
+  $('#results').innerHTML = '<div class="searching">' + SPIN + '<br>Đang tìm tài liệu về "' + esc(q) + '"…</div>';
+  try {
+    const r = await apiJson(API.search, { q, lang: picked('#slang') }, 40000);
+    RESULTS = r.results || []; PICKED.clear();
+    renderResults(q);
+  } catch (e) {
+    $('#results').innerHTML = '<div class="empty">' + ic('search') + '<br>Không tìm được: ' + esc((e && e.message) || e) + '</div>';
+  }
+}
+
+const LANG_LABEL = { vi: 'Tiếng Việt', en: 'Tiếng Anh' };
+function renderResults(q) {
+  if (!RESULTS.length) {
+    $('#results').innerHTML = '<div class="empty">' + ic('search') + '<br>Không có tài liệu nào khớp "' + esc(q) + '".<br>Thử từ khoá khác hoặc đổi ngôn ngữ nha.</div>';
+    return;
+  }
+  $('#results').innerHTML =
+    '<div class="addbar"><button class="btn soft" id="addpicked">' + ic('plus') + '<span id="addpicked-label">Thêm vào danh sách</span></button>' +
+    '<span class="muted grow">Chạm để chọn tài liệu muốn đọc.</span></div>' +
+    RESULTS.map((r) => {
+      const already = SOURCES.some((s) => s.url === r.url);
+      return '<div class="res' + (PICKED.has(r.url) ? ' on' : '') + (already ? ' added' : '') + '" data-url="' + esc(r.url) + '">' +
+        '<span class="tick">' + ic('check') + '</span>' +
+        '<div class="grow"><div class="rt">' + esc(r.title) + '</div>' +
+        (r.snippet ? '<div class="rs">' + esc(r.snippet) + '</div>' : '') +
+        '<div class="rm"><span class="lang">' + (LANG_LABEL[r.lang] || r.lang) + '</span>' +
+        '<span>' + esc(r.source) + '</span>' +
+        (r.words ? '<span>' + r.words.toLocaleString('vi') + ' từ</span>' : '') +
+        (already ? '<span>· đã thêm rồi</span>' : '') + '</div></div></div>';
+    }).join('');
+  updateAddBar();
+}
+
+function updateAddBar() {
+  const el = $('#addpicked-label'); if (!el) return;
+  el.textContent = PICKED.size ? 'Thêm ' + PICKED.size + ' tài liệu đã chọn' : 'Thêm vào danh sách';
+}
+
+$('#results').addEventListener('click', (e) => {
+  if (e.target.closest('#addpicked')) return addPicked();
+  const row = e.target.closest('.res'); if (!row) return;
+  const url = row.dataset.url;
+  if (PICKED.has(url)) PICKED.delete(url); else PICKED.add(url);
+  row.classList.toggle('on', PICKED.has(url));
+  updateAddBar();
+});
+
+function addPicked() {
+  if (!PICKED.size) return toast('Chạm chọn vài tài liệu trước đã nha');
+  let added = 0;
+  for (const url of PICKED) {
+    if (SOURCES.some((s) => s.url === url)) continue;
+    const r = RESULTS.find((x) => x.url === url);
+    if (addSource({ kind: 'link', url, label: (r && r.title) || prettyUrl(url) })) added++;
+  }
+  PICKED.clear();
+  renderResults($('#sq').value.trim());
+  toast(added ? 'Đã thêm ' + added + ' tài liệu vào danh sách nguồn' : 'Các tài liệu này đã có trong danh sách rồi');
+}
 
 $('#txt').addEventListener('input', () => {
   const n = $('#txt').value.trim().length;
@@ -707,30 +824,26 @@ async function run() {
     renderSynthesis(synthesis, usable);
     renderPerSource(usable);
 
-    // 5) Ra đề trên TOÀN BỘ các nguồn
-    step('quiz', 'run');
-    const count = parseInt(picked('#ncount'), 10) || 8;
-    const summaryTxt = overall.tldr + '\n' + overall.points.map((p) => '- ' + p).join('\n') +
-      (usable.length > 1 ? '\n\nTóm tắt riêng từng nguồn:\n' + usable.map((s, i) => 'Nguồn ' + (i + 1) + ' (' + s.label + '): ' + s.summary.tldr).join('\n') : '');
-    const r = await analyze({
-      task: 'questions', summary: summaryTxt, excerpts: excerptsOfAll(usable), count,
-      difficulty: picked('#diff') || 'medium', qtype: picked('#qtype') || 'mc', focus: $('#focusq').value.trim().slice(0, 300),
-    });
-    step('quiz', 'ok', r.questions.length + ' câu'); phase('quiz', 1);
-    renderQuiz(r.questions);
+    // 5) Giữ ngữ cảnh để soạn đề SAU — chỉ khi người dùng bấm nút (ra đề tốn token, đừng tự chạy)
+    ANALYSIS = {
+      summaryTxt: overall.tldr + '\n' + overall.points.map((p) => '- ' + p).join('\n') +
+        (usable.length > 1 ? '\n\nTóm tắt riêng từng nguồn:\n' + usable.map((s, i) => 'Nguồn ' + (i + 1) + ' (' + s.label + '): ' + s.summary.tldr).join('\n') : ''),
+      excerpts: excerptsOfAll(usable),
+    };
+    resetQuizCard();
     setTimeout(() => $('#pipe').classList.add('hidden'), 800);
     $('#sumcard').scrollIntoView({ behavior: 'smooth' });
 
-    // 6) Lưu lại để so sánh & đánh giá
+    // 6) Lưu lại để so sánh & đánh giá (bộ câu hỏi điền sau nếu người dùng bấm tạo)
     LAST = {
       id: (crypto.randomUUID ? crypto.randomUUID() : 'r' + Date.now() + Math.random().toString(36).slice(2)),
       source: usable.length > 1 ? 'multi' : usable[0].kind,
       file_name: usable.length > 1 ? usable.length + ' nguồn' : usable[0].label.slice(0, 120),
       char_count: total, chunks: totalChunks,
-      model: shortModel(overall.model), model_q: shortModel(r.model),
+      model: shortModel(overall.model), model_q: null,
       input_excerpt: usable.map((s, i) => '[' + (i + 1) + '] ' + s.label + '\n' + s.text.slice(0, 800)).join('\n\n').slice(0, 3000),
       tldr: overall.tldr, points: overall.points, terms: overall.terms || [],
-      questions: r.questions, ms: Date.now() - t0,
+      questions: [], ms: Date.now() - t0,
       sources: usable.map((s) => ({ kind: s.kind, label: s.label, url: s.url || null, chars: s.chars, tldr: s.summary.tldr, points: s.summary.points })),
       synthesis: synthesis ? { themes: synthesis.themes || [], connections: synthesis.connections || [] } : null,
     };
@@ -739,8 +852,50 @@ async function run() {
     stepFailRunning();
     toast('Ơ, có lỗi rồi: ' + ((e && e.message) || e) + ' — thử lại nha!');
   }
-  BUSY = false; $('#go').disabled = false; $('#go-label').textContent = 'Phân tích';
+  BUSY = false; $('#go').disabled = false; $('#go-label').textContent = 'Tóm tắt & phân tích';
   renderSources();
+}
+
+// ── Soạn đề — CHỈ chạy khi bấm nút (mỗi lần gọi là một lượt AI, đừng tự động) ─
+function resetQuizCard() {
+  QUIZ = null;
+  $('#quiz-intro').classList.remove('hidden');
+  $('#quiz-body').classList.add('hidden');
+  $('#quizcard').classList.remove('hidden'); $('#quizcard').classList.add('reveal');
+}
+
+$('#gen-quiz').addEventListener('click', generateQuestions);
+$('#newquiz').addEventListener('click', generateQuestions);
+
+async function generateQuestions() {
+  if (!ANALYSIS) return toast('Phân tích tài liệu trước đã nha');
+  if (QGEN) return;
+  QGEN = true;
+  const btns = [$('#gen-quiz'), $('#newquiz')];
+  btns.forEach((b) => { b.disabled = true; });
+  $('#gen-label').textContent = 'Đang soạn đề…';
+  try {
+    const r = await analyze({
+      task: 'questions', summary: ANALYSIS.summaryTxt, excerpts: ANALYSIS.excerpts,
+      count: parseInt(picked('#ncount'), 10) || 8,
+      difficulty: picked('#diff') || 'medium', qtype: picked('#qtype') || 'mc',
+      focus: $('#focusq').value.trim().slice(0, 300),
+    });
+    $('#quiz-intro').classList.add('hidden');
+    $('#quiz-body').classList.remove('hidden');
+    renderQuiz(r.questions);
+    $('#quizcard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // vá bộ câu hỏi vào đúng lần chạy đã lưu (lưu lúc phân tích xong, khi đó chưa có đề)
+    if (LAST) {
+      LAST.questions = r.questions; LAST.model_q = shortModel(r.model);
+      updateRun(LAST.id, { questions: r.questions, model_q: LAST.model_q });
+    }
+  } catch (e) {
+    toast('Chưa soạn được đề: ' + ((e && e.message) || e));
+  }
+  QGEN = false;
+  btns.forEach((b) => { b.disabled = false; });
+  $('#gen-label').textContent = 'Tạo bộ câu hỏi';
 }
 
 // Lấy chữ của một nguồn (đường dẫn / tệp / chữ dán)
@@ -848,14 +1003,14 @@ function apiJson(path, body, ms) {
 function analyze(body) { return apiJson(API.analyze, body, 120000); }
 
 // ── Tiến trình ──────────────────────────────────────────────────────────────
+// Soạn đề KHÔNG nằm trong luồng này nữa — nó là một nút riêng, chỉ chạy khi người dùng bấm.
 const STEP_DEFS = [
   ['read', 'Đọc các nguồn', 'tải trang web / trích chữ từ tệp'],
   ['clean', 'Làm sạch & chia đoạn', 'bỏ ký tự thừa, cắt thành phần vừa sức'],
   ['map', 'Đọc kỹ từng nguồn', 'tóm tắt riêng từng nguồn một'],
   ['reduce', 'Nối các nguồn lại', 'tìm chủ đề chung và mối liên hệ giữa chúng'],
-  ['quiz', 'Soạn bộ câu hỏi', 'ra đề trên toàn bộ các nguồn'],
 ];
-const PHASES = { read: [0, .3], clean: [.3, .35], map: [.35, .72], reduce: [.72, .85], quiz: [.85, 1] };
+const PHASES = { read: [0, .35], clean: [.35, .42], map: [.42, .86], reduce: [.86, 1] };
 function phase(id, frac) { const [a, b] = PHASES[id]; setProgress(a + (b - a) * Math.max(0, Math.min(1, frac))); }
 function setProgress(p) {
   $('#pg-fill').style.width = Math.round(p * 100) + '%';
@@ -1094,6 +1249,13 @@ async function saveRun(rec) {
   }
 }
 
+// Vá thêm dữ liệu vào lần chạy đã lưu (dùng khi soạn đề sau lúc phân tích)
+async function updateRun(id, patch) {
+  if (!SB || !id) return;
+  try { await SB.from('lab_runs').update(patch).eq('id', id); loadHistory(); }
+  catch (e) { /* không lưu được đề thì thôi, đề vẫn hiện trên màn hình */ }
+}
+
 const COLS_FULL = 'id,created_at,source,file_name,char_count,chunks,model,model_q,tldr,questions,rating,note,ms,sources,synthesis';
 const COLS_LITE = 'id,created_at,source,file_name,char_count,chunks,model,model_q,tldr,questions,rating,note,ms';
 let HIST_COLS = COLS_FULL;
@@ -1133,7 +1295,7 @@ function renderHistory(rows) {
         '<span class="badge' + (ns > 1 ? ' multi' : '') + '">' + (ns > 1 ? ns + ' nguồn' : (SRC_LABEL[r.source] || r.source || '?')) + '</span>' +
         (r.file_name && ns <= 1 ? '<span class="badge">' + esc(r.file_name) + '</span>' : '') +
         '<span class="badge model">' + esc(r.model || '?') + (r.model_q && r.model_q !== r.model ? ' / ' + esc(r.model_q) : '') + '</span>' +
-        '<span class="badge">' + (r.char_count || 0).toLocaleString('vi') + ' ký tự · ' + nq + ' câu' + (nc ? ' · ' + nc + ' liên hệ' : '') + '</span>' +
+        '<span class="badge">' + (r.char_count || 0).toLocaleString('vi') + ' ký tự · ' + (nq ? nq + ' câu' : 'chưa tạo đề') + (nc ? ' · ' + nc + ' liên hệ' : '') + '</span>' +
         '<span>' + when + '</span>' +
       '</div>' +
       '<div class="htldr">' + esc(r.tldr || '') + '</div>' +
@@ -1198,7 +1360,8 @@ function openRun(id) {
     '<button class="btn soft" data-close="1">' + ic('x', 'sm') + 'Đóng</button></div>' +
     '<p class="muted" style="margin:8px 0 12px">' + esc(r.model || '?') + (r.model_q && r.model_q !== r.model ? ' (câu hỏi: ' + esc(r.model_q) + ')' : '') + ' · ' + (r.char_count || 0).toLocaleString('vi') + ' ký tự · ' + Math.round((r.ms || 0) / 100) / 10 + 's</p>' +
     '<div class="tldr" style="margin-top:0">' + esc(r.tldr || '') + '</div>' + srcHtml + connHtml +
-    '<h2 class="ct" style="margin:16px 0 10px; font-size:16px">' + ic('check') + 'Bộ câu hỏi (' + (Array.isArray(r.questions) ? r.questions.length : 0) + ')</h2>' + qs;
+    '<h2 class="ct" style="margin:16px 0 10px; font-size:16px">' + ic('check') + 'Bộ câu hỏi (' + (Array.isArray(r.questions) ? r.questions.length : 0) + ')</h2>' +
+    (qs || '<p class="muted">Lần này chưa tạo bộ câu hỏi.</p>');
   $('#overlay').classList.add('show');
 }
 $('#overlay').addEventListener('click', (e) => { if (e.target.id === 'overlay' || e.target.closest('[data-close]')) $('#overlay').classList.remove('show'); });
