@@ -444,6 +444,175 @@
   .stagger > *:nth-child(5){ animation-delay:.36s; }
   @keyframes rise{ from{ opacity:0; transform:translateY(14px); } to{ opacity:1; transform:none; } }
 
+  /* ===================== LỊCH SONG SONG (tab Lịch) ===================== */
+  /* thanh chọn khu: Lịch ngày · Thói quen · Nhắc */
+  .seg{ display:flex; gap:5px; background:var(--chip); border:2px solid var(--edge); border-radius:15px;
+    padding:4px; margin:10px 0 14px; box-shadow:2px 2px 0 var(--edge); }
+  .seg-b{ flex:1; position:relative; border:none; background:none; font:inherit; font-weight:800; font-size:12.5px;
+    color:var(--soft); padding:9px 2px; border-radius:11px; cursor:pointer; transition:.22s var(--ease-smooth); white-space:nowrap; }
+  .seg-b.on{ background:var(--card); color:var(--p1); box-shadow:0 2px 7px rgba(120,80,90,.14); }
+  .seg-b:active{ transform:scale(.97); }
+  .seg-dot{ position:absolute; top:1px; right:5px; background:var(--no); color:#fff; font-size:9.5px; font-style:normal;
+    font-weight:800; min-width:15px; height:15px; border-radius:9px; display:grid; place-items:center; padding:0 3px; }
+
+  /* dải 7 ngày để nhảy nhanh */
+  .sch-strip{ display:flex; gap:6px; overflow-x:auto; padding:2px 2px 10px; scrollbar-width:none; }
+  .sch-strip::-webkit-scrollbar{ display:none; }
+  .sch-d{ flex:none; width:47px; text-align:center; padding:6px 0 7px; border-radius:14px; border:2px solid var(--edge);
+    background:var(--card); box-shadow:2px 2px 0 var(--edge); cursor:pointer; transition:.18s var(--ease-smooth); }
+  .sch-d:active{ transform:translate(2px,2px); box-shadow:0 0 0 var(--edge); }
+  .sch-d span{ display:block; font-size:10px; color:var(--soft); font-weight:800; letter-spacing:.02em; }
+  .sch-d b{ font-size:16px; font-weight:800; }
+  .sch-d.on{ background:linear-gradient(135deg,var(--p1),var(--p2)); color:#fff; }
+  .sch-d.on span{ color:rgba(255,255,255,.88); }
+  .sch-d i{ display:block; width:5px; height:5px; border-radius:9px; background:var(--p2); margin:3px auto 0; opacity:0; }
+  .sch-d.busy i{ opacity:1; }
+  .sch-d.on i{ background:#fff; }
+
+  /* đầu bảng: avatar hai đứa */
+  .tl-head{ display:grid; grid-template-columns:1fr 56px 1fr; align-items:center; gap:4px; margin:2px 0 9px; }
+  .tl-who{ display:flex; align-items:center; gap:7px; font-weight:800; font-size:13.5px; min-width:0; }
+  .tl-who span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .tl-who.r{ flex-direction:row-reverse; }
+  .tl-mid{ text-align:center; font-size:10.5px; color:var(--soft); font-weight:800; }
+
+  .tl{ position:relative; background:var(--card); border:2px solid var(--edge); border-radius:20px;
+    box-shadow:4px 4px 0 var(--edge); padding:12px 9px 14px;
+    -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+  .tl-col.mine{ cursor:crosshair; }
+  /* lịch cao đủ 24h nên cuộn TRONG KHUNG, không kéo dài cả trang */
+  .tl-wrap{ position:relative; }
+  .tl-scroll{ max-height:62vh; overflow-y:auto; overscroll-behavior:contain; border-radius:12px;
+    scrollbar-width:none; -ms-overflow-style:none; }
+  .tl-scroll::-webkit-scrollbar{ width:0; height:0; display:none; }
+  /* thay thanh cuộn bằng vệt mờ ở mép — vẫn gợi ý "còn nữa" mà không thô */
+  .tl-fade{ position:absolute; left:0; right:0; height:18px; pointer-events:none; z-index:7; }
+  .tl-fade.t{ top:0;    background:linear-gradient(var(--card), rgba(255,255,255,0)); }
+  .tl-fade.b{ bottom:0; background:linear-gradient(rgba(255,255,255,0), var(--card)); }
+  /* lời nhắc của ngày đang xem — hiện thành chip trên đầu lịch (kể cả nhắc không hẹn giờ) */
+  .sch-notes{ display:flex; flex-wrap:wrap; gap:6px; margin:0 0 10px; }
+  .sch-nchip{ border:2px solid var(--edge); background:var(--card); border-radius:99px; padding:5px 11px; font:inherit;
+    font-size:11.5px; font-weight:700; cursor:pointer; box-shadow:2px 2px 0 var(--edge); max-width:100%;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; transition:.16s var(--ease-smooth); }
+  .sch-nchip:active{ transform:translate(2px,2px); box-shadow:0 0 0 var(--edge); }
+  /* lịch tháng */
+  .mon{ background:var(--card); border:2px solid var(--edge); border-radius:20px; box-shadow:4px 4px 0 var(--edge); padding:12px 10px 14px; }
+  .mon-head{ display:flex; align-items:center; gap:8px; margin:0 0 10px; }
+  .mon-head b{ flex:1; text-align:center; font-size:15.5px; font-family:'Fraunces',serif; }
+  .mon-dow{ display:grid; grid-template-columns:repeat(7,1fr); text-align:center; font-size:10px; color:var(--soft); font-weight:800; margin-bottom:5px; }
+  .mon-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+  .mon-c{ position:relative; aspect-ratio:.82; border:2px solid transparent; border-radius:12px; display:flex; flex-direction:column;
+    align-items:center; padding-top:4px; cursor:pointer; transition:transform .15s var(--ease-smooth); }
+  .mon-c:active{ transform:scale(.9); }
+  .mon-c b{ font-size:13.5px; font-weight:800; line-height:1.05; }
+  /* ngày âm lịch dd/mm — chữ nhỏ ngay dưới ngày dương */
+  .mon-c .lu{ font-size:8.5px; font-style:normal; font-weight:800; color:var(--soft); line-height:1.15; margin-top:1px; }
+  .mon-c .lu.m1{ color:var(--accent); }        /* mùng 1 âm lịch cho dễ nhận ra đầu tháng */
+  .mon-c.sel .lu, .mon-c.sel .lu.m1{ color:rgba(255,255,255,.9); }
+  .mon-c.out{ visibility:hidden; pointer-events:none; }
+  .mon-c.today{ border-color:var(--p2); background:color-mix(in srgb,var(--p1) 9%, transparent); }
+  .mon-c.sel{ background:linear-gradient(135deg,var(--p1),var(--p2)); border-color:var(--edge); box-shadow:2px 2px 0 var(--edge); }
+  .mon-c.sel b, .mon-c.sel .bell{ color:#fff; }
+  .mon-dots{ display:flex; gap:3px; margin-top:2px; min-height:5px; }
+  .mon-dots i{ width:5px; height:5px; border-radius:99px; }
+  .mon-dots .da{ background:var(--p1); } .mon-dots .db{ background:var(--accent); }
+  .mon-c.sel .mon-dots i{ background:#fff; }
+  .mon-c .bell{ position:absolute; top:1px; right:2px; font-size:8px; line-height:1; }
+  .tl-body{ position:relative; display:grid; grid-template-columns:1fr 56px 1fr; }
+  .tl-layer{ position:absolute; inset:0; pointer-events:none; }
+  .tl-col{ position:relative; z-index:1; }
+  .tl-gut{ position:relative; z-index:3; }
+  /* vạch giờ + số giờ ở giữa */
+  .tl-h{ position:absolute; left:0; right:0; border-top:1px dashed var(--line); }
+  .tl-h b{ position:absolute; left:50%; top:0; transform:translate(-50%,-52%); background:var(--card);
+    padding:0 5px; font-size:10px; color:var(--soft); font-weight:800; }
+
+  /* khoảng CẢ HAI CÙNG RẢNH */
+  .tl-free{ position:absolute; left:0; right:0; display:grid; justify-items:center; align-content:start;
+    padding-top:3px; overflow:hidden; border-radius:10px;
+    background:repeating-linear-gradient(-45deg, color-mix(in srgb,var(--p1) 13%, transparent) 0 7px, transparent 7px 15px);
+    border-top:1.5px dashed var(--p2); border-bottom:1.5px dashed var(--p2); }
+  .tl-free b{ font-size:11px; font-weight:800; color:var(--p1); background:var(--card); border-radius:99px;
+    padding:3px 10px; border:1.5px solid var(--p2); white-space:nowrap; animation:freepulse 2.8s ease-in-out infinite; }
+  @keyframes freepulse{ 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.06);} }
+
+  /* vạch "bây giờ" */
+  .tl-now{ position:absolute; left:0; right:0; border-top:2px solid var(--no); z-index:2; }
+  .tl-now b{ position:absolute; right:0; top:-9px; font-size:9px; font-weight:800; color:#fff; background:var(--no);
+    padding:1px 7px; border-radius:99px; }
+  .tl-now i{ position:absolute; left:-2px; top:-4px; width:7px; height:7px; border-radius:9px; background:var(--no);
+    animation:nowpulse 2s ease-out infinite; }
+  @keyframes nowpulse{ 0%{ box-shadow:0 0 0 0 color-mix(in srgb,var(--no) 55%, transparent);} 100%{ box-shadow:0 0 0 11px transparent;} }
+
+  /* một việc trên lịch */
+  .tl-blk{ position:absolute; left:2px; right:2px; background:var(--c); border:2px solid var(--edge); border-radius:13px;
+    box-shadow:2px 2px 0 var(--edge); padding:5px 8px; overflow:hidden; cursor:pointer; z-index:2;
+    animation:blkin .42s var(--ease-smooth) both; animation-delay:calc(var(--i) * .05s);
+    transition:transform .16s var(--ease-smooth), box-shadow .16s var(--ease-smooth); }
+  .tl-blk:active{ transform:translate(2px,2px); box-shadow:0 0 0 var(--edge); }
+  .tl-blk b{ display:block; font-size:12.5px; font-weight:800; line-height:1.25; }
+  .tl-blk em{ display:block; font-size:10px; color:var(--soft); font-weight:800; font-style:normal; margin-top:1px; }
+  .tl-blk.short{ padding:0 8px; display:flex; align-items:center; gap:5px; }
+  .tl-blk.short b{ font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tl-blk.short em{ margin:0 0 0 auto; font-size:9.5px; }
+  .tl-blk.both{ box-shadow:2px 2px 0 var(--p1); }
+  .tl-blk.done{ opacity:.5; }
+  .tl-blk.done b{ text-decoration:line-through; }
+  @keyframes blkin{ from{ opacity:0; transform:translateY(9px) scale(.96);} to{ opacity:1; transform:none;} }
+
+  /* nét tim nối hai việc trùng giờ */
+  .tl-link{ position:absolute; left:50%; top:0; transform:translate(-50%,-50%); font-size:15px; z-index:4;
+    animation:linkpop .55s var(--ease-smooth) both, tlfloat 3.2s ease-in-out infinite .55s; }
+  @keyframes linkpop{ from{ opacity:0; transform:translate(-50%,-50%) scale(.3);} to{ opacity:1; transform:translate(-50%,-50%) scale(1);} }
+  @keyframes tlfloat{ 0%,100%{ transform:translate(-50%,-50%) scale(1);} 50%{ transform:translate(-50%,-58%) scale(1.12);} }
+  /* lời nhắc ghim vào đúng giờ */
+  .tl-pin{ position:absolute; left:50%; top:0; transform:translate(-50%,-50%); width:28px; height:28px; border-radius:10px;
+    display:grid; place-items:center; background:var(--card); border:2px solid var(--edge); box-shadow:2px 2px 0 var(--edge);
+    font-size:13px; cursor:pointer; z-index:5; animation:blkin .4s var(--ease-smooth) both; }
+  .tl-pin:active{ transform:translate(-46%,-46%); box-shadow:0 0 0 var(--edge); }
+
+  /* ô đang kéo để tạo việc mới */
+  .tl-ghost{ position:absolute; left:2px; right:2px; border:2px dashed var(--p1); border-radius:13px; z-index:6;
+    background:color-mix(in srgb,var(--p1) 14%, transparent); display:grid; place-items:center; text-align:center;
+    pointer-events:none; overflow:hidden; }
+  .tl-ghost b{ display:block; font-size:12.5px; color:var(--p1); font-weight:800; }
+  .tl-ghost em{ display:block; font-size:9.5px; color:var(--p1); opacity:.85; font-style:normal; }
+  .tl-body.dragging{ touch-action:none; }
+  .tl-body.dragging .tl-col.mine{ background:color-mix(in srgb,var(--p1) 5%, transparent); border-radius:12px; }
+
+  /* gợi ý cách thêm việc khi cột còn trống */
+  .tl-hint{ position:absolute; left:4px; right:4px; top:34%; text-align:center; font-size:11px; color:var(--soft);
+    font-weight:800; line-height:1.55; pointer-events:none; z-index:1; }
+  .tl-hint u{ display:block; font-size:24px; text-decoration:none; animation:hintdrag 2.6s ease-in-out infinite; }
+  @keyframes hintdrag{ 0%,100%{ transform:translateY(-8px); opacity:.35;} 18%{ opacity:1;} 62%{ transform:translateY(20px); opacity:1;} 82%{ opacity:.4;} }
+
+  /* dòng việc ở khu "Thói quen" */
+  .rt-row{ display:flex; align-items:center; gap:10px; padding:9px 12px; background:var(--card); border:2px solid var(--edge);
+    border-radius:15px; box-shadow:2px 2px 0 var(--edge); margin-bottom:8px; cursor:pointer;
+    transition:transform .16s var(--ease-smooth), box-shadow .16s var(--ease-smooth); }
+  .rt-row:active{ transform:translate(2px,2px); box-shadow:0 0 0 var(--edge); }
+  .rt-row .em{ width:36px; height:36px; flex:none; border-radius:12px; display:grid; place-items:center; font-size:18px;
+    border:2px solid var(--edge); background:var(--c,var(--chip)); }
+  .rt-row .tx{ flex:1; min-width:0; }
+  .rt-row .tx b{ display:block; font-size:14px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .rt-row .tx span{ font-size:11.5px; color:var(--soft); font-weight:700; }
+
+  /* chip gợi ý việc + chọn thứ trong tuần (trong popup) */
+  .sug{ display:flex; flex-wrap:wrap; gap:7px; margin:7px 0 4px; }
+  .sug button{ border:2px solid var(--edge); background:var(--card); border-radius:99px; padding:6px 12px; font:inherit;
+    font-size:12.5px; font-weight:700; cursor:pointer; box-shadow:2px 2px 0 var(--edge); transition:.16s var(--ease-smooth); }
+  .sug button:active{ transform:translate(2px,2px); box-shadow:0 0 0 var(--edge); }
+  .dow{ display:flex; gap:5px; margin:6px 0 2px; }
+  .dow button{ flex:1; border:2px solid var(--edge); background:var(--card); border-radius:11px; padding:8px 0; font:inherit;
+    font-size:11.5px; font-weight:800; cursor:pointer; color:var(--soft); box-shadow:2px 2px 0 var(--edge); transition:.16s var(--ease-smooth); }
+  .dow button.on{ background:linear-gradient(135deg,var(--p1),var(--p2)); color:#fff; }
+  .dow button:active{ transform:translate(2px,2px); box-shadow:0 0 0 var(--edge); }
+  .pickrow{ display:flex; gap:7px; }
+  .pickrow button{ flex:1; border:2px solid var(--edge); background:var(--card); border-radius:12px; padding:9px 4px; font:inherit;
+    font-size:12.5px; font-weight:800; cursor:pointer; color:var(--soft); box-shadow:2px 2px 0 var(--edge); transition:.16s var(--ease-smooth); }
+  .pickrow button.on{ background:linear-gradient(135deg,var(--p1),var(--p2)); color:#fff; }
+  .pickrow button:active{ transform:translate(2px,2px); box-shadow:0 0 0 var(--edge); }
+
   /* Tôn trọng cài đặt "giảm chuyển động" của máy — tắt mọi animation/transition trang trí */
   @media (prefers-reduced-motion:reduce){
     *,*::before,*::after{ animation-duration:.001ms !important; animation-iteration-count:1 !important;
@@ -899,7 +1068,7 @@ const L = {
   saveUsers(u){ localStorage.setItem('loveapp_users', JSON.stringify(u)); },
   invites(){ try{ return JSON.parse(localStorage.getItem('loveapp_invites')||'[]'); }catch(e){ return []; } },
   saveInvites(a){ localStorage.setItem('loveapp_invites', JSON.stringify(a)); },
-  ensure(id){ const db=this.db(); if(!db[id]) db[id]={space:null,decks:[],cards:[],quizzes:[],daily:[],notes:[],duels:[]}; if(!db[id].duels) db[id].duels=[]; this.save(db); return db; },
+  ensure(id){ const db=this.db(); if(!db[id]) db[id]={space:null,decks:[],cards:[],quizzes:[],daily:[],notes:[],duels:[],routines:[]}; if(!db[id].duels) db[id].duels=[]; if(!db[id].routines) db[id].routines=[]; this.save(db); return db; },
   sp(id){ return this.db()[id]||null; },
 };
 
@@ -958,6 +1127,14 @@ const Store = {
     const db=L.ensure(n.space_id); const a=db[n.space_id].notes; const i=a.findIndex(x=>x.id===n.id); if(i>=0)a[i]=n; else a.push(n); L.save(db); },
   async deleteNote(sid,id){ if(useCloud){ await sb.from('notes').delete().eq('id',id); return; }
     const db=L.ensure(sid); db[sid].notes=db[sid].notes.filter(x=>x.id!==id); L.save(db); },
+  /* routines (lịch sinh hoạt song song) */
+  async listRoutines(sid){ if(useCloud){ const {data,error}=await sb.from('routines').select('*').eq('space_id',sid).order('start_min'); if(error) throw error; return data||[]; }
+    return ((L.sp(sid)||{}).routines||[]).slice().sort((a,b)=>(a.start_min||0)-(b.start_min||0)); },
+  async saveRoutine(r){ if(useCloud){ const {error}=await sb.from('routines').upsert(r); if(error) throw error; return; }
+    const db=L.ensure(r.space_id); db[r.space_id].routines=db[r.space_id].routines||[];
+    const a=db[r.space_id].routines; const i=a.findIndex(x=>x.id===r.id); if(i>=0)a[i]=r; else a.push(r); L.save(db); },
+  async deleteRoutine(sid,id){ if(useCloud){ await sb.from('routines').delete().eq('id',id); return; }
+    const db=L.ensure(sid); db[sid].routines=(db[sid].routines||[]).filter(x=>x.id!==id); L.save(db); },
   /* push subscriptions (thông báo đẩy) */
   async savePushSub(s){ if(useCloud){ const {error}=await sb.from('push_subscriptions').upsert(s,{onConflict:'endpoint'}); if(error) throw error; return; }
     const db=L.ensure(s.space_id); db[s.space_id].pushSubs=db[s.space_id].pushSubs||[];
@@ -989,7 +1166,7 @@ const Store = {
 
 /* ===================== STATE ===================== */
 const S = { user:null, space:null, me:null, view:'auth', sub:null,
-  decks:[], cards:[], quizzes:[], notes:[], dailyToday:null, dailyHistory:null, invites:[],
+  decks:[], cards:[], quizzes:[], notes:[], routines:[], dailyToday:null, dailyHistory:null, invites:[],
   duel:null, duelPlay:null, duelHistory:[],
   play:null, compose:null, inboxTab:'in', authTab:'login', tmp:{} };
 function duelSeenIds(){ try{ return JSON.parse(localStorage.getItem('loveapp_duel_seen')||'[]'); }catch(e){ return []; } }
@@ -1195,9 +1372,15 @@ window.addEventListener('popstate', ()=>{
   _backExitAt=now; armBack(); toast('Bấm lần nữa để thoát');
 });
 
+/* Bảng `routines` là bảng MỚI — người dùng phải tự chạy SQL trong Supabase. Chưa chạy thì KHÔNG được
+   để cả loadAll() ném lỗi (sẽ chết luôn màn Nhà), nên nuốt lỗi ở đây và bật cờ để tab Lịch hiện hướng dẫn. */
+let routinesMissing=false;
+async function loadRoutines(sid){ try{ const r=await Store.listRoutines(sid); routinesMissing=false; return r; }
+  catch(e){ routinesMissing=true; return S.routines||[]; } }
+
 async function loadAll(){ if(!S.space) return; const sid=S.space.id;
-  const [q,n,d,c,du]=await Promise.all([Store.listQuizzes(sid),Store.listNotes(sid),Store.listDecks(sid),Store.listCards(sid),Store.listDuels(sid)]);
-  S.quizzes=q; S.notes=n; S.decks=d; S.cards=c; applyDuels(du);
+  const [q,n,d,c,du,rt]=await Promise.all([Store.listQuizzes(sid),Store.listNotes(sid),Store.listDecks(sid),Store.listCards(sid),Store.listDuels(sid),loadRoutines(sid)]);
+  S.quizzes=q; S.notes=n; S.decks=d; S.cards=c; S.routines=rt; applyDuels(du);
   await backfillLearnedOnce();
   S.dailyToday=await ensureDaily(sid,todayStr()); maybeNotify(); }
 /* Đồng bộ 1 lần: đánh dấu "đã học" cho các BÀI DÒ đã hoàn thành TỪ TRƯỚC (status='answered')
@@ -1244,14 +1427,14 @@ function startPolling(){ clearInterval(duelPollT); duelPollT=setInterval(duelTic
   if(Store.mode!=='cloud') return; clearInterval(pollT); pollTick=0;
   pollT=setInterval(async ()=>{ if(document.hidden) return; const ae=document.activeElement;
     maybeSyncClock();
-    if(ae && /INPUT|TEXTAREA|SELECT/.test(ae.tagName)) return; if(S.play || $('.overlay')) return;
+    if(ae && /INPUT|TEXTAREA|SELECT/.test(ae.tagName)) return; if(S.play || $('.overlay') || SchDrag.on) return;
     if(S.view==='arena') return; // màn đấu do duelTick lo
-    try{ const before=JSON.stringify([S.decks,S.cards,S.quizzes,S.notes,S.dailyToday,S.space,S.duel]);
+    try{ const before=JSON.stringify([S.decks,S.cards,S.quizzes,S.notes,S.routines,S.dailyToday,S.space,S.duel]);
       pollTick++; const full=(pollTick%12===0); // mỗi ~60s tải đủ heart_photos 1 lần để bắt kịp ảnh người ấy vừa up
       const sp=await Store.getSpace(S.space.id, !full);
       if(sp){ if(!full && S.space) sp.heart_photos=S.space.heart_photos; S.space=sp; }
       await loadAll();
-      if(JSON.stringify([S.decks,S.cards,S.quizzes,S.notes,S.dailyToday,S.space,S.duel])!==before) render();
+      if(JSON.stringify([S.decks,S.cards,S.quizzes,S.notes,S.routines,S.dailyToday,S.space,S.duel])!==before) render();
     }catch(e){} }, 5000); }
 
 /* ===== REALTIME cho bảng duels — để máy nhận thấy từ mới NGAY, không chờ vòng poll (đỡ "đơ") =====
@@ -1362,7 +1545,7 @@ function render(){ const app=$('#app');
       case 'library': b=S.sub?(String(S.sub).startsWith('g:')?viewGrammar():viewTopic()):viewLibrary(); break;
       case 'arena': b=viewArena(); break;
       case 'inbox': b=viewInbox(); break;
-      case 'notes': b=viewNotes(); break;
+      case 'notes': b=viewSchedule(); break;
       case 'daily': b=viewDaily(); break;
       case 'settings': b=viewSettings(); break;
       default: b=viewHome();
@@ -1372,6 +1555,7 @@ function render(){ const app=$('#app');
   if(anim) app.querySelectorAll('.screen').forEach(el=>el.classList.add(anim));
   if(S.view==='library' && !S.sub) applyLibFilter();
   if(S.view==='home' && !S.play) mountHeartTank(); else HeartTank.stop();
+  if(S.view==='notes' && !S.play) mountSchScroll();
   if(S.view==='arena' && S.duel && S.duel.status==='active' && isChainDuel(S.duel)) startChainTimer(); else stopChainTimer();
   hideLoading(); mountLotties();
 }
@@ -1404,7 +1588,7 @@ function header(){ if(!S.space) return '';
 
 function nav(pop){ const pend=S.quizzes.filter(q=>q.to_person===S.me&&(q.status==='pending'||q.status==='picked')).length; const due=dueCount();
   const duelAlert = S.duel && ((S.duel.status==='waiting'&&S.duel.challenger!==S.me)||S.duel.status==='active') ? 1 : 0;
-  const items=[['home','home','Nhà'],['library','cards','Học'],['arena','swords','Đấu'],['inbox','inbox','Hộp thư'],['notes','bell','Nhắc']];
+  const items=[['home','home','Nhà'],['library','cards','Học'],['arena','swords','Đấu'],['inbox','inbox','Hộp thư'],['notes','cal','Lịch']];
   const badge={inbox:pend, notes:due, arena:duelAlert};
   return `<div class="nav">`+items.map(([v,i,l])=>`<button class="${S.view===v?('on'+(pop?' pop':'')):''}" data-act="go" data-v="${v}">${ic(i)}${l}${badge[v]?`<span class="dot">${badge[v]}</span>`:''}</button>`).join('')+`</div>`; }
 
@@ -2348,7 +2532,494 @@ function noteCard(n){ const d=n.remind_at!=null?daysDiff(n.remind_at):null; cons
     <div class="body" style="${n.done?'text-decoration:line-through':''}">${esc(n.text)}</div>
     <button class="btn ${n.done?'soft':'ghost'} sm" style="margin-top:10px" data-act="toggle-done" data-id="${n.id}">${n.done?'↺ Bỏ đánh dấu':ic('check','sm')+' Đã xong'}</button>
   </div>`; }
-function viewNotes(){
+/* ===================== LỊCH SINH HOẠT SONG SONG (tab Lịch) =====================
+   Ý tưởng: hai đứa cùng nhìn MỘT trục giờ. Việc của mình nằm cột trái, việc người ấy cột phải,
+   việc chung hiện ở cả hai cột và có nét tim nối ở giữa. Khoảng nào KHÔNG ai bận -> tô "cùng rảnh 💞".
+   Nhập việc: chạm giữ rồi KÉO DỌC trên cột của mình để quét ra khung giờ (như kéo chọn trên lịch giấy),
+   thả tay ra mới hỏi tên -> đỡ phải gõ giờ bằng tay. Chạm nhẹ ô trống = thêm nhanh 1 tiếng tại đó. */
+const SCH_HOUR_PX = 58;                 // 1 tiếng cao bao nhiêu pixel
+const SCH_MIN_PX  = SCH_HOUR_PX/60;
+const SCH_SNAP    = 15;                 // kéo xong tự làm tròn về 15 phút
+const DOW_VI      = ['CN','T2','T3','T4','T5','T6','T7'];
+const RT_TINT     = ['#fde8ec','#e6f2ea','#ece7fa','#e4eff8','#fbf0dc','#f5ece5'];
+/* Gợi ý bấm-một-phát: chạm là có sẵn tên + emoji + khung giờ hợp lý, khỏi nghĩ */
+const RT_SUGGEST = [
+  {e:'⏰',t:'Thức dậy',s:390,d:30},   {e:'🍳',t:'Ăn sáng',s:420,d:30},
+  {e:'📚',t:'Đi học',s:450,d:240},    {e:'💼',t:'Đi làm',s:480,d:480},
+  {e:'🍚',t:'Ăn trưa',s:690,d:60},    {e:'😴',t:'Ngủ trưa',s:750,d:60},
+  {e:'🏋️',t:'Tập gym',s:1050,d:75},  {e:'🍜',t:'Cơm tối',s:1110,d:60},
+  {e:'📖',t:'Học từ vựng',s:1200,d:45},{e:'🚿',t:'Tắm rửa',s:1260,d:30},
+  {e:'💕',t:'Gọi nhau',s:1320,d:45},  {e:'🌙',t:'Đi ngủ',s:1380,d:60},
+];
+
+/* ---------- ÂM LỊCH VIỆT NAM (múi giờ +7) ----------
+   Thuật toán chuẩn của Hồ Ngọc Đức: tính ngày Sóc (trăng mới) và kinh độ Mặt Trời,
+   suy ra ngày/tháng âm + tháng nhuận. KHÔNG dùng bảng tra nên chạy được mọi năm. */
+const LUNAR_TZ = 7;
+const _int = (x)=> Math.floor(x);
+/* đổi ngày dương -> số ngày Julian */
+function jdFromDate(dd,mm,yy){ const a=_int((14-mm)/12), y=yy+4800-a, m=mm+12*a-3;
+  let jd = dd + _int((153*m+2)/5) + 365*y + _int(y/4) - _int(y/100) + _int(y/400) - 32045;
+  if(jd < 2299161) jd = dd + _int((153*m+2)/5) + 365*y + _int(y/4) - 32083;
+  return jd; }
+/* thời điểm trăng mới lần thứ k kể từ 1900-01-01 (ngày Julian) */
+function _newMoon(k){ const T=k/1236.85, T2=T*T, T3=T2*T, dr=Math.PI/180;
+  let Jd1 = 2415020.75933 + 29.53058868*k + 0.0001178*T2 - 0.000000155*T3;
+  Jd1 += 0.00033*Math.sin((166.56 + 132.87*T - 0.009173*T2)*dr);
+  const M   = 359.2242 + 29.10535608*k - 0.0000333*T2 - 0.00000347*T3;
+  const Mpr = 306.0253 + 385.81691806*k + 0.0107306*T2 + 0.00001236*T3;
+  const F   = 21.2964 + 390.67050646*k - 0.0016528*T2 - 0.00000239*T3;
+  let C1 = (0.1734 - 0.000393*T)*Math.sin(M*dr) + 0.0021*Math.sin(2*dr*M);
+  C1 = C1 - 0.4068*Math.sin(Mpr*dr) + 0.0161*Math.sin(dr*2*Mpr);
+  C1 = C1 - 0.0004*Math.sin(dr*3*Mpr);
+  C1 = C1 + 0.0104*Math.sin(dr*2*F) - 0.0051*Math.sin(dr*(M+Mpr));
+  C1 = C1 - 0.0074*Math.sin(dr*(M-Mpr)) + 0.0004*Math.sin(dr*(2*F+M));
+  C1 = C1 - 0.0004*Math.sin(dr*(2*F-M)) - 0.0006*Math.sin(dr*(2*F+Mpr));
+  C1 = C1 + 0.0010*Math.sin(dr*(2*F-Mpr)) + 0.0005*Math.sin(dr*(2*Mpr+M));
+  const deltat = (T < -11) ? (0.001 + 0.000839*T + 0.0002261*T2 - 0.00000845*T3 - 0.000000081*T*T3)
+                           : (-0.000278 + 0.000265*T + 0.000262*T2);
+  return Jd1 + C1 - deltat; }
+/* kinh độ Mặt Trời (chia 12 cung, mỗi cung 30°) */
+function _sunLong(jdn){ const T=(jdn-2451545.0)/36525, T2=T*T, dr=Math.PI/180;
+  const M  = 357.52910 + 35999.05030*T - 0.0001559*T2 - 0.00000048*T*T2;
+  const L0 = 280.46645 + 36000.76983*T + 0.0003032*T2;
+  let DL = (1.914600 - 0.004817*T - 0.000014*T2)*Math.sin(dr*M);
+  DL += (0.019993 - 0.000101*T)*Math.sin(dr*2*M) + 0.000290*Math.sin(dr*3*M);
+  let L=(L0+DL)*dr;
+  return L - Math.PI*2*_int(L/(Math.PI*2)); }
+const _sunCung   = (jd)=> _int(_sunLong(jd - 0.5 - LUNAR_TZ/24)/Math.PI*6);
+const _newMoonDay= (k)=> _int(_newMoon(k) + 0.5 + LUNAR_TZ/24);
+/* ngày bắt đầu tháng 11 âm của năm yy (tháng chứa Đông chí) */
+function _lunarMonth11(yy){ const off=jdFromDate(31,12,yy)-2415021, k=_int(off/29.530588853);
+  let nm=_newMoonDay(k);
+  if(_sunCung(nm) >= 9) nm=_newMoonDay(k-1);
+  return nm; }
+/* năm nhuận: tìm tháng nào không chứa Trung khí -> tháng nhuận */
+function _leapOffset(a11){ const k=_int((a11 - 2415021.076998695)/29.530588853 + 0.5);
+  let last=0, i=1, arc=_sunCung(_newMoonDay(k+i));
+  do{ last=arc; i++; arc=_sunCung(_newMoonDay(k+i)); } while(arc!==last && i<14);
+  return i-1; }
+/* 'YYYY-MM-DD' -> {d, m, y, leap} âm lịch */
+function solarToLunar(ds){
+  const [yy,mm,dd]=String(ds).split('-').map(Number);
+  const dayNumber=jdFromDate(dd,mm,yy), k=_int((dayNumber - 2415021.076998695)/29.530588853);
+  let monthStart=_newMoonDay(k+1);
+  if(monthStart > dayNumber) monthStart=_newMoonDay(k);
+  let a11=_lunarMonth11(yy), b11=a11, lunarYear;
+  if(a11 >= monthStart){ lunarYear=yy;   a11=_lunarMonth11(yy-1); }
+  else                 { lunarYear=yy+1; b11=_lunarMonth11(yy+1); }
+  const lunarDay=dayNumber-monthStart+1;
+  const diff=_int((monthStart-a11)/29);
+  let leap=0, lunarMonth=diff+11;
+  if(b11-a11 > 365){ const lo=_leapOffset(a11);
+    if(diff >= lo){ lunarMonth=diff+10; if(diff===lo) leap=1; } }
+  if(lunarMonth > 12) lunarMonth -= 12;
+  if(lunarMonth >= 11 && diff < 4) lunarYear -= 1;
+  return { d:lunarDay, m:lunarMonth, y:lunarYear, leap }; }
+/* nhãn ngắn hiện dưới số ngày dương: '15/8' (tháng nhuận thêm dấu +) */
+const lunarLabel = (ds)=>{ const l=solarToLunar(ds); return `${l.d}/${l.m}${l.leap?'+':''}`; };
+
+const hhmm  = (m)=>`${String(Math.floor(m/60)).padStart(2,'0')}:${String(Math.round(m)%60).padStart(2,'0')}`;
+const minOf = (s)=>{ const p=String(s||'').split(':'); return (parseInt(p[0],10)||0)*60+(parseInt(p[1],10)||0); };
+const schSnap = (m)=> Math.max(0, Math.min(24*60, Math.round(m/SCH_SNAP)*SCH_SNAP));
+function dowOf(ds){ const [y,m,d]=String(ds).split('-').map(Number); return new Date(y,m-1,d).getDay(); }
+function dateShort(ds){ const [,m,d]=String(ds).split('-').map(Number); return `${d}/${m}`; }
+function dateLabel(ds){ const t=todayStr();
+  if(ds===t) return 'Hôm nay'; if(ds===addDaysStr(t,1)) return 'Ngày mai'; if(ds===addDaysStr(t,-1)) return 'Hôm qua';
+  return `${DOW_VI[dowOf(ds)]}, ${dateShort(ds)}`; }
+const schDate = ()=> S.tmp.schDate || todayStr();
+
+const rtDays = (r)=> String(r.days||'').split(',').map(x=>parseInt(x,10)).filter(x=>!isNaN(x)).sort();
+/* Việc này có rơi vào ngày ds không? */
+function routineOn(r, ds){
+  if(r.freq==='once')  return r.date===ds;
+  if(r.freq==='weekly') return rtDays(r).includes(dowOf(ds));
+  return true; }
+function routinesFor(ds, person){
+  return (S.routines||[]).filter(r=> routineOn(r,ds) && (r.person===person || r.person==='both'))
+    .sort((a,b)=> (a.start_min||0)-(b.start_min||0) || (a.end_min||0)-(b.end_min||0)); }
+function freqLabel(r){
+  if(r.freq==='once')  return 'Một lần'+(r.date?' · '+dateShort(r.date):'');
+  if(r.freq==='weekly'){ const d=rtDays(r); return d.length? d.map(x=>DOW_VI[x]).join(' · ') : 'Chưa chọn thứ nào'; }
+  return 'Mỗi ngày'; }
+const rtDone = (r,ds)=> Array.isArray(r.done_days) && r.done_days.includes(ds);
+
+function mergeIv(list){ const a=list.slice().sort((x,y)=>x[0]-y[0]); const out=[];
+  a.forEach(iv=>{ const last=out[out.length-1];
+    if(last && iv[0]<=last[1]) last[1]=Math.max(last[1],iv[1]); else out.push([iv[0],iv[1]]); });
+  return out; }
+/* Khoảng KHÔNG ai bận (chỉ xét 7h–23h cho khỏi tính cả lúc ngủ), tối thiểu 45 phút mới đáng khoe */
+function freeBands(ds){
+  const busy=mergeIv([...routinesFor(ds,'a'),...routinesFor(ds,'b')].map(r=>[r.start_min||0,r.end_min||0]));
+  const lo=7*60, hi=23*60; const out=[]; let cur=lo;
+  busy.forEach(([s,e])=>{ if(e<=lo||s>=hi) return; if(s>cur) out.push([cur,Math.min(s,hi)]); cur=Math.max(cur,e); });
+  if(cur<hi) out.push([cur,hi]);
+  return out.filter(([s,e])=> e-s>=45); }
+
+/* Hai việc trùng giờ & trùng tên (hoặc việc chung) -> chấm tim ở giữa hai cột */
+function schLinks(mine,yours){
+  /* so tên đã bỏ dấu + gộp khoảng trắng: "Học từ vựng" và "học  TỪ VỰNG" phải coi là một */
+  const key=(t)=>noDiacritics(String(t||'')).toLowerCase().replace(/\s+/g,' ').trim(); const out=[];
+  mine.forEach(r=>{
+    if(r.person==='both'){ out.push((r.start_min+r.end_min)/2); return; }
+    yours.forEach(o=>{ if(o.person==='both'||key(o.title)!==key(r.title)) return;
+      const s=Math.max(r.start_min,o.start_min), e=Math.min(r.end_min,o.end_min);
+      if(e-s>=15) out.push((s+e)/2); });
+  });
+  return [...new Set(out.map(m=>Math.round(m)))]; }
+
+/* Xếp làn cho các việc chồng giờ trong CÙNG một cột (nếu không sẽ đè lên nhau) */
+function schLanes(list){
+  const res={}; const groups=[]; let cur=[], curEnd=-1;
+  list.forEach(r=>{ if(cur.length && (r.start_min||0)>=curEnd){ groups.push(cur); cur=[]; curEnd=-1; }
+    cur.push(r); curEnd=Math.max(curEnd, r.end_min||0); });
+  if(cur.length) groups.push(cur);
+  groups.forEach(g=>{ const lanes=[];
+    g.forEach(r=>{ let i=lanes.findIndex(end=>(r.start_min||0)>=end); if(i<0){ i=lanes.length; lanes.push(0); }
+      lanes[i]=r.end_min||0; res[r.id]={lane:i}; });
+    g.forEach(r=>{ res[r.id].lanes=lanes.length; }); });
+  return res; }
+
+/* ---------- MÀN LỊCH ---------- */
+function viewSchedule(){
+  const tab=S.tmp.schTab||'day', due=dueCount();
+  const seg=(k,l,badge)=>`<button class="seg-b${tab===k?' on':''}" data-act="sch-tab" data-v="${k}">${l}${badge?`<i class="seg-dot">${badge}</i>`:''}</button>`;
+  const sqlHint = routinesMissing ? `<div class="card" style="background:#fff6f0">
+      <b>Cần bật bảng lịch một lần 🛠️</b>
+      <p class="muted" style="margin:6px 0 8px">Mở Supabase → SQL Editor → dán <b>schema.sql</b> rồi Run (chạy lại an toàn). Lịch sẽ chạy ngay sau đó.</p></div>` : '';
+  let body='';
+  if(tab==='day')      body=schDayView();
+  else if(tab==='mon') body=schMonthView();
+  else if(tab==='rt')  body=schRoutinesView();
+  else                 body=notesBody();
+  return `<h2 class="title" style="margin:0">Lịch của hai đứa</h2>
+    <div class="seg">${seg('day','Ngày')}${seg('mon','Tháng')}${seg('rt','Thói quen')}${seg('note','Nhắc',due)}</div>
+    ${sqlHint}${body}`; }
+
+function schDayView(){
+  const ds=schDate(), t=todayStr(), me=S.me, you=other(S.me);
+  /* LUÔN vẽ đủ 0h–24h — trước đây chỉ vẽ 7h–22h nên lời nhắc 22:06 rơi ra ngoài, không thấy đâu.
+     Lịch cao 24*58px nằm trong .tl-scroll cuộn được, mountSchScroll tự cuộn tới chỗ đáng xem. */
+  const h0=0, h1=24, H=24*SCH_HOUR_PX;
+  const top=(m)=> Math.round((m-h0*60)*SCH_MIN_PX);
+  const mine=routinesFor(ds,me), yours=routinesFor(ds,you);
+
+  /* dải 7 ngày (hôm qua → 5 ngày tới) */
+  const strip=Array.from({length:7},(_,i)=>addDaysStr(t,i-1)).map(d=>{
+    const busy=routinesFor(d,'a').length+routinesFor(d,'b').length;
+    return `<div class="sch-d${d===ds?' on':''}${busy?' busy':''}" data-act="sch-pick" data-v="${d}">
+      <span>${d===t?'nay':DOW_VI[dowOf(d)]}</span><b>${String(d).split('-')[2].replace(/^0/,'')}</b><i></i></div>`; }).join('');
+
+  let hours=''; for(let h=h0;h<=h1;h++) hours+=`<div class="tl-h" style="top:${(h-h0)*SCH_HOUR_PX}px"><b>${h}h</b></div>`;
+
+  const bands=(mine.length&&yours.length)? freeBands(ds).map(([s,e])=>
+    `<div class="tl-free" style="top:${top(s)}px;height:${Math.round((e-s)*SCH_MIN_PX)}px"><b>💞 cùng rảnh · ${hhmm(s)}–${hhmm(e)}</b></div>`).join('') : '';
+
+  const now=new Date(), nowMin=now.getHours()*60+now.getMinutes();
+  const nowLine=(ds===t && nowMin>=h0*60 && nowMin<=h1*60)
+    ? `<div class="tl-now" style="top:${top(nowMin)}px"><i></i><b>bây giờ</b></div>` : '';
+
+  const links=schLinks(mine,yours).filter(m=>m>=h0*60&&m<=h1*60)
+    .map(m=>`<div class="tl-link" style="top:${top(m)}px">💗</div>`).join('');
+  /* lời nhắc có giờ của đúng ngày này -> ghim vào giữa hai cột */
+  const pins=S.notes.filter(n=>n.remind_at===ds&&n.remind_time&&!n.done).map(n=>{
+    const m=minOf(n.remind_time); if(m<h0*60||m>h1*60) return '';
+    return `<div class="tl-pin" style="top:${top(m)}px" data-act="sch-note" data-id="${n.id}" title="${esc(n.text||'')}">🔔</div>`; }).join('');
+
+  const col=(list,isMine)=>{
+    const lanes=schLanes(list);
+    const blk=list.map((r,i)=>{
+      const y=top(r.start_min), h=Math.max(24, Math.round((r.end_min-r.start_min)*SCH_MIN_PX)-3);
+      const L=lanes[r.id]||{lane:0,lanes:1}, w=100/L.lanes;
+      const pos=L.lanes>1?`left:calc(${(L.lane*w).toFixed(2)}% + 2px);right:calc(${(100-(L.lane+1)*w).toFixed(2)}% + 2px);`:'';
+      return `<div class="tl-blk${r.person==='both'?' both':''}${rtDone(r,ds)?' done':''}${h<40?' short':''}"
+        data-act="sch-open" data-id="${r.id}" style="top:${y}px;height:${h}px;${pos}--c:${r.color||RT_TINT[0]};--i:${i}">
+        <b>${r.emoji?r.emoji+' ':''}${esc(r.title||'Việc mới')}</b><em>${hhmm(r.start_min)}–${hhmm(r.end_min)}</em></div>`; }).join('');
+    const hint = (!list.length && isMine)
+      ? `<div class="tl-hint"><u>👆</u>${matchMedia('(pointer:fine)').matches?'kéo dọc để quét ra khung giờ':'chạm giữ rồi kéo dọc<br>để quét ra khung giờ'}</div>`
+      : (!list.length ? `<div class="tl-hint" style="opacity:.6">chưa có việc nào</div>` : '');
+    return `<div class="tl-col${isMine?' mine':''}"${isMine?` data-mine="1" data-h0="${h0}"`:''}>${blk}${hint}</div>`; };
+
+  const freeTotal=(mine.length&&yours.length)? freeBands(ds).reduce((s,[a,b])=>s+(b-a),0) : 0;
+  const summary = freeTotal ? `<p class="muted center" style="margin:10px 4px 0">${dateLabel(ds)} hai đứa cùng rảnh khoảng <b>${Math.floor(freeTotal/60)}h${freeTotal%60?String(freeTotal%60):''}</b> 💞</p>` : '';
+
+  /* MỌI lời nhắc của ngày này (kể cả không hẹn giờ) hiện thành chip trên đầu lịch — bấm là mở */
+  const dayNotes=S.notes.filter(n=>n.remind_at===ds && !n.done)
+    .sort((a,b)=>(a.remind_time||'99')<(b.remind_time||'99')?-1:1);
+  const nstrip=dayNotes.length?`<div class="sch-notes">${dayNotes.map(n=>{ const tx=String(n.text||'');
+    return `<button class="sch-nchip" data-act="sch-note" data-id="${n.id}">🔔 ${n.remind_time?n.remind_time+' · ':''}${esc(tx.slice(0,30))}${tx.length>30?'…':''}</button>`; }).join('')}</div>`:'';
+
+  return `<div class="row" style="align-items:center;margin-bottom:2px">
+      <div class="grow"><b style="font-size:15px">${dateLabel(ds)}</b>
+        <span class="muted" style="margin-left:6px">${DOW_VI[dowOf(ds)]} · ${dateShort(ds)} · âl ${lunarLabel(ds)}</span></div>
+      ${ds!==t?`<button class="btn ghost sm" data-act="sch-pick" data-v="${t}">Về hôm nay</button>`:''}
+      <button class="btn sm" data-act="rt-new">${ic('plus','sm')} Thêm</button></div>
+    <div class="sch-strip">${strip}</div>
+    ${nstrip}
+    <div class="tl">
+      <div class="tl-head">
+        <div class="tl-who">${avatarEl(me,28)}<span>Bạn</span></div>
+        <div class="tl-mid">giờ</div>
+        <div class="tl-who r"><span>${esc(nameOf(you)||'Người ấy')}</span>${avatarEl(you,28)}</div>
+      </div>
+      <div class="tl-wrap">
+      <div class="tl-scroll" id="tl_scroll">
+      <div class="tl-body" id="tl_body" style="height:${H}px">
+        <div class="tl-layer">${hours}${bands}${nowLine}</div>
+        ${col(mine,true)}
+        <div class="tl-gut">${links}${pins}</div>
+        ${col(yours,false)}
+      </div>
+      <div class="tl-fade t"></div><div class="tl-fade b"></div>
+      </div>
+    </div>${summary}
+    <p class="muted center" style="margin:8px 4px 0;font-size:11.5px">Chạm một việc để đánh dấu xong, sửa, hoặc nhắc người ấy 💌</p>`; }
+
+/* Lần đầu mở: tự cuộn tới "bây giờ"/việc sớm nhất; các lần render sau (poll/feedback)
+   giữ nguyên đúng chỗ người dùng đang xem (S.tmp.schScrollTop, reset khi vào tab/đổi ngày). */
+function mountSchScroll(){ const el=$('#tl_scroll'); if(!el) return;
+  if(S.tmp.schScrollTop!=null){ el.scrollTop=S.tmp.schScrollTop; return; }
+  const ds=schDate(); let m=7*60+30;
+  const all=[...routinesFor(ds,'a'),...routinesFor(ds,'b')];
+  if(all.length) m=Math.min(m, ...all.map(r=>r.start_min||0));
+  if(ds===todayStr()){ const n=new Date(); m=Math.min(m, n.getHours()*60+n.getMinutes()); }
+  el.scrollTop=Math.max(0, Math.round(m*SCH_MIN_PX)-70); S.tmp.schScrollTop=el.scrollTop; }
+
+/* ---------- LỊCH THÁNG: nhìn cả tháng một phát, bấm một ngày -> vào lịch ngày chi tiết ---------- */
+function schMonthView(){
+  const base=S.tmp.schMonth||schDate().slice(0,7); const [y,m]=base.split('-').map(Number);
+  const t=todayStr(), sel=schDate();
+  const off=(new Date(y,m-1,1).getDay()+6)%7;                 // tuần bắt đầu Thứ 2
+  const dim=new Date(y,m,0).getDate();
+  let cells=''; for(let i=0;i<off;i++) cells+='<div class="mon-c out"></div>';
+  for(let d=1;d<=dim;d++){ const ds=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const busyMe=routinesFor(ds,S.me).length, busyYou=routinesFor(ds,other(S.me)).length;
+    const nn=S.notes.filter(n=>n.remind_at===ds&&!n.done).length;
+    const lu=solarToLunar(ds);
+    cells+=`<div class="mon-c${ds===t?' today':''}${ds===sel?' sel':''}" data-act="sch-pick" data-v="${ds}">
+      <b>${d}</b><i class="lu${lu.d===1?' m1':''}">${lu.d}/${lu.m}${lu.leap?'+':''}</i>
+      <div class="mon-dots">${busyMe?'<i class="da"></i>':''}${busyYou?'<i class="db"></i>':''}</div>${nn?'<span class="bell">🔔</span>':''}</div>`; }
+  return `<div class="mon">
+    <div class="mon-head"><button class="iconbtn" data-act="sch-mon" data-v="-1">${ic('back','sm')}</button>
+      <b>Tháng ${m} · ${y}</b>
+      <button class="iconbtn" data-act="sch-mon" data-v="1"><span style="display:inline-flex;transform:rotate(180deg)">${ic('back','sm')}</span></button></div>
+    <div class="mon-dow">${DOW_VI.slice(1).concat(DOW_VI[0]).map(x=>`<span>${x}</span>`).join('')}</div>
+    <div class="mon-grid">${cells}</div></div>
+  <p class="muted center" style="margin:10px 4px 0;font-size:11.5px">Số nhỏ dưới mỗi ngày là <b>ngày âm lịch</b> (mùng 1 tô màu nâu)</p>
+  <p class="muted center" style="margin:4px 4px 0;font-size:11.5px">
+    <i style="display:inline-block;width:6px;height:6px;border-radius:9px;background:var(--p1)"></i> bạn bận ·
+    <i style="display:inline-block;width:6px;height:6px;border-radius:9px;background:var(--accent)"></i> người ấy bận ·
+    🔔 có lời nhắc — bấm một ngày để xem chi tiết 💕</p>`; }
+
+/* ---------- KHU THÓI QUEN: việc lặp hằng ngày lên trước, việc thưa hơn xuống sau ---------- */
+function schRoutinesView(){
+  const list=S.routines||[];
+  if(!list.length) return `<div class="empty">${ic('cal','lg')}
+      <div style="margin:8px 0 14px">Chưa có thói quen nào.<br>Chạm một gợi ý để thêm thật nhanh 👇</div></div>
+    <div class="sug" style="justify-content:center">${RT_SUGGEST.map((x,i)=>`<button data-act="rt-quick" data-v="${i}">${x.e} ${x.t}</button>`).join('')}</div>
+    <button class="btn block" style="margin-top:16px" data-act="rt-new">${ic('plus','sm')} Tự thêm việc khác</button>`;
+
+  const row=(r)=>{
+    const who = r.person==='both' ? '💞 cả hai' : (r.person===S.me?'bạn':esc(nameOf(other(S.me))||'người ấy'));
+    return `<div class="rt-row" data-act="sch-open" data-id="${r.id}">
+      <div class="em" style="--c:${r.color||RT_TINT[0]}">${r.emoji||'🗓️'}</div>
+      <div class="tx"><b>${esc(r.title||'Việc mới')}</b>
+        <span>${hhmm(r.start_min)}–${hhmm(r.end_min)} · ${freqLabel(r)} · ${who}</span></div>
+      <span style="color:var(--soft);transform:rotate(180deg);display:inline-flex">${ic('back','sm')}</span></div>`; };
+  const sec=(t,sub,arr)=> arr.length? `<div class="label">${t}</div>${sub?`<p class="muted" style="margin:-4px 4px 8px">${sub}</p>`:''}${arr.map(row).join('')}` : '';
+  const by=(f)=> list.filter(r=>r.freq===f).sort((a,b)=>(a.start_min||0)-(b.start_min||0));
+  const once=by('once').sort((a,b)=> String(a.date||'')<String(b.date||'')?-1:1);
+  return `<div class="row" style="margin-bottom:2px"><p class="sub-h grow" style="margin:0">Việc lặp hằng ngày xếp trước, việc thưa hơn xếp sau.</p>
+      <button class="btn sm" data-act="rt-new">${ic('plus','sm')} Thêm</button></div>
+    ${sec('🔁 Mỗi ngày','Nếp sinh hoạt cố định của hai đứa.',by('daily'))}
+    ${sec('📅 Vài ngày trong tuần','Việc theo thứ — vd lịch học, lịch gym.',by('weekly'))}
+    ${sec('✨ Một lần','Việc riêng của một ngày cụ thể.',once)}`; }
+
+/* ---------- POPUP: xem một việc ---------- */
+function openRoutineSheet(id){
+  const r=(S.routines||[]).find(x=>x.id===id); if(!r) return;
+  const ds=schDate(), done=rtDone(r,ds), mine=(r.person===S.me||r.person==='both');
+  const who = r.person==='both' ? '💞 việc chung của hai đứa' : (r.person===S.me?'việc của bạn':'việc của '+esc(nameOf(other(S.me))||'người ấy'));
+  modal(`<div class="row" style="align-items:flex-start">
+      <div class="em" style="width:44px;height:44px;flex:none;border:2px solid var(--edge);border-radius:14px;display:grid;place-items:center;font-size:22px;background:${r.color||RT_TINT[0]}">${r.emoji||'🗓️'}</div>
+      <div class="grow" style="margin-left:10px">
+        <h2 class="title" style="margin:0">${esc(r.title||'Việc mới')}</h2>
+        <p class="muted" style="margin:2px 0 0">${hhmm(r.start_min)}–${hhmm(r.end_min)} · ${freqLabel(r)}</p>
+        <p class="muted" style="margin:2px 0 0">${who}</p></div></div>
+    ${r.note?`<p style="margin:12px 2px 0">${esc(r.note)}</p>`:''}
+    <div style="margin-top:16px">
+      <button class="btn ${done?'soft':''} block" data-act="sch-done" data-id="${r.id}">${done?'↩︎ Bỏ đánh dấu xong':'✓ Xong '+dateLabel(ds).toLowerCase()}</button>
+      ${r.person!==S.me?`<button class="btn soft block" style="margin-top:8px" data-act="sch-nudge" data-id="${r.id}">💌 Nhắc ${esc(nameOf(other(S.me))||'người ấy')} nhớ việc này</button>`:''}
+      ${mine?`<div class="row" style="gap:10px;margin-top:8px">
+        <button class="btn soft block" data-act="rt-edit" data-id="${r.id}">${ic('edit','sm')} Sửa</button>
+        <button class="btn danger block" data-act="rt-del" data-id="${r.id}">${ic('trash','sm')} Xoá</button></div>`:''}
+      <button class="btn ghost block" style="margin-top:8px" data-act="close-modal">Đóng</button></div>`); }
+
+function openNotePinSheet(id){
+  const n=S.notes.find(x=>x.id===id); if(!n) return;
+  modal(`<h2 class="title" style="margin-top:0">🔔 Lời nhắc</h2>
+    <p style="margin:0 0 4px">${esc(n.text||'')}</p>
+    <p class="muted">${reminderLabel(n.remind_at,n.remind_time)} · ${esc(n.author_name||'')}</p>
+    <div class="row" style="gap:10px;margin-top:14px">
+      <button class="btn soft block" data-act="toggle-done" data-id="${n.id}">✓ Xong</button>
+      <button class="btn block" data-act="close-modal">Đóng</button></div>`); }
+
+/* ---------- POPUP: thêm / sửa việc (khu nhập liệu chính) ---------- */
+function openRoutineModal(r, preset){
+  S.tmp.rt = r ? Object.assign({},r) : {
+    id:uid(), space_id:S.space.id, person:S.me, title:'', emoji:'',
+    start_min:(preset&&preset.start!=null)?preset.start:8*60,
+    end_min:(preset&&preset.end!=null)?preset.end:9*60,
+    freq:'daily', days:'', date:schDate(), color:RT_TINT[S.routines.length%RT_TINT.length], note:'', done_days:[] };
+  S.tmp.rtNew = !r;
+  modal(rtSheetHTML());
+  if(!r) setTimeout(()=>{ const el=$('#rt_title'); if(el && !el.value) el.focus(); },60); }
+
+function rtSheetHTML(){ const r=S.tmp.rt, isNew=S.tmp.rtNew;
+  const days=rtDays(r);
+  return `<h2 class="title" style="margin-top:0">${isNew?'Thêm vào lịch ✨':'Sửa việc này'}</h2>
+    <p class="muted" style="margin:-6px 0 10px">${isNew?'Chạm một gợi ý cho nhanh, hoặc tự gõ tên việc.':'Đổi gì cũng được, lịch cập nhật ngay.'}</p>
+    ${isNew?`<div class="sug">${RT_SUGGEST.map((x,i)=>`<button data-act="rt-suggest" data-v="${i}">${x.e} ${x.t}</button>`).join('')}</div>`:''}
+    <div class="row" style="gap:8px;align-items:flex-end">
+      <label class="fld" style="width:64px;margin-bottom:0"><span class="lab">Hình</span>
+        <input id="rt_emoji" value="${esc(r.emoji||'')}" maxlength="4" style="text-align:center;font-size:20px" placeholder="🗓️"/></label>
+      <label class="fld grow" style="margin-bottom:0"><span class="lab">Tên việc</span>
+        <input id="rt_title" value="${esc(r.title||'')}" placeholder="vd: Đi học, Tập gym…"/></label></div>
+    <div class="row" style="gap:10px;margin-top:12px">
+      <label class="fld grow" style="margin:0"><span class="lab">Bắt đầu</span><input id="rt_start" type="time" value="${hhmm(r.start_min)}"/></label>
+      <label class="fld grow" style="margin:0"><span class="lab">Kết thúc</span><input id="rt_end" type="time" value="${hhmm(Math.min(r.end_min,23*60+59))}"/></label></div>
+
+    <span class="lab" style="display:block;margin-top:14px">Ai làm</span>
+    <div class="pickrow">
+      <button class="${r.person===S.me?'on':''}" data-act="rt-who" data-v="me">🙋 Mình</button>
+      <button class="${r.person==='both'?'on':''}" data-act="rt-who" data-v="both">💞 Cả hai</button>
+      <button class="${r.person===other(S.me)?'on':''}" data-act="rt-who" data-v="you">💛 ${esc(nameOf(other(S.me))||'Người ấy')}</button></div>
+
+    <span class="lab" style="display:block;margin-top:14px">Lặp lại</span>
+    <div class="pickrow">
+      <button class="${r.freq==='daily'?'on':''}" data-act="rt-freq" data-v="daily">🔁 Mỗi ngày</button>
+      <button class="${r.freq==='weekly'?'on':''}" data-act="rt-freq" data-v="weekly">📅 Theo thứ</button>
+      <button class="${r.freq==='once'?'on':''}" data-act="rt-freq" data-v="once">✨ Một lần</button></div>
+    ${r.freq==='weekly'?`<div class="dow">${DOW_VI.map((d,i)=>`<button class="${days.includes(i)?'on':''}" data-act="rt-dow" data-v="${i}">${d}</button>`).join('')}</div>`:''}
+    ${r.freq==='once'?`<label class="fld" style="margin:8px 0 0"><span class="lab">Vào ngày</span><input id="rt_date" type="date" value="${esc(r.date||todayStr())}"/></label>`:''}
+
+    <span class="lab" style="display:block;margin-top:14px">Màu</span>
+    <div class="chips" style="margin:6px 0 0">${RT_TINT.map(c=>`<div class="swatch ${r.color===c?'on':''}" data-act="rt-tint" data-v="${c}" style="background:${c}"></div>`).join('')}</div>
+
+    <label class="fld" style="margin-top:14px"><span class="lab">Ghi chú (không bắt buộc)</span>
+      <textarea id="rt_note" style="min-height:64px" placeholder="Nhớ mang theo gì, hẹn ở đâu…">${esc(r.note||'')}</textarea></label>
+    <div class="row" style="gap:10px;margin-top:6px">
+      <button class="btn soft block" data-act="close-modal">Huỷ</button>
+      <button class="btn block" data-act="rt-save">${isNew?'Thêm vào lịch':'Lưu'}</button></div>`; }
+
+/* Đọc ô nhập vào state trước khi vẽ lại popup, kẻo mất chữ đang gõ dở */
+function rtSync(){ const r=S.tmp.rt; if(!r) return;
+  const g=(id)=>$('#'+id);
+  if(g('rt_title')) r.title=g('rt_title').value;
+  if(g('rt_emoji')) r.emoji=g('rt_emoji').value.trim().slice(0,4);
+  if(g('rt_start')&&g('rt_start').value) r.start_min=minOf(g('rt_start').value);
+  if(g('rt_end')&&g('rt_end').value)     r.end_min=minOf(g('rt_end').value);
+  if(g('rt_date')&&g('rt_date').value)   r.date=g('rt_date').value;
+  if(g('rt_note')) r.note=g('rt_note').value; }
+function rtRefresh(){ const sh=$('.overlay .sheet'); if(sh) sh.innerHTML=rtSheetHTML(); }
+
+async function rtSave(){ rtSync(); const r=S.tmp.rt; if(!r) return;
+  if(!String(r.title||'').trim()){ toast('Đặt tên việc đã nha 💗'); $('#rt_title')?.focus(); return; }
+  if(r.end_min<=r.start_min) r.end_min=Math.min(24*60, r.start_min+30);
+  if(r.freq==='weekly' && !rtDays(r).length){ toast('Chọn ít nhất một thứ nha'); return; }
+  if(r.freq!=='once') r.date=null;
+  if(r.freq!=='weekly') r.days=null;
+  const row={ id:r.id, space_id:S.space.id, person:r.person, title:String(r.title).trim(), emoji:r.emoji||'',
+    start_min:r.start_min, end_min:r.end_min, freq:r.freq, days:r.days||null, date:r.date||null,
+    color:r.color||RT_TINT[0], note:r.note||'', done_days:Array.isArray(r.done_days)?r.done_days:[],
+    created_at:r.created_at||new Date().toISOString() };
+  try{ await Store.saveRoutine(row); }
+  catch(e){ toast('Chưa bật bảng lịch — chạy schema.sql trong Supabase nha'); return; }
+  closeModal(); S.tmp.rt=null;
+  /* nhảy về đúng ngày việc đó xuất hiện để thấy nó ngay */
+  if(row.freq==='once' && row.date) S.tmp.schDate=row.date;
+  S.tmp.schTab='day'; S.tmp.schScrollTop=null;
+  await loadAll(); render(); toast('Đã thêm vào lịch ✨'); }
+
+async function rtDelete(id){ if(!confirm('Xoá việc này khỏi lịch?')) return;
+  await Store.deleteRoutine(S.space.id,id); closeModal(); await loadAll(); render(); toast('Đã xoá'); }
+
+async function schToggleDone(id){
+  const r=(S.routines||[]).find(x=>x.id===id); if(!r) return;
+  const ds=schDate(); const cur=Array.isArray(r.done_days)?r.done_days.slice():[];
+  const i=cur.indexOf(ds); if(i>=0) cur.splice(i,1); else cur.push(ds);
+  cur.sort(); while(cur.length>60) cur.shift();                 // chỉ giữ 60 ngày gần nhất cho nhẹ
+  r.done_days=cur; await Store.saveRoutine(r);
+  closeModal(); render(); if(i<0) toast('Giỏi quá 💗'); }
+
+/* "Nhắc nhau": tạo luôn một lời nhắc đến hạn NGAY -> đi qua đúng đường thông báo đẩy sẵn có */
+async function schNudge(id){
+  const r=(S.routines||[]).find(x=>x.id===id); if(!r) return;
+  const now=new Date(), hh=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  await Store.saveNote({ id:uid(), space_id:S.space.id, author:S.me, author_name:meName(),
+    text:`${r.emoji||'⏰'} ${r.title} lúc ${hhmm(r.start_min)} nha — ${meName()} nhắc nè 💕`,
+    color:'#fde8ec', remind_at:todayStr(), remind_time:hh, notified_at:null, done:false,
+    created_at:new Date().toISOString() });
+  closeModal(); await loadAll(); render(); toast('Đã nhắc rồi nha 💌'); }
+
+/* ---------- KÉO DỌC TRÊN CỘT CỦA MÌNH ĐỂ TẠO VIỆC ----------
+   Vì trang cuộn dọc, không thể khoá touch-action sẵn. Cách làm: chờ GIỮ 240ms (chưa nhúc nhích)
+   mới vào chế độ kéo — lúc đó trình duyệt chưa bắt đầu cuộn nên preventDefault trên touchmove
+   còn chặn kịp. Nhúc nhích trước khi đủ 240ms = người dùng đang cuộn -> huỷ, không giành. */
+const SchDrag = { col:null, body:null, rect:null, y0:0, y1:0, startY:0, h0:0, on:false, timer:null, ghost:null };
+function schDragEnd(){ clearTimeout(SchDrag.timer); SchDrag.timer=null;
+  if(SchDrag.ghost){ SchDrag.ghost.remove(); SchDrag.ghost=null; }
+  if(SchDrag.body) SchDrag.body.classList.remove('dragging');
+  SchDrag.col=null; SchDrag.body=null; SchDrag.on=false; }
+function schDragRange(){ const h0=SchDrag.h0;
+  let a=schSnap(SchDrag.y0/SCH_MIN_PX + h0*60), b=schSnap(SchDrag.y1/SCH_MIN_PX + h0*60);
+  if(b<a){ const t=a; a=b; b=t; }
+  if(b-a<SCH_SNAP) b=Math.min(24*60, a+30);
+  return { s:a, e:Math.max(b, a+SCH_SNAP) }; }
+function schGhostUpdate(){ if(!SchDrag.ghost) return; const {s,e}=schDragRange();
+  SchDrag.ghost.style.top=((s-SchDrag.h0*60)*SCH_MIN_PX)+'px';
+  SchDrag.ghost.style.height=Math.max(22,(e-s)*SCH_MIN_PX)+'px';
+  SchDrag.ghost.innerHTML=`<div><b>${hhmm(s)} – ${hhmm(e)}</b><em>thả tay ra để đặt tên ✨</em></div>`; }
+
+document.addEventListener('pointerdown',(e)=>{
+  if(S.view!=='notes'||(S.tmp.schTab&&S.tmp.schTab!=='day')) return;
+  if($('.overlay')) return;
+  const col=e.target.closest('.tl-col[data-mine="1"]'); if(!col) return;
+  if(e.target.closest('.tl-blk')) return;                     // chạm vào việc có sẵn -> để click lo
+  schDragEnd();
+  const rect=col.getBoundingClientRect();
+  SchDrag.col=col; SchDrag.body=col.closest('.tl-body'); SchDrag.rect=rect;
+  SchDrag.h0=parseInt(col.dataset.h0,10)||0;
+  SchDrag.startY=e.clientY; SchDrag.y0=e.clientY-rect.top; SchDrag.y1=SchDrag.y0;
+  const begin=()=>{ SchDrag.on=true;
+    if(navigator.vibrate){ try{ navigator.vibrate(14); }catch(err){} }
+    SchDrag.body?.classList.add('dragging');
+    const g=document.createElement('div'); g.className='tl-ghost'; SchDrag.ghost=g; col.appendChild(g); schGhostUpdate(); };
+  if(e.pointerType==='mouse'){ e.preventDefault(); begin(); }   // chuột: kéo NGAY, chặn luôn chọn text
+  else SchDrag.timer=setTimeout(()=>{ SchDrag.timer=null; begin(); }, 180); }); // chạm: giữ nhẹ để phân biệt với cuộn trang
+
+document.addEventListener('pointermove',(e)=>{
+  if(!SchDrag.col) return;
+  if(!SchDrag.on){ if(Math.abs(e.clientY-SchDrag.startY)>14) schDragEnd(); return; }
+  SchDrag.y1=Math.max(0, Math.min(SchDrag.rect.height, e.clientY-SchDrag.rect.top));
+  schGhostUpdate(); });
+
+document.addEventListener('pointerup',(e)=>{
+  if(!SchDrag.col) return;
+  const wasDrag=SchDrag.on, r=schDragRange();
+  const tapMin=schSnap(SchDrag.y0/SCH_MIN_PX + SchDrag.h0*60);
+  const moved=Math.abs(e.clientY-SchDrag.startY)>7;
+  schDragEnd();
+  if(wasDrag && moved) openRoutineModal(null,{start:r.s,end:r.e});          // quét xong -> đúng khung vừa quét
+  else if(!moved) openRoutineModal(null,{start:tapMin,end:Math.min(24*60,tapMin+60)}); }); // bấm nhẹ -> 1 tiếng
+document.addEventListener('pointercancel', schDragEnd);
+document.addEventListener('scroll', ()=>{ if(!SchDrag.on) schDragEnd(); }, true);
+/* Chặn trang cuộn trong lúc đang kéo (phải non-passive mới preventDefault được) */
+document.addEventListener('touchmove',(e)=>{ if(SchDrag.on) e.preventDefault(); }, {passive:false});
+/* nhớ vị trí đang cuộn trong khung lịch để render lại (poll 5s…) không bị nhảy về đầu */
+document.addEventListener('scroll',(e)=>{ if(e.target && e.target.id==='tl_scroll') S.tmp.schScrollTop=e.target.scrollTop; }, true);
+
+function notesBody(){
   const notes=S.notes;
   const dated=notes.filter(n=>n.remind_at && !n.done);
   const overdue=dated.filter(n=>daysDiff(n.remind_at)>0).sort((a,b)=>a.remind_at<b.remind_at?-1:1);
@@ -2358,9 +3029,8 @@ function viewNotes(){
   const done=notes.filter(n=>n.done);
   const sec=(t,arr)=> arr.length?`<div class="label">${t}</div>`+arr.map(noteCard).join(''):'';
   const notifOn=('Notification' in window) && Notification.permission==='granted';
-  return `<div class="row" style="margin-bottom:4px"><h2 class="title grow" style="margin:0">Nhắc &amp; ghi chú</h2>
+  return `<div class="row" style="margin-bottom:4px"><p class="sub-h grow" style="margin:0">Đặt ngày giờ để nhắc — cả hai đứa đều thấy, và lời nhắc sẽ ghim luôn lên lịch ngày hôm đó.</p>
       <button class="btn sm" data-act="note-new">${ic('plus','sm')} Viết</button></div>
-    <p class="sub-h">Đặt ngày để nhắc — cả hai đứa đều thấy lời nhắc.</p>
     ${ ('Notification' in window)?`<button class="btn ${notifOn?'soft':'ghost'} block sm" data-act="enable-notif">${ic('bell','sm')} ${notifOn?'Đã bật thông báo ✓':'Bật thông báo đẩy'}</button>
     <p class="muted" style="margin:6px 0 14px;font-size:12px">Nhận được cả khi tắt app. Trên iPhone: cài app vào màn hình chính (⚙️ → Cài app) rồi mới bật được nha.</p>`:'' }
     ${ notes.length? sec('⚠️ Quá hạn',overdue)+sec('Hôm nay',today)+sec('Sắp tới',upcoming)+sec('Ghi chú (không hẹn ngày)',plain)+sec('Đã xong',done)
@@ -2636,7 +3306,7 @@ document.addEventListener('keydown',(e)=>{ if(e.key!=='Enter') return;
 
 async function handle(act,v,id,t,e){
   switch(act){
-    case 'go': saveScrollNow(); S.view=v; S.sub=null; S.tmp.dReactOpen=null; S.tmp.dReplyOpen=null; if(v!=='compose')S.compose=null; render(); restoreScrollSoon();
+    case 'go': saveScrollNow(); S.view=v; S.sub=null; S.tmp.dReactOpen=null; S.tmp.dReplyOpen=null; if(v==='notes')S.tmp.schScrollTop=null; if(v!=='compose')S.compose=null; render(); restoreScrollSoon();
       if(v==='daily') loadDailyHistory(); break;
     case 'atab': S.authTab=v; render(); break;
     case 'do-register': await doRegister(); break;
@@ -2713,6 +3383,31 @@ async function handle(act,v,id,t,e){
     case 'restudy': { const p=S.play; if(p.mode==='grammar') startGrammarPractice(p.grammarId, p.quiz?{quiz:p.quiz}:undefined); else startStudy(p.words,{mode:p.mode,src:p.src,quiz:p.quiz,title:p.title,back:p.back}); } break;
     case 'quit-play': { const back=(S.play&&S.play.back)||'home'; S.play=null; S.view=back; render(); } break;
     case 'finish-play': S.play=null; S.view='home'; await loadAll(); render(); break;
+
+    /* ----- Lịch song song ----- */
+    case 'sch-tab': S.tmp.schTab=v; render(); break;
+    case 'sch-pick': S.tmp.schDate=v; S.tmp.schMonth=v.slice(0,7); S.tmp.schTab='day'; S.tmp.schScrollTop=null; render(); break;
+    case 'sch-mon': { const base=S.tmp.schMonth||schDate().slice(0,7); const [yy,mm]=base.split('-').map(Number);
+      const d=new Date(yy,mm-1+parseInt(v,10),1); S.tmp.schMonth=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); render(); } break;
+    case 'sch-open': openRoutineSheet(id); break;
+    case 'sch-note': openNotePinSheet(id); break;
+    case 'sch-done': await schToggleDone(id); break;
+    case 'sch-nudge': await schNudge(id); break;
+    case 'rt-new': openRoutineModal(null); break;
+    case 'rt-quick': { const x=RT_SUGGEST[parseInt(v,10)]; openRoutineModal(null,{start:x.s,end:Math.min(24*60,x.s+x.d)});
+      S.tmp.rt.emoji=x.e; S.tmp.rt.title=x.t; rtRefresh(); } break;
+    case 'rt-edit': { const r=(S.routines||[]).find(x=>x.id===id); if(r){ closeModal(); openRoutineModal(r); } } break;
+    case 'rt-del': await rtDelete(id); break;
+    case 'rt-save': await rtSave(); break;
+    case 'rt-suggest': { rtSync(); const x=RT_SUGGEST[parseInt(v,10)]; const r=S.tmp.rt;
+      r.emoji=x.e; r.title=x.t; r.start_min=x.s; r.end_min=Math.min(24*60,x.s+x.d); rtRefresh(); } break;
+    case 'rt-who': { rtSync(); S.tmp.rt.person = v==='both'?'both':(v==='you'?other(S.me):S.me); rtRefresh(); } break;
+    case 'rt-freq': { rtSync(); const r=S.tmp.rt; r.freq=v;
+      if(v==='weekly' && !rtDays(r).length) r.days=String(dowOf(schDate()));
+      if(v==='once' && !r.date) r.date=schDate(); rtRefresh(); } break;
+    case 'rt-dow': { rtSync(); const r=S.tmp.rt; const d=rtDays(r); const n=parseInt(v,10);
+      const i=d.indexOf(n); if(i>=0) d.splice(i,1); else d.push(n); r.days=d.sort().join(','); rtRefresh(); } break;
+    case 'rt-tint': { rtSync(); S.tmp.rt.color=v; rtRefresh(); } break;
 
     case 'note-new': openNoteModal(); break;
     case 'pick-tint': S.tmp.noteTint=v; document.querySelectorAll('#m_tint .swatch').forEach(s=>s.classList.remove('on')); t.classList.add('on'); break;

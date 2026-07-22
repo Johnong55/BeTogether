@@ -95,6 +95,25 @@ create table if not exists notes (
   created_at  timestamptz default now()
 );
 
+-- Lịch sinh hoạt hằng ngày — mỗi dòng là MỘT VIỆC lặp lại của một người (hoặc của cả hai).
+-- Lịch "song song" ở tab Lịch dựng từ bảng này: cột trái = việc của mình, cột phải = việc người ấy.
+create table if not exists routines (
+  id          text primary key,
+  space_id    text references spaces(id) on delete cascade,
+  person      text default 'a',            -- 'a' | 'b' | 'both' (việc chung hiện ở CẢ HAI cột, có nét tim nối)
+  title       text,
+  emoji       text,
+  start_min   int default 480,             -- phút tính từ 0h (480 = 8:00)
+  end_min     int default 540,
+  freq        text default 'daily',        -- 'daily' | 'weekly' | 'once'
+  days        text,                        -- khi freq='weekly': '1,3,5' (0=CN … 6=T7)
+  date        date,                        -- khi freq='once'
+  color       text,
+  note        text,
+  done_days   jsonb default '[]'::jsonb,   -- mảng 'YYYY-MM-DD' đã đánh dấu xong (giữ 60 ngày gần nhất)
+  created_at  timestamptz default now()
+);
+
 -- Thuê bao nhận thông báo đẩy (Web Push) — mỗi máy/thiết bị đã bật thông báo là 1 dòng
 create table if not exists push_subscriptions (
   id          text primary key,
@@ -242,7 +261,7 @@ alter table lab_runs add column if not exists synthesis jsonb;
 do $$
 declare t text;
 begin
-  foreach t in array array['users','spaces','invites','decks','cards','quizzes','notes','daily','duels','push_subscriptions','word_examples','admins','library_topics','library_words','lab_runs'] loop
+  foreach t in array array['users','spaces','invites','decks','cards','quizzes','notes','routines','daily','duels','push_subscriptions','word_examples','admins','library_topics','library_words','lab_runs'] loop
     execute format('alter table %I enable row level security;', t);
     execute format('drop policy if exists "allow all" on %I;', t);
     execute format('create policy "allow all" on %I for all using (true) with check (true);', t);
