@@ -313,6 +313,47 @@
     box-shadow:0 8px 24px rgba(0,0,0,.22); }
   .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 
+  /* ── Bản đồ ý chính: cần nắm gì & nằm ở đâu ─────────────────── */
+  .km + .km{ margin-top:20px; }
+  .km-src{ display:flex; align-items:center; gap:8px; font-weight:800; font-size:14px; margin:2px 0 4px; }
+  .km-src .n{ flex:none; width:22px; height:22px; border-radius:50%; background:var(--p2); color:#fff;
+    font-size:12px; font-weight:800; display:inline-flex; align-items:center; justify-content:center; }
+  .km-goal{ display:flex; gap:8px; align-items:flex-start; background:var(--chip); border:1.5px dashed var(--edge);
+    border-radius:14px; padding:10px 12px; font-size:13px; line-height:1.55; margin:8px 0 4px; }
+  .km-goal .ic{ flex:none; width:16px; height:16px; margin-top:2px; color:var(--p1); }
+  .kp{ display:flex; width:100%; text-align:left; gap:10px; align-items:flex-start; background:var(--card);
+    border:2px solid var(--edge); border-radius:16px; padding:11px 12px; margin-top:9px; cursor:pointer;
+    box-shadow:2px 2px 0 var(--edge); font:inherit; color:inherit; transition:transform .12s var(--ease-smooth), box-shadow .12s var(--ease-smooth); }
+  .kp:active{ transform:translate(1.5px,1.5px); box-shadow:.5px .5px 0 var(--edge); }
+  .kp-n{ flex:none; width:22px; height:22px; border-radius:50%; background:var(--p1); color:#fff; font-size:12px;
+    font-weight:800; display:inline-flex; align-items:center; justify-content:center; margin-top:1px; }
+  .kp-body{ flex:1; min-width:0; }
+  .kp-body b{ display:block; font-size:14px; line-height:1.45; }
+  .kp-why{ display:block; font-size:12.5px; color:var(--soft); line-height:1.5; margin-top:2px; }
+  .kp-loc{ flex:none; display:inline-flex; align-items:center; gap:3px; font-size:11.5px; font-weight:800; color:var(--p1);
+    background:var(--chip); border:1.5px solid var(--edge); border-radius:999px; padding:4px 8px; white-space:nowrap; margin-top:1px; }
+  .kp-loc .ic{ width:12px; height:12px; }
+  .sh-why{ color:var(--soft); font-size:13.5px; line-height:1.6; margin:6px 0 0; }
+  .sh-meta{ font-size:12px; font-weight:800; color:var(--p1); margin:10px 0 8px; }
+  .sh-excerpt{ background:var(--chip); border:2px solid var(--edge); border-radius:14px; padding:12px 13px; max-height:44vh; overflow-y:auto; }
+  .sh-excerpt p{ margin:0 0 10px; font-size:13.5px; line-height:1.7; }
+  .sh-excerpt p:last-child{ margin-bottom:0; }
+
+  /* ── Trang đọc toàn bài ─────────────────────────────────────── */
+  .reader{ position:fixed; inset:0; z-index:90; background:var(--bg1); display:flex; flex-direction:column; animation:fadein .22s var(--ease-smooth); }
+  .rd-top{ display:flex; gap:10px; align-items:center; padding:10px 14px; border-bottom:2px solid var(--edge); background:var(--card); flex:none; }
+  .rd-title{ font-weight:800; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0; }
+  .rd-jumps{ display:flex; gap:8px; overflow-x:auto; padding:10px 14px; background:var(--card); border-bottom:2px solid var(--edge); flex:none; -webkit-overflow-scrolling:touch; }
+  .rd-jumps:empty{ display:none; }
+  .rd-jumps .chip{ flex:none; display:inline-flex; align-items:center; gap:6px; }
+  .rd-jumps .kp-n{ width:18px; height:18px; font-size:10.5px; margin:0; }
+  .rd-body{ flex:1; overflow-y:auto; padding:18px 14px 60px; width:100%; }
+  .rd-inner{ max-width:760px; margin:0 auto; }
+  .rd-seg{ position:relative; font-size:14.5px; line-height:1.75; margin:0 0 6px; padding:6px 8px 6px 38px; border-radius:12px; border:1.5px solid transparent; }
+  .rd-n{ position:absolute; left:0; top:8px; width:30px; text-align:right; font-size:10.5px; font-weight:800; color:var(--soft); opacity:.75; }
+  .rd-seg.mark{ background:#fff3d6; border-color:var(--edge); box-shadow:2px 2px 0 var(--edge); }
+  .rd-hint{ font-size:12px; color:var(--soft); margin:0 0 14px; }
+
   :focus-visible{ outline:3px solid var(--p2); outline-offset:2px; border-radius:8px; }
   @media (prefers-reduced-motion:reduce){
     *{ animation:none !important; transition:none !important; }
@@ -413,6 +454,13 @@
     </div>
   </section>
 
+  <!-- Bản đồ ý chính: cần nắm gì & nằm ở đâu trong tài liệu -->
+  <section class="card hidden" id="keycard">
+    <h2 class="ct"><span data-ic="map"></span>Cần nắm gì &amp; nằm ở đâu</h2>
+    <p class="muted" style="margin:6px 0 4px">Chạm một ý để xem đúng đoạn đó trong tài liệu — rồi chạm "Đọc trong toàn bài" để đọc đầy đủ ngay tại chỗ.</p>
+    <div id="keymap"></div>
+  </section>
+
   <!-- Liên kết giữa các nguồn -->
   <section class="card hidden" id="linkcard">
     <h2 class="ct"><span data-ic="share"></span>Các nguồn liên quan nhau thế nào</h2>
@@ -501,6 +549,17 @@
 </div>
 
 <div class="overlay" id="overlay"><div class="sheet" id="sheet"></div></div>
+
+<!-- Trang đọc toàn bài: hiện cả tài liệu theo đoạn đánh số, tô sáng đúng chỗ ý chính -->
+<div class="reader hidden" id="reader">
+  <div class="rd-top">
+    <button class="roundbtn" id="rd-close" aria-label="Đóng trang đọc"><span data-ic="x"></span></button>
+    <div class="rd-title" id="rd-title"></div>
+  </div>
+  <div class="rd-jumps" id="rd-jumps"></div>
+  <div class="rd-body" id="rd-body"><div class="rd-inner" id="rd-inner"></div></div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -541,6 +600,7 @@ const ICONS = {
   book: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5v-15Z"/><path d="M4 18.5A2.5 2.5 0 0 1 6.5 16H20"/><path d="M9 7.5h6"/>',
   link: '<path d="M9.5 14.5 14.5 9.5"/><path d="M11 6.5 12.5 5a4 4 0 0 1 5.7 5.7L16.5 12.5M13 17.5 11.5 19a4 4 0 0 1-5.7-5.7L7.5 11.5"/>',
   layers: '<path d="M12 3 3 7.5l9 4.5 9-4.5L12 3Z"/><path d="M3 12.5 12 17l9-4.5"/>',
+  map: '<path d="M9 4.5 3.5 6.5v13L9 17.5l6 2 5.5-2v-13l-5.5 2-6-2Z"/><path d="M9 4.5v13M15 6.5v13"/>',
   share: '<circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="6" r="2.6"/><circle cx="18" cy="18" r="2.6"/><path d="M8.4 10.8 15.6 7.2M8.4 13.2l7.2 3.6"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   dot: '<circle cx="12" cy="12" r="4"/>',
@@ -573,6 +633,8 @@ let NOTE = '';               // gợi ý lộ trình học của AI
 let SEARCHING = false;
 let ANALYSIS = null;         // ngữ cảnh sau khi phân tích, để soạn đề LÚC NGƯỜI DÙNG BẤM NÚT
 let QGEN = false;
+let KEYMAP_LIST = [];        // các nguồn của lần chạy gần nhất (giữ segs + keys cho popup & trang đọc)
+let READER_SRC = null;       // chỉ số nguồn đang mở trong trang đọc toàn bài
 
 // ── Chọn kiểu nguồn đang thêm ───────────────────────────────────────────────
 $('#srcseg').addEventListener('click', (e) => {
@@ -805,9 +867,9 @@ async function run() {
   QUIZ = null; LAST = null;
   const t0 = Date.now();
   SOURCES = SOURCES.filter((s) => !s.parent); // bỏ trang con của lần chạy trước
-  SOURCES.forEach((s) => { s.status = 'idle'; s.chars = 0; s.err = ''; s.text = ''; s.summary = null; });
+  SOURCES.forEach((s) => { s.status = 'idle'; s.chars = 0; s.err = ''; s.text = ''; s.summary = null; s.segs = null; s.keys = null; });
   renderSources();
-  ['#sumcard', '#linkcard', '#srccard', '#fcard', '#quizcard'].forEach((s) => $(s).classList.add('hidden'));
+  ['#sumcard', '#keycard', '#linkcard', '#srccard', '#fcard', '#quizcard'].forEach((s) => $(s).classList.add('hidden'));
   buildSteps(); setProgress(0);
   $('#pipe').classList.remove('hidden'); $('#pipe').classList.add('reveal');
   $('#pipe').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -867,6 +929,15 @@ async function run() {
       step('map', 'run', head + '…');
       phase('map', i / usable.length);
       s.summary = await summarizeOne(s, (part, of) => step('map', 'run', head + ' · phần ' + part + '/' + of));
+      // Bản đồ ý chính: chia tài liệu thành đoạn đánh số, AI trả về ý cần nắm + SỐ ĐOẠN nó nằm.
+      // Hỏng cũng không sao — vẫn còn tóm tắt, đừng để một bước phụ làm chết cả mẻ.
+      s.segs = buildSegments(s.text);
+      if (s.segs.length >= 2) {
+        step('map', 'run', head + ' · đánh dấu vị trí ý chính…');
+        const per = Math.max(60, Math.min(240, Math.floor(16000 / s.segs.length)));
+        try { s.keys = await analyze({ task: 'keypoints', title: s.label, segs: s.segs.map((t) => ({ t: t.slice(0, per) })) }); }
+        catch (e) { s.keys = null; }
+      }
     }
     step('map', 'ok', usable.length + ' nguồn');
     phase('map', 1);
@@ -887,6 +958,8 @@ async function run() {
     }
     phase('reduce', 1);
     renderSummary(overall, usable.length);
+    KEYMAP_LIST = usable;
+    renderKeymap(usable);
     renderSynthesis(synthesis, usable);
     renderPerSource(usable);
 
@@ -910,7 +983,14 @@ async function run() {
       input_excerpt: usable.map((s, i) => '[' + (i + 1) + '] ' + s.label + '\n' + s.text.slice(0, 800)).join('\n\n').slice(0, 3000),
       tldr: overall.tldr, points: overall.points, terms: overall.terms || [],
       questions: [], ms: Date.now() - t0,
-      sources: usable.map((s) => ({ kind: s.kind, label: s.label, url: s.url || null, chars: s.chars, tldr: s.summary.tldr, points: s.summary.points })),
+      sources: usable.map((s) => ({
+        kind: s.kind, label: s.label, url: s.url || null, chars: s.chars, tldr: s.summary.tldr, points: s.summary.points,
+        // lịch sử không giữ toàn văn (nặng) → lưu kèm mỗi ý một trích đoạn ngắn để xem lại vẫn thấy chỗ đó
+        keys: s.keys ? { goal: s.keys.goal || '', keys: s.keys.keys.map((k) => ({
+          t: k.t, why: k.why, from: k.from, to: k.to,
+          ex: s.segs.slice(k.from - 1, k.to).join(' ').slice(0, 400),
+        })) } : null,
+      })),
       synthesis: synthesis ? { themes: synthesis.themes || [], connections: synthesis.connections || [] } : null,
     };
     saveRun(LAST);
@@ -1031,6 +1111,29 @@ function cleanText(s) {
     .trim();
 }
 
+// Chia tài liệu thành các "đoạn" đánh số — đơn vị vị trí cho bản đồ ý chính (AI chỉ trả số đoạn,
+// giao diện trỏ thẳng segs[from-1..to-1] nên vị trí luôn là chữ THẬT trong tài liệu, không bịa được).
+// Đoạn quá dài (PDF hay mất xuống dòng) cắt tại ranh giới câu ~550 ký tự; không dùng lookbehind
+// trong regex vì Safari cũ trên iPhone chưa chắc hiểu.
+function buildSegments(text) {
+  const out = [];
+  for (const para of String(text || '').split(/\n\n+/)) {
+    const p = para.trim();
+    if (!p) continue;
+    if (p.length <= 700) { out.push(p); continue; }
+    const sens = p.match(/[^.!?…;]+[.!?…;]*\s*/g) || [p];
+    let cur = '';
+    for (const raw of sens) {
+      const sen = raw.trim();
+      if (!sen) continue;
+      if (cur && cur.length + sen.length + 1 > 550) { out.push(cur); cur = sen; }
+      else cur = cur ? cur + ' ' + sen : sen;
+    }
+    if (cur) out.push(cur);
+  }
+  return out;
+}
+
 function chunkText(text) {
   if (text.length <= CHUNK + 1000) return [text];
   const paras = text.split(/\n\n+/);
@@ -1109,6 +1212,94 @@ function renderSummary(s, nSources) {
   $('#sumcard').classList.remove('hidden'); $('#sumcard').classList.add('reveal');
 }
 
+// ── Kết quả: bản đồ ý chính — cần nắm gì & nằm ở đâu ────────────────────────
+function segLabel(k) { return k.from === k.to ? 'đoạn ' + k.from : 'đoạn ' + k.from + '–' + k.to; }
+
+function renderKeymap(list) {
+  const rows = list.map((s, i) => ({ s, i })).filter((x) => x.s.keys && (x.s.keys.keys || []).length);
+  if (!rows.length) { $('#keycard').classList.add('hidden'); return; }
+  $('#keymap').innerHTML = rows.map(({ s, i }) => {
+    const head = list.length > 1 ? '<div class="km-src"><span class="n">' + (i + 1) + '</span><span>' + esc(s.label) + '</span></div>' : '';
+    const goal = s.keys.goal ? '<div class="km-goal">' + ic('target') + '<span>' + esc(s.keys.goal) + '</span></div>' : '';
+    return '<div class="km">' + head + goal + s.keys.keys.map((k, j) =>
+      '<button class="kp" data-kp="' + i + ':' + j + '"><span class="kp-n">' + (j + 1) + '</span>' +
+      '<span class="kp-body"><b>' + esc(k.t) + '</b>' + (k.why ? '<span class="kp-why">' + esc(k.why) + '</span>' : '') + '</span>' +
+      '<span class="kp-loc">' + segLabel(k) + ic('right') + '</span></button>').join('') +
+      '<div class="actions" style="margin-top:10px"><button class="btn soft" data-readall="' + i + '">' + ic('book') + 'Đọc toàn bài</button>' +
+      (s.url ? openLink(s.url, 'Bản gốc · ' + prettyUrl(s.url)) : '') + '</div></div>';
+  }).join('');
+  $('#keycard').classList.remove('hidden'); $('#keycard').classList.add('reveal');
+}
+
+$('#keymap').addEventListener('click', (e) => {
+  const all = e.target.closest('[data-readall]');
+  if (all) return openReader(+all.dataset.readall, null);
+  if (e.target.closest('a')) return; // link mở bản gốc thì để nó mở
+  const b = e.target.closest('[data-kp]'); if (!b) return;
+  const [si, ki] = b.dataset.kp.split(':').map(Number);
+  openKeyPoint(si, ki);
+});
+
+// Popup một ý: đúng các đoạn chứa ý đó (chữ thật từ tài liệu) + nút mở trang đọc toàn bài
+function openKeyPoint(si, ki) {
+  const s = KEYMAP_LIST[si]; if (!s || !s.keys) return;
+  const k = s.keys.keys[ki]; if (!k) return;
+  $('#sheet').innerHTML = '<div class="grab"></div>' +
+    '<div class="row" style="justify-content:space-between; align-items:flex-start">' +
+    '<h2 class="ct" style="margin:0"><span class="kp-n">' + (ki + 1) + '</span>' + esc(k.t) + '</h2>' +
+    '<button class="btn soft" data-close="1">' + ic('x', 'sm') + 'Đóng</button></div>' +
+    (k.why ? '<p class="sh-why">' + esc(k.why) + '</p>' : '') +
+    '<div class="sh-meta">' + esc(segLabel(k)) + ' · ' + esc(s.label.slice(0, 70)) + '</div>' +
+    '<div class="sh-excerpt">' + s.segs.slice(k.from - 1, k.to).map((t) => '<p>' + esc(t) + '</p>').join('') + '</div>' +
+    '<div class="actions">' +
+    '<button class="btn" data-reader="' + si + ':' + ki + '">' + ic('book') + 'Đọc trong toàn bài</button>' +
+    (s.url ? openLink(s.url, 'Bản gốc · ' + prettyUrl(s.url)) : '') + '</div>';
+  $('#overlay').classList.add('show');
+}
+
+// Từ popup bấm tiếp → đóng sheet, mở trang đọc toàn bài và cuộn tới đúng chỗ
+$('#overlay').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-reader]'); if (!b) return;
+  $('#overlay').classList.remove('show');
+  const [si, ki] = b.dataset.reader.split(':').map(Number);
+  openReader(si, ki);
+});
+
+// ── Trang đọc toàn bài: cả tài liệu theo đoạn đánh số, ý chính là chip nhảy nhanh ──
+function openReader(si, ki) {
+  const s = KEYMAP_LIST[si]; if (!s || !s.segs || !s.segs.length) return;
+  READER_SRC = si;
+  const keys = (s.keys && s.keys.keys) || [];
+  $('#rd-title').textContent = s.label;
+  $('#rd-jumps').innerHTML = keys.map((k, j) =>
+    '<button class="chip" data-jump="' + j + '"><span class="kp-n">' + (j + 1) + '</span>' + esc(k.t.slice(0, 34)) + '</button>').join('');
+  $('#rd-inner').innerHTML =
+    (keys.length ? '<p class="rd-hint">Chạm một ý phía trên để nhảy tới đúng chỗ nó nằm — đoạn được tô sáng.</p>' : '') +
+    s.segs.map((t, j) => '<p class="rd-seg" id="rd-seg-' + (j + 1) + '"><span class="rd-n">' + (j + 1) + '</span>' + esc(t) + '</p>').join('');
+  $('#reader').classList.remove('hidden');
+  document.body.style.overflow = 'hidden'; // trang nền đứng yên, chỉ cuộn trong trang đọc
+  if (ki != null && keys[ki]) readerJump(ki);
+}
+
+function readerJump(ki) {
+  const s = KEYMAP_LIST[READER_SRC]; if (!s || !s.keys) return;
+  const k = s.keys.keys[ki]; if (!k) return;
+  document.querySelectorAll('#rd-inner .rd-seg.mark').forEach((el) => el.classList.remove('mark'));
+  document.querySelectorAll('#rd-jumps .chip.on').forEach((el) => el.classList.remove('on'));
+  const chip = document.querySelector('#rd-jumps [data-jump="' + ki + '"]');
+  if (chip) { chip.classList.add('on'); chip.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); }
+  for (let n = k.from; n <= k.to; n++) { const el = $('#rd-seg-' + n); if (el) el.classList.add('mark'); }
+  const first = $('#rd-seg-' + k.from);
+  if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+$('#rd-jumps').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-jump]'); if (b) readerJump(+b.dataset.jump);
+});
+function closeReader() { $('#reader').classList.add('hidden'); document.body.style.overflow = ''; }
+$('#rd-close').addEventListener('click', closeReader);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#reader').classList.contains('hidden')) closeReader(); });
+
 // ── Kết quả: liên kết giữa các nguồn ────────────────────────────────────────
 function renderSynthesis(syn, list) {
   if (!syn || (!(syn.themes || []).length && !(syn.connections || []).length)) { $('#linkcard').classList.add('hidden'); return; }
@@ -1153,14 +1344,21 @@ $('#btn-export').addEventListener('click', () => {
   if (!LAST) return;
   const md = ['# Tổng hợp tài liệu', '', LAST.tldr, '', '## Ý chính', ...LAST.points.map((p) => '- ' + p)];
   const srcs = LAST.sources || [];
+  const pushKeys = (s) => {
+    if (!s.keys || !(s.keys.keys || []).length) return;
+    if (s.keys.goal) md.push('', '> Mục tiêu: ' + s.keys.goal);
+    md.push('', '#### Cần nắm gì & nằm ở đâu');
+    s.keys.keys.forEach((k, j) => md.push((j + 1) + '. **' + k.t + '** _(' + segLabel(k) + ')_' + (k.why ? ' — ' + k.why : '')));
+  };
   if (srcs.length > 1) {
     md.push('', '## Các nguồn');
     srcs.forEach((s, i) => {
       md.push('', '### ' + (i + 1) + '. ' + s.label + (s.url ? '\n' + s.url : ''));
       md.push(s.tldr);
       (s.points || []).forEach((p) => md.push('- ' + p));
+      pushKeys(s);
     });
-  }
+  } else if (srcs.length === 1) pushKeys(srcs[0]);
   if (LAST.synthesis) {
     const nameOf = (i) => (srcs[i - 1] ? srcs[i - 1].label : 'Nguồn ' + i);
     if ((LAST.synthesis.themes || []).length) {
@@ -1407,9 +1605,17 @@ function openRun(id) {
   const r = HIST.find((x) => x.id === id); if (!r) return;
   const srcs = Array.isArray(r.sources) ? r.sources : [];
   const nameOf = (i) => (srcs[i - 1] ? srcs[i - 1].label : 'Nguồn ' + i);
-  const srcHtml = srcs.length > 1 ? '<h2 class="ct" style="margin:16px 0 10px; font-size:16px">' + ic('layers') + 'Các nguồn (' + srcs.length + ')</h2>' +
-    srcs.map((s, i) => '<div class="qview"><b>' + (i + 1) + '. ' + esc(s.label) + '</b>' +
-      '<div style="margin-top:5px">' + esc(s.tldr || '') + '</div>' +
+  // lịch sử không giữ toàn văn → mỗi ý hiện trích đoạn ngắn (ex) đã lưu kèm lúc phân tích
+  const keysHtml = (s) => (s.keys && (s.keys.keys || []).length)
+    ? s.keys.keys.map((k, j) => '<details style="margin-top:6px"><summary style="cursor:pointer; font-weight:700; font-size:13px">' +
+        (j + 1) + '. ' + esc(k.t) + ' <span class="badge">' + esc(segLabel(k)) + '</span></summary>' +
+        (k.why ? '<div class="muted" style="margin:5px 0">' + esc(k.why) + '</div>' : '') +
+        (k.ex ? '<div class="sh-excerpt" style="margin-top:5px"><p>' + esc(k.ex) + '…</p></div>' : '') + '</details>').join('')
+    : '';
+  const showSrc = srcs.length > 1 || (srcs.length === 1 && srcs[0].keys && (srcs[0].keys.keys || []).length);
+  const srcHtml = showSrc ? '<h2 class="ct" style="margin:16px 0 10px; font-size:16px">' + ic('layers') + (srcs.length > 1 ? 'Các nguồn (' + srcs.length + ')' : 'Cần nắm gì & nằm ở đâu') + '</h2>' +
+    srcs.map((s, i) => '<div class="qview">' + (srcs.length > 1 ? '<b>' + (i + 1) + '. ' + esc(s.label) + '</b>' +
+      '<div style="margin-top:5px">' + esc(s.tldr || '') + '</div>' : '') + keysHtml(s) +
       openLink(s.url, 'Mở tài liệu · ' + prettyUrl(s.url || '')) + '</div>').join('') : '';
   const syn = r.synthesis || {};
   const connHtml = (syn.connections || []).length ? '<h2 class="ct" style="margin:16px 0 10px; font-size:16px">' + ic('share') + 'Mối liên hệ</h2>' +

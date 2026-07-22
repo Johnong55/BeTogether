@@ -7,6 +7,9 @@
 //   task='synthesis'     { sources:[{label,tldr,points}] }
 //                        → { tldr, points[], themes[], connections[], terms[] }  (≥2 nguồn: chỉ ra
 //                          các nguồn liên quan nhau ra sao; from/to/sources là SỐ THỨ TỰ nguồn từ 1)
+//   task='keypoints'     { title, segs:[{n,t}] }  (tài liệu chia thành ĐOẠN đánh số ở client)
+//                        → { goal, keys:[{t,why,from,to}] }  — from/to là SỐ ĐOẠN từ 1: AI không
+//                          được trả nội dung vị trí, chỉ trả chỉ số (cùng cách chống bịa như curate)
 //   task='questions'     { summary, excerpts, count, difficulty?, qtype?, focus? }
 //                        difficulty: easy|medium|hard · qtype: mc|tf|mix (tf = Đúng–Sai, options 2 mục)
 //                        → { questions:[{q,options[2|4],answer,explain}] }
@@ -63,6 +66,24 @@ export async function onRequestPost({ request, env }) {
         '"sources"/"from"/"to" là SỐ THỨ TỰ nguồn (bắt đầu từ 1). "themes" tối đa 6, "connections" tối đa 8, "terms" tối đa 12. ' +
         'Nếu hai nguồn thật sự không liên quan gì nhau thì nói thẳng điều đó trong "note". Không markdown, không chữ nào ngoài JSON.';
       const { result, model } = await runJSON(env, sys, 'CÁC NGUỒN:\n\n' + clip(block, 18000), (v) => validSynthesis(v, list.length));
+      return Response.json({ ...result, model });
+    }
+    if (task === 'keypoints') {
+      // "Bản đồ ý chính": khách chia tài liệu thành các đoạn đánh số [1..n] rồi gửi phần đầu mỗi đoạn.
+      // AI chỉ được trả SỐ ĐOẠN (from/to) — không cho trả vị trí bằng chữ để nó không bịa được chỗ.
+      const segs = Array.isArray(body.segs) ? body.segs.slice(0, 400) : [];
+      if (segs.length < 2) return Response.json({ error: 'cần ít nhất 2 đoạn' }, { status: 400 });
+      const per = Math.max(60, Math.min(240, Math.floor(16000 / segs.length)));
+      const block = segs.map((s, i) => '[' + (i + 1) + '] ' + String((s && s.t) || '').slice(0, per)).join('\n');
+      const sys = 'Bạn là gia sư. Một tài liệu được chia thành ' + segs.length + ' ĐOẠN đánh số [1..' + segs.length + '] theo đúng thứ tự trong bài (mỗi đoạn chỉ hiện phần đầu). ' +
+        'Nhiệm vụ: chỉ ra NHỮNG Ý NGƯỜI HỌC CẦN NẮM để hiểu toàn bộ tài liệu, xếp theo thứ tự nên học, và mỗi ý nằm ở các đoạn nào. ' +
+        'Chỉ dựa vào nội dung có thật trong các đoạn, KHÔNG bịa. Viết tiếng Việt, giữ nguyên thuật ngữ/tên riêng gốc. ' +
+        'Trả về DUY NHẤT một JSON object đúng dạng: {"goal":"1 câu: nắm hết các ý dưới đây thì hiểu được gì",' +
+        '"keys":[{"t":"tên ý, thật ngắn gọn","why":"1 câu: ý này nói gì / vì sao cần nắm","from":3,"to":5}]}. ' +
+        '"from"/"to" là SỐ ĐOẠN (1..' + segs.length + ') nơi ý đó nằm, from ≤ to, phạm vi HẸP đúng chỗ ý đó xuất hiện (đừng quét cả bài). ' +
+        '"keys" có 4-10 mục, cộng lại phủ được các phần quan trọng của tài liệu. Không markdown, không chữ nào ngoài JSON.';
+      const user = (body.title ? 'TÀI LIỆU: ' + String(body.title).slice(0, 150) + '\n\n' : '') + 'CÁC ĐOẠN:\n' + clip(block, 20000);
+      const { result, model } = await runJSON(env, sys, user, (v) => validKeypoints(v, segs.length));
       return Response.json({ ...result, model });
     }
     if (task === 'questions') {
@@ -143,6 +164,23 @@ function validSynthesis(v, n) {
     }).filter(Boolean).slice(0, 8),
     terms: (Array.isArray(v.terms) ? v.terms : []).map((t) => t && t.term ? { term: String(t.term).trim(), vi: String(t.vi || t.meaning || '').trim() } : null).filter(Boolean).slice(0, 12),
   };
+}
+
+// Bản đồ ý chính: from bắt buộc hợp lệ (sai thì bỏ cả ý), to hỏng thì co về from,
+// phạm vi quá rộng (model "quét cả bài") bị cắt lại — giao diện trỏ thẳng segs[from-1..to-1].
+function validKeypoints(v, n) {
+  if (!v || !Array.isArray(v.keys)) return null;
+  const keys = v.keys.map((k) => {
+    if (!k || !k.t) return null;
+    const from = parseInt(k.from, 10);
+    let to = parseInt(k.to, 10);
+    if (!(from >= 1 && from <= n)) return null;
+    if (!(to >= from && to <= n)) to = from;
+    if (to - from > 11) to = from + 11;
+    return { t: String(k.t).trim().slice(0, 120), why: String(k.why || '').trim().slice(0, 300), from, to };
+  }).filter(Boolean).slice(0, 10);
+  if (!keys.length) return null;
+  return { goal: String(v.goal || '').trim().slice(0, 300), keys };
 }
 
 function normQuestion(it) {
