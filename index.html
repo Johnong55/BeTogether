@@ -2692,7 +2692,8 @@ function viewSchedule(){
   else if(tab==='mon') body=schMonthView();
   else if(tab==='rt')  body=schRoutinesView();
   else                 body=notesBody();
-  return `<h2 class="title" style="margin:0">Lịch của hai đứa</h2>
+  return `<div class="row" style="margin:0 0 2px"><h2 class="title grow" style="margin:0">Lịch của hai đứa</h2>
+      <button class="btn ghost sm" data-act="ics-open">${ic('cal','sm')} Vào máy</button></div>
     <div class="seg">${seg('day','Ngày')}${seg('mon','Tháng')}${seg('rt','Thói quen')}${seg('note','Nhắc',due)}</div>
     ${sqlHint}${body}`; }
 
@@ -2834,6 +2835,64 @@ function schRoutinesView(){
     ${sec('🔁 Mỗi ngày','Nếp sinh hoạt cố định của hai đứa.',by('daily'))}
     ${sec('📅 Vài ngày trong tuần','Việc theo thứ — vd lịch học, lịch gym.',by('weekly'))}
     ${sec('✨ Một lần','Việc riêng của một ngày cụ thể.',once)}`; }
+
+/* ---------- ĐƯA LỊCH VÀO ĐIỆN THOẠI (file .ics, xem functions/api/ics.js) ----------
+   Điện thoại đăng ký đường dẫn này một lần rồi app Lịch của MÁY tự lo báo thức —
+   không cần Web Push, iPhone không cần cài app vào màn hình chính.
+   Đổi lại: máy tự tải lại theo chu kỳ của nó (iPhone ~15 phút–1 tiếng, Google Calendar
+   có khi vài tiếng) nên đây là kênh cho việc ĐẶT TRƯỚC, việc gấp vẫn đi đường push. */
+const ICS_ORIGIN = 'https://cungnhau.pages.dev';   // preview local không có /api -> dùng domain thật
+const ICS_ALARMS = [['off','Tắt'],[0,'Đúng giờ'],[5,'5′'],[15,'15′'],[30,'30′']];
+function icsUrl(){
+  const o=S.tmp.ics||{}, h=location.hostname;
+  const base = (location.protocol==='https:' && h && !/^(localhost|127\.|0\.0\.0\.0|\[?::1)/.test(h))
+    ? location.origin : ICS_ORIGIN;
+  const p=new URLSearchParams({ room:S.space.id, who:o.all?'all':S.me });
+  if(o.alarm!==5) p.set('alarm', String(o.alarm));
+  return base+'/api/ics?'+p.toString(); }
+
+function openIcsModal(){
+  if(!S.tmp.ics) S.tmp.ics={ all:false, alarm:5 };
+  modal(icsSheetHTML()); }
+function icsRefresh(){ const sh=$('.overlay .sheet'); if(sh) sh.innerHTML=icsSheetHTML(); }
+
+function icsSheetHTML(){
+  const o=S.tmp.ics, url=icsUrl(), ios=/iPad|iPhone|iPod/.test(navigator.userAgent);
+  const chip=(on,act,v,l)=>`<button class="${on?'on':''}" data-act="${act}" data-v="${v}">${l}</button>`;
+  const guideIos=`<b>Trên iPhone / iPad</b>
+    <p class="muted" style="margin:4px 0 0">Bấm <b>Mở trong app Lịch</b> ở trên → hiện hộp thoại → chọn <b>Đăng ký</b>.<br>
+    Muốn lịch cập nhật nhanh hơn: <i>Cài đặt → Ứng dụng → Lịch → Tài khoản → Tải dữ liệu mới</i> rồi chọn chu kỳ ngắn nhất.</p>`;
+  const guideAnd=`<b>Trên Android</b>
+    <p class="muted" style="margin:4px 0 0">Chép link rồi mở <b>calendar.google.com</b> (trình duyệt máy tính dễ hơn) →
+    cột trái mục <i>Lịch khác</i> bấm dấu <b>＋</b> → <b>Từ URL</b> → dán link → <b>Thêm lịch</b>.</p>`;
+  return `<h2 class="title" style="margin-top:0">Đưa lịch vào điện thoại 📅</h2>
+    <p class="muted" style="margin:0 0 14px">Đăng ký một lần thôi. Sau đó app Lịch của máy tự nhắc hai đứa,
+      kể cả khi không mở app — iPhone cũng không cần cài app vào màn hình chính nữa 💕</p>
+
+    <span class="lab" style="display:block">Lịch này gồm những gì</span>
+    <div class="pickrow" style="margin:6px 0 2px">
+      ${chip(!o.all,'ics-who','me','🙋 Của mình')}
+      ${chip(o.all,'ics-who','all','💞 Cả hai đứa')}</div>
+    <p class="muted" style="margin:0 0 12px;font-size:12px">${o.all
+      ? 'Gồm cả việc của '+esc(nameOf(other(S.me))||'người ấy')+' — có gắn tên cho khỏi lẫn.'
+      : 'Việc của bạn và việc chung của hai đứa.'}</p>
+
+    <span class="lab" style="display:block">Báo trước bao lâu</span>
+    <div class="pickrow" style="margin:6px 0 14px">
+      ${ICS_ALARMS.map(([v,l])=>chip(String(o.alarm)===String(v),'ics-alarm',v,l)).join('')}</div>
+
+    <label class="fld"><span class="lab">Đường dẫn lịch</span>
+      <input id="ics_url" readonly value="${esc(url)}" onfocus="this.select()" style="font-size:12px"/></label>
+    <div class="row" style="gap:10px;margin:2px 0 14px">
+      <button class="btn soft block sm" data-act="ics-copy">${ic('copy','sm')} Chép link</button>
+      <button class="btn block sm" data-act="ics-sub">${ic('cal','sm')} Mở trong app Lịch</button></div>
+
+    <div class="card" style="background:var(--chip);padding:12px 14px">
+      ${ios? guideIos+'<div style="height:10px"></div>'+guideAnd : guideAnd+'<div style="height:10px"></div>'+guideIos}
+      <p class="muted" style="margin:10px 0 0;font-size:12px">💡 Máy tự tải lại lịch theo chu kỳ riêng của nó
+        (Google Calendar có khi chậm vài tiếng), nên việc vừa thêm xong có thể lát nữa mới hiện.
+        Việc cần báo <b>ngay</b> thì vẫn dùng thông báo đẩy ở tab Nhắc nha.</p></div>
+    <button class="btn soft block" style="margin-top:14px" data-act="close-modal">Xong</button>`; }
 
 /* ---------- POPUP: xem một việc ---------- */
 function openRoutineSheet(id){
@@ -3390,6 +3449,13 @@ async function handle(act,v,id,t,e){
     case 'sch-mon': { const base=S.tmp.schMonth||schDate().slice(0,7); const [yy,mm]=base.split('-').map(Number);
       const d=new Date(yy,mm-1+parseInt(v,10),1); S.tmp.schMonth=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); render(); } break;
     case 'sch-open': openRoutineSheet(id); break;
+    case 'ics-open':  openIcsModal(); break;
+    case 'ics-who':   S.tmp.ics.all=(v==='all'); icsRefresh(); break;
+    case 'ics-alarm': S.tmp.ics.alarm=(v==='off'?'off':parseInt(v,10)); icsRefresh(); break;
+    case 'ics-copy':  { const u=icsUrl();
+      if(navigator.clipboard?.writeText) navigator.clipboard.writeText(u).then(()=>toast('Đã chép link lịch 💕'),()=>$('#ics_url')?.select());
+      else $('#ics_url')?.select(); break; }
+    case 'ics-sub':   location.href=icsUrl().replace(/^https?:/,'webcal:'); break;
     case 'sch-note': openNotePinSheet(id); break;
     case 'sch-done': await schToggleDone(id); break;
     case 'sch-nudge': await schNudge(id); break;
