@@ -354,6 +354,20 @@
   .rd-seg.mark{ background:#fff3d6; border-color:var(--edge); box-shadow:2px 2px 0 var(--edge); }
   .rd-hint{ font-size:12px; color:var(--soft); margin:0 0 14px; }
 
+  /* Bản PDF gốc vẽ ra canvas + lớp tô sáng nằm đè lên */
+  .rd-inner.pdfmode{ max-width:980px; }
+  .pdf-page{ position:relative; margin:0 auto 16px; background:#fff; border:2px solid var(--edge);
+    border-radius:10px; overflow:hidden; box-shadow:3px 3px 0 var(--edge); }
+  .pdf-page canvas{ display:block; width:100%; height:auto; }
+  .pdf-wait{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    color:var(--soft); font-size:12px; font-weight:700; }
+  .pdf-pn{ position:absolute; right:8px; bottom:6px; font-size:10.5px; font-weight:800; color:var(--soft);
+    background:rgba(255,255,255,.88); border-radius:6px; padding:2px 7px; pointer-events:none; }
+  /* multiply để chữ đen bên dưới vẫn đọc được xuyên qua màu tô */
+  .pdf-hl{ position:absolute; background:rgba(255,206,84,.55); border-radius:2px; pointer-events:none;
+    mix-blend-mode:multiply; animation:hlpop .45s var(--ease-smooth); }
+  @keyframes hlpop{ from{ opacity:0; transform:scaleY(.4); } to{ opacity:1; transform:none; } }
+
   :focus-visible{ outline:3px solid var(--p2); outline-offset:2px; border-radius:8px; }
   @media (prefers-reduced-motion:reduce){
     *{ animation:none !important; transition:none !important; }
@@ -566,7 +580,11 @@
 <script>
 // ── Cấu hình (khớp với functions/api/lab/*.js) ───────────────────────────────
 const LAB_KEY = 'cn-lab-124-tim';
-const API = { extract: '/api/lab/extract', analyze: '/api/lab/analyze', fetch: '/api/lab/fetch', search: '/api/lab/search' };
+const API = { extract: '/api/lab/extract', analyze: '/api/lab/analyze', fetch: '/api/lab/fetch', search: '/api/lab/search', raw: '/api/lab/raw' };
+// PDF.js 3.x bản classic script (4.x là ESM, không nhúng bằng <script> thường được).
+const PDFJS_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+const PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const PDF_MAX_PAGES = 300;
 const CHUNK = 6000, OVERLAP = 250;
 const MAX_PER_SOURCE = 40000;   // trần ký tự MỖI nguồn (nhiều nguồn nên siết hơn hồi chỉ có 1)
 const MAX_TOTAL = 120000;       // trần ký tự cả mẻ
@@ -867,7 +885,11 @@ async function run() {
   QUIZ = null; LAST = null;
   const t0 = Date.now();
   SOURCES = SOURCES.filter((s) => !s.parent); // bỏ trang con của lần chạy trước
-  SOURCES.forEach((s) => { s.status = 'idle'; s.chars = 0; s.err = ''; s.text = ''; s.summary = null; s.segs = null; s.keys = null; });
+  SOURCES.forEach((s) => {
+    if (s.pdf && s.pdf.doc) { try { s.pdf.doc.destroy(); } catch (e) {} }  // trả bộ nhớ của PDF lần trước
+    s.status = 'idle'; s.chars = 0; s.err = ''; s.text = ''; s.summary = null;
+    s.segs = null; s.segLoc = null; s.keys = null; s.pdf = null;
+  });
   renderSources();
   ['#sumcard', '#keycard', '#linkcard', '#srccard', '#fcard', '#quizcard'].forEach((s) => $(s).classList.add('hidden'));
   buildSteps(); setProgress(0);
@@ -885,6 +907,7 @@ async function run() {
       s.status = 'reading'; renderSources();
       try {
         const got = await readSource(s);
+        s.pdf = got.pdf || null;
         s.text = cleanText(got.text);
         if (s.text.length < 40) throw new Error('gần như không có chữ');
         if (s.text.length > MAX_PER_SOURCE) s.text = s.text.slice(0, MAX_PER_SOURCE);
@@ -931,7 +954,8 @@ async function run() {
       s.summary = await summarizeOne(s, (part, of) => step('map', 'run', head + ' · phần ' + part + '/' + of));
       // Bản đồ ý chính: chia tài liệu thành đoạn đánh số, AI trả về ý cần nắm + SỐ ĐOẠN nó nằm.
       // Hỏng cũng không sao — vẫn còn tóm tắt, đừng để một bước phụ làm chết cả mẻ.
-      s.segs = buildSegments(s.text);
+      if (s.pdf) { const r = segmentsFromPdf(s.pdf); s.segs = r.segs; s.segLoc = r.loc; }
+      else { s.segs = buildSegments(s.text); s.segLoc = null; }
       if (s.segs.length >= 2) {
         step('map', 'run', head + ' · đánh dấu vị trí ý chính…');
         const per = Math.max(60, Math.min(240, Math.floor(16000 / s.segs.length)));
@@ -987,7 +1011,7 @@ async function run() {
         kind: s.kind, label: s.label, url: s.url || null, chars: s.chars, tldr: s.summary.tldr, points: s.summary.points,
         // lịch sử không giữ toàn văn (nặng) → lưu kèm mỗi ý một trích đoạn ngắn để xem lại vẫn thấy chỗ đó
         keys: s.keys ? { goal: s.keys.goal || '', keys: s.keys.keys.map((k) => ({
-          t: k.t, why: k.why, from: k.from, to: k.to,
+          t: k.t, why: k.why, from: k.from, to: k.to, loc: locLabel(s, k),
           ex: s.segs.slice(k.from - 1, k.to).join(' ').slice(0, 400),
         })) } : null,
       })),
@@ -1045,11 +1069,100 @@ async function generateQuestions() {
 }
 
 // Lấy chữ của một nguồn (đường dẫn / tệp / chữ dán)
+// PDF được ưu tiên đọc bằng PDF.js NGAY TRONG TRÌNH DUYỆT: vừa có chữ, vừa biết mỗi câu nằm ở
+// trang nào / chỗ nào trên trang → sau này hiện được đúng trên bản PDF gốc. Không đọc được
+// (PDF scan chỉ có ảnh) mới lùi về đường cũ: gửi lên máy chủ nhờ Workers AI chuyển thành chữ.
 async function readSource(s) {
   if (s.kind === 'paste') return { text: s.raw };
-  if (s.kind === 'file') return { text: await extractFile(s) };
+  if (s.kind === 'file') {
+    if (/\.pdf$/i.test(s.label) && !s.isImage) {
+      const p = await readPdfBlob(s.blob);
+      if (p) return { text: p.text, pdf: p };
+    }
+    return { text: await extractFile(s) };
+  }
+  // Đường dẫn: nếu là PDF thì tải bytes qua /api/lab/raw (trình duyệt tải thẳng sẽ bị CORS chặn)
+  if (isPdfUrl(s.url)) {
+    const p = await fetchPdfDoc(s.url);
+    if (p) return { text: p.text, pdf: p, title: fileFromUrl(s.url) };
+  }
   const r = await apiJson(API.fetch, { url: s.url }, 60000);
+  if (r.kind === 'pdf') {
+    const p = await fetchPdfDoc(s.url);            // /fetch báo là PDF mà URL không có đuôi .pdf
+    if (p) return { text: p.text, pdf: p, title: r.title };
+  }
   return { text: r.text, title: r.title, links: r.links || [] };
+}
+
+function isPdfUrl(u) { return /\.pdf($|[?#])/i.test(String(u || '')); }
+function fileFromUrl(u) {
+  try { const p = new URL(u).pathname.split('/').filter(Boolean).pop(); return decodeURIComponent(p || u); }
+  catch (e) { return u; }
+}
+
+async function fetchPdfDoc(url) {
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 60000);
+    const res = await fetch(API.raw, {
+      method: 'POST', signal: ctrl.signal,
+      headers: { 'content-type': 'application/json', 'x-lab-key': LAB_KEY },
+      body: JSON.stringify({ url }),
+    }).finally(() => clearTimeout(t));
+    if (!res.ok) return null;
+    return await readPdfBlob(await res.blob());
+  } catch (e) { return null; }
+}
+
+// ── Đọc PDF bằng PDF.js: chữ + vị trí từng mẩu chữ trên trang ────────────────
+let PDFLIB = null;
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const el = document.createElement('script');
+    el.src = src; el.onload = resolve; el.onerror = () => reject(new Error('không tải được ' + src));
+    document.head.appendChild(el);
+  });
+}
+async function pdfjs() {
+  if (PDFLIB) return PDFLIB;
+  await loadScript(PDFJS_SRC);
+  if (!window.pdfjsLib) throw new Error('không nạp được PDF.js');
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+  PDFLIB = window.pdfjsLib;
+  return PDFLIB;
+}
+
+// Trả { doc, pages:[{n,w,h,text,items}], text } — items có toạ độ Ở TỈ LỆ 1 (scale 1), lúc vẽ
+// mới nhân theo cỡ màn hình, nên đổi cỡ/xoay máy vẫn tô sáng đúng chỗ.
+// null = PDF không có lớp chữ (bản scan) → gọi hàm gọi phải lùi về cách đọc cũ.
+async function readPdfBlob(blob) {
+  try {
+    const lib = await pdfjs();
+    const data = new Uint8Array(await blob.arrayBuffer());
+    const doc = await lib.getDocument({ data }).promise;
+    const pages = [];
+    let total = 0;
+    for (let n = 1; n <= Math.min(doc.numPages, PDF_MAX_PAGES); n++) {
+      const page = await doc.getPage(n);
+      const vp = page.getViewport({ scale: 1 });
+      const tc = await page.getTextContent();
+      let text = ''; const items = [];
+      for (const it of tc.items) {
+        const str = typeof it.str === 'string' ? it.str : '';
+        if (str) {
+          const tr = lib.Util.transform(vp.transform, it.transform);
+          const h = Math.hypot(tr[2], tr[3]) || 10;
+          items.push({ o: text.length, n: str.length, x: tr[4], y: tr[5] - h, w: it.width || 0, h });
+        }
+        text += str;
+        if (it.hasEOL) text += '\n';
+      }
+      pages.push({ n, w: vp.width, h: vp.height, text, items });
+      total += text.length;
+    }
+    if (total < 200) { try { doc.destroy(); } catch (e) {} return null; } // PDF scan: chỉ có ảnh, không có chữ
+    return { doc, pages, text: pages.map((p) => p.text).join('\n\n') };
+  } catch (e) { return null; }
 }
 
 // Tóm tắt một nguồn: 1 phần gọi thẳng, nhiều phần thì tóm từng phần rồi gộp
@@ -1115,23 +1228,51 @@ function cleanText(s) {
 // giao diện trỏ thẳng segs[from-1..to-1] nên vị trí luôn là chữ THẬT trong tài liệu, không bịa được).
 // Đoạn quá dài (PDF hay mất xuống dòng) cắt tại ranh giới câu ~550 ký tự; không dùng lookbehind
 // trong regex vì Safari cũ trên iPhone chưa chắc hiểu.
-function buildSegments(text) {
+// segmentPositions trả kèm KHOẢNG KÝ TỰ [a,b) trong chuỗi gốc — cần cho PDF: biết đoạn nằm ở
+// đâu trong chữ của trang thì mới quy ra được toạ độ để tô sáng trên bản gốc.
+function segmentPositions(text) {
+  const src = String(text || '');
   const out = [];
-  for (const para of String(text || '').split(/\n\n+/)) {
-    const p = para.trim();
-    if (!p) continue;
-    if (p.length <= 700) { out.push(p); continue; }
-    const sens = p.match(/[^.!?…;]+[.!?…;]*\s*/g) || [p];
-    let cur = '';
-    for (const raw of sens) {
-      const sen = raw.trim();
-      if (!sen) continue;
-      if (cur && cur.length + sen.length + 1 > 550) { out.push(cur); cur = sen; }
-      else cur = cur ? cur + ' ' + sen : sen;
+  const trimPush = (a, b) => {
+    while (a < b && /\s/.test(src[a])) a++;
+    while (b > a && /\s/.test(src[b - 1])) b--;
+    if (b > a) out.push({ t: src.slice(a, b), a, b });
+  };
+  const paras = []; const rx = /\n{2,}/g;
+  let m, prev = 0;
+  while ((m = rx.exec(src))) { paras.push([prev, m.index]); prev = rx.lastIndex; }
+  paras.push([prev, src.length]);
+  for (const [pa, pb] of paras) {
+    let a = pa, b = pb;
+    while (a < b && /\s/.test(src[a])) a++;
+    while (b > a && /\s/.test(src[b - 1])) b--;
+    if (b <= a) continue;
+    if (b - a <= 700) { trimPush(a, b); continue; }
+    const para = src.slice(a, b);
+    const rs = /[^.!?…;]+[.!?…;]*\s*/g;
+    let s, ca = -1, cb = -1;
+    while ((s = rs.exec(para))) {
+      if (!s[0].trim()) continue;
+      const sa = a + s.index, sb = sa + s[0].length;
+      if (ca >= 0 && (sb - ca) > 550) { trimPush(ca, cb); ca = sa; cb = sb; }
+      else { if (ca < 0) ca = sa; cb = sb; }
     }
-    if (cur) out.push(cur);
+    if (ca >= 0) trimPush(ca, cb);
   }
   return out;
+}
+
+function buildSegments(text) {
+  return segmentPositions(text).map((s) => s.t);
+}
+
+// PDF: chia đoạn THEO TỪNG TRANG để mỗi đoạn biết mình thuộc trang nào (segLoc song song với segs)
+function segmentsFromPdf(pdf) {
+  const segs = [], loc = [];
+  for (const pg of pdf.pages) {
+    for (const sp of segmentPositions(pg.text)) { segs.push(sp.t); loc.push({ p: pg.n, a: sp.a, b: sp.b }); }
+  }
+  return { segs, loc };
 }
 
 function chunkText(text) {
@@ -1215,6 +1356,14 @@ function renderSummary(s, nSources) {
 // ── Kết quả: bản đồ ý chính — cần nắm gì & nằm ở đâu ────────────────────────
 function segLabel(k) { return k.from === k.to ? 'đoạn ' + k.from : 'đoạn ' + k.from + '–' + k.to; }
 
+// Nguồn là PDF thì nói VỊ TRÍ THEO TRANG ("trang 12") — dễ lần theo hơn hẳn số đoạn.
+function locLabel(s, k) {
+  const l = (s && s.segLoc) ? s.segLoc.slice(k.from - 1, k.to).filter(Boolean) : [];
+  if (!l.length) return segLabel(k);
+  const p0 = Math.min(...l.map((x) => x.p)), p1 = Math.max(...l.map((x) => x.p));
+  return p0 === p1 ? 'trang ' + p0 : 'trang ' + p0 + '–' + p1;
+}
+
 function renderKeymap(list) {
   const rows = list.map((s, i) => ({ s, i })).filter((x) => x.s.keys && (x.s.keys.keys || []).length);
   if (!rows.length) { $('#keycard').classList.add('hidden'); return; }
@@ -1224,8 +1373,9 @@ function renderKeymap(list) {
     return '<div class="km">' + head + goal + s.keys.keys.map((k, j) =>
       '<button class="kp" data-kp="' + i + ':' + j + '"><span class="kp-n">' + (j + 1) + '</span>' +
       '<span class="kp-body"><b>' + esc(k.t) + '</b>' + (k.why ? '<span class="kp-why">' + esc(k.why) + '</span>' : '') + '</span>' +
-      '<span class="kp-loc">' + segLabel(k) + ic('right') + '</span></button>').join('') +
-      '<div class="actions" style="margin-top:10px"><button class="btn soft" data-readall="' + i + '">' + ic('book') + 'Đọc toàn bài</button>' +
+      '<span class="kp-loc">' + locLabel(s, k) + ic('right') + '</span></button>').join('') +
+      '<div class="actions" style="margin-top:10px"><button class="btn soft" data-readall="' + i + '">' + ic('book') +
+      (s.pdf ? 'Mở bản PDF gốc' : 'Đọc toàn bài') + '</button>' +
       (s.url ? openLink(s.url, 'Bản gốc · ' + prettyUrl(s.url)) : '') + '</div></div>';
   }).join('');
   $('#keycard').classList.remove('hidden'); $('#keycard').classList.add('reveal');
@@ -1249,10 +1399,11 @@ function openKeyPoint(si, ki) {
     '<h2 class="ct" style="margin:0"><span class="kp-n">' + (ki + 1) + '</span>' + esc(k.t) + '</h2>' +
     '<button class="btn soft" data-close="1">' + ic('x', 'sm') + 'Đóng</button></div>' +
     (k.why ? '<p class="sh-why">' + esc(k.why) + '</p>' : '') +
-    '<div class="sh-meta">' + esc(segLabel(k)) + ' · ' + esc(s.label.slice(0, 70)) + '</div>' +
+    '<div class="sh-meta">' + esc(locLabel(s, k)) + ' · ' + esc(s.label.slice(0, 70)) + '</div>' +
     '<div class="sh-excerpt">' + s.segs.slice(k.from - 1, k.to).map((t) => '<p>' + esc(t) + '</p>').join('') + '</div>' +
     '<div class="actions">' +
-    '<button class="btn" data-reader="' + si + ':' + ki + '">' + ic('book') + 'Đọc trong toàn bài</button>' +
+    '<button class="btn" data-reader="' + si + ':' + ki + '">' + ic('book') +
+    (s.pdf ? 'Xem trên bản PDF gốc' : 'Đọc trong toàn bài') + '</button>' +
     (s.url ? openLink(s.url, 'Bản gốc · ' + prettyUrl(s.url)) : '') + '</div>';
   $('#overlay').classList.add('show');
 }
@@ -1265,38 +1416,150 @@ $('#overlay').addEventListener('click', (e) => {
   openReader(si, ki);
 });
 
-// ── Trang đọc toàn bài: cả tài liệu theo đoạn đánh số, ý chính là chip nhảy nhanh ──
-function openReader(si, ki) {
+// ── Trang đọc toàn bài ──────────────────────────────────────────────────────
+// Nguồn là PDF → hiện ĐÚNG BẢN PDF GỐC (PDF.js vẽ ra canvas) và tô sáng chỗ cần đọc lên trên đó.
+// Nguồn khác (trang web / chữ dán) không có bản gốc để vẽ → vẫn dùng lối cũ: chữ chia đoạn đánh số.
+const RD = { rendered: new Set(), io: null, scale: 1 };
+
+async function openReader(si, ki) {
   const s = KEYMAP_LIST[si]; if (!s || !s.segs || !s.segs.length) return;
   READER_SRC = si;
   const keys = (s.keys && s.keys.keys) || [];
   $('#rd-title').textContent = s.label;
   $('#rd-jumps').innerHTML = keys.map((k, j) =>
     '<button class="chip" data-jump="' + j + '"><span class="kp-n">' + (j + 1) + '</span>' + esc(k.t.slice(0, 34)) + '</button>').join('');
-  $('#rd-inner').innerHTML =
-    (keys.length ? '<p class="rd-hint">Chạm một ý phía trên để nhảy tới đúng chỗ nó nằm — đoạn được tô sáng.</p>' : '') +
-    s.segs.map((t, j) => '<p class="rd-seg" id="rd-seg-' + (j + 1) + '"><span class="rd-n">' + (j + 1) + '</span>' + esc(t) + '</p>').join('');
   $('#reader').classList.remove('hidden');
   document.body.style.overflow = 'hidden'; // trang nền đứng yên, chỉ cuộn trong trang đọc
+  if (s.pdf) await mountPdfPages(s, keys.length);
+  else mountTextPages(s, keys.length);
   if (ki != null && keys[ki]) readerJump(ki);
+}
+
+function mountTextPages(s, nKeys) {
+  RD.rendered = new Set();
+  if (RD.io) { RD.io.disconnect(); RD.io = null; }
+  const inner = $('#rd-inner');
+  inner.className = 'rd-inner';
+  inner.innerHTML =
+    (nKeys ? '<p class="rd-hint">Chạm một ý phía trên để nhảy tới đúng chỗ nó nằm — đoạn được tô sáng.</p>' : '') +
+    s.segs.map((t, j) => '<p class="rd-seg" id="rd-seg-' + (j + 1) + '"><span class="rd-n">' + (j + 1) + '</span>' + esc(t) + '</p>').join('');
+}
+
+// Dựng khung tất cả các trang trước (biết sẵn tỉ lệ khổ giấy nên chỗ trống đúng cỡ, cuộn không giật),
+// canvas chỉ vẽ khi trang sắp lọt vào tầm nhìn — PDF vài trăm trang vẫn mở được ngay.
+async function mountPdfPages(s, nKeys) {
+  RD.rendered = new Set();
+  if (RD.io) { RD.io.disconnect(); RD.io = null; }
+  const inner = $('#rd-inner');
+  inner.className = 'rd-inner pdfmode';
+  const avail = Math.max(280, ($('#rd-body').clientWidth || 900) - 30);
+  RD.scale = Math.max(0.4, Math.min(2.2, Math.min(avail, 980) / (s.pdf.pages[0].w || 612)));
+  inner.innerHTML =
+    (nKeys ? '<p class="rd-hint">Đây là bản PDF gốc. Chạm một ý phía trên để nhảy tới đúng trang và tô sáng chỗ đó.</p>' : '') +
+    s.pdf.pages.map((pg) => '<div class="pdf-page" data-p="' + pg.n + '" style="aspect-ratio:' + pg.w + '/' + pg.h + '">' +
+      '<div class="pdf-wait">trang ' + pg.n + '</div></div>').join('');
+  RD.io = new IntersectionObserver((es) => {
+    es.forEach((e) => { if (e.isIntersecting) renderPdfPage(+e.target.dataset.p); });
+  }, { root: $('#rd-body'), rootMargin: '600px 0px' });
+  inner.querySelectorAll('.pdf-page').forEach((el) => RD.io.observe(el));
+  await renderPdfPage(1);
+}
+
+async function renderPdfPage(n) {
+  const s = KEYMAP_LIST[READER_SRC];
+  if (!s || !s.pdf || RD.rendered.has(n)) return;
+  RD.rendered.add(n);
+  const host = document.querySelector('#rd-inner .pdf-page[data-p="' + n + '"]');
+  if (!host) return;
+  try {
+    const page = await s.pdf.doc.getPage(n);
+    const vp = page.getViewport({ scale: RD.scale });
+    const dpr = Math.min(2, window.devicePixelRatio || 1);   // màn retina vẫn nét, nhưng đừng quá 2x kẻo nặng
+    const cv = document.createElement('canvas');
+    cv.width = Math.round(vp.width * dpr); cv.height = Math.round(vp.height * dpr);
+    const ctx = cv.getContext('2d');
+    ctx.scale(dpr, dpr);
+    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+    const wait = host.querySelector('.pdf-wait'); if (wait) wait.remove();
+    host.style.aspectRatio = '';                              // canvas tự quyết chiều cao từ đây
+    host.insertBefore(cv, host.firstChild);
+    host.insertAdjacentHTML('beforeend', '<span class="pdf-pn">' + n + '</span>');
+  } catch (e) { RD.rendered.delete(n); }
 }
 
 function readerJump(ki) {
   const s = KEYMAP_LIST[READER_SRC]; if (!s || !s.keys) return;
   const k = s.keys.keys[ki]; if (!k) return;
-  document.querySelectorAll('#rd-inner .rd-seg.mark').forEach((el) => el.classList.remove('mark'));
   document.querySelectorAll('#rd-jumps .chip.on').forEach((el) => el.classList.remove('on'));
   const chip = document.querySelector('#rd-jumps [data-jump="' + ki + '"]');
   if (chip) { chip.classList.add('on'); chip.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); }
+  if (s.pdf && s.segLoc) return pdfJump(s, k);
+  document.querySelectorAll('#rd-inner .rd-seg.mark').forEach((el) => el.classList.remove('mark'));
   for (let n = k.from; n <= k.to; n++) { const el = $('#rd-seg-' + n); if (el) el.classList.add('mark'); }
   const first = $('#rd-seg-' + k.from);
   if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
+// Tô sáng trên bản PDF: quy khoảng ký tự của đoạn → các mẩu chữ → hình chữ nhật.
+// Toạ độ ghi bằng PHẦN TRĂM khổ trang nên phóng to / xoay máy vẫn dính đúng chỗ.
+async function pdfJump(s, k) {
+  document.querySelectorAll('#rd-inner .pdf-hl').forEach((el) => el.remove());
+  const locs = s.segLoc.slice(k.from - 1, k.to).filter(Boolean);
+  if (!locs.length) return;
+  const byPage = new Map();
+  for (const l of locs) { if (!byPage.has(l.p)) byPage.set(l.p, []); byPage.get(l.p).push(l); }
+  const pct = (v) => (Math.max(0, Math.min(1, v)) * 100).toFixed(3) + '%';
+  for (const [p, list] of byPage) {
+    await renderPdfPage(p);
+    const pg = s.pdf.pages[p - 1];
+    const host = document.querySelector('#rd-inner .pdf-page[data-p="' + p + '"]');
+    if (!pg || !host) continue;
+    const rects = [];
+    for (const l of list) rects.push(...rectsForRange(pg, l.a, l.b));
+    host.insertAdjacentHTML('beforeend', mergeRects(rects).map((r) =>
+      '<i class="pdf-hl" style="left:' + pct(r.x / pg.w) + ';top:' + pct(r.y / pg.h) +
+      ';width:' + pct(r.w / pg.w) + ';height:' + pct(r.h / pg.h) + '"></i>').join(''));
+  }
+  const p0 = locs[0].p;
+  const target = document.querySelector('#rd-inner .pdf-page[data-p="' + p0 + '"] .pdf-hl') ||
+                 document.querySelector('#rd-inner .pdf-page[data-p="' + p0 + '"]');
+  if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// Mẩu chữ nào giao với khoảng [a,b) thì lấy — giao một phần thì cắt theo tỉ lệ ký tự cho khít.
+function rectsForRange(pg, a, b) {
+  const out = [];
+  for (const it of pg.items) {
+    const s0 = it.o, e0 = it.o + it.n;
+    if (e0 <= a || s0 >= b || !it.n) continue;
+    const f0 = (Math.max(a, s0) - s0) / it.n, f1 = (Math.min(b, e0) - s0) / it.n;
+    out.push({ x: it.x + it.w * f0, y: it.y, w: it.w * (f1 - f0), h: it.h });
+  }
+  return out;
+}
+
+// PDF.js cắt một dòng thành nhiều mẩu → gộp lại thành vệt liền cho đỡ lỗ chỗ.
+function mergeRects(rs) {
+  const out = [];
+  for (const r of rs.slice().sort((p, q) => (p.y - q.y) || (p.x - q.x))) {
+    const last = out[out.length - 1];
+    const sameLine = last && Math.abs(last.y - r.y) < Math.max(2, last.h * 0.5);
+    if (sameLine && r.x >= last.x && r.x - (last.x + last.w) < last.h) {
+      last.w = Math.max(last.x + last.w, r.x + r.w) - last.x;
+      last.h = Math.max(last.h, r.h);
+    } else out.push({ x: r.x, y: r.y, w: r.w, h: r.h });
+  }
+  return out;
+}
+
 $('#rd-jumps').addEventListener('click', (e) => {
   const b = e.target.closest('[data-jump]'); if (b) readerJump(+b.dataset.jump);
 });
-function closeReader() { $('#reader').classList.add('hidden'); document.body.style.overflow = ''; }
+function closeReader() {
+  $('#reader').classList.add('hidden');
+  document.body.style.overflow = '';
+  if (RD.io) { RD.io.disconnect(); RD.io = null; }   // thôi theo dõi cuộn, khỏi vẽ trang trong lúc đã đóng
+}
 $('#rd-close').addEventListener('click', closeReader);
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#reader').classList.contains('hidden')) closeReader(); });
 
@@ -1348,7 +1611,7 @@ $('#btn-export').addEventListener('click', () => {
     if (!s.keys || !(s.keys.keys || []).length) return;
     if (s.keys.goal) md.push('', '> Mục tiêu: ' + s.keys.goal);
     md.push('', '#### Cần nắm gì & nằm ở đâu');
-    s.keys.keys.forEach((k, j) => md.push((j + 1) + '. **' + k.t + '** _(' + segLabel(k) + ')_' + (k.why ? ' — ' + k.why : '')));
+    s.keys.keys.forEach((k, j) => md.push((j + 1) + '. **' + k.t + '** _(' + (k.loc || segLabel(k)) + ')_' + (k.why ? ' — ' + k.why : '')));
   };
   if (srcs.length > 1) {
     md.push('', '## Các nguồn');
@@ -1608,7 +1871,7 @@ function openRun(id) {
   // lịch sử không giữ toàn văn → mỗi ý hiện trích đoạn ngắn (ex) đã lưu kèm lúc phân tích
   const keysHtml = (s) => (s.keys && (s.keys.keys || []).length)
     ? s.keys.keys.map((k, j) => '<details style="margin-top:6px"><summary style="cursor:pointer; font-weight:700; font-size:13px">' +
-        (j + 1) + '. ' + esc(k.t) + ' <span class="badge">' + esc(segLabel(k)) + '</span></summary>' +
+        (j + 1) + '. ' + esc(k.t) + ' <span class="badge">' + esc(k.loc || segLabel(k)) + '</span></summary>' +
         (k.why ? '<div class="muted" style="margin:5px 0">' + esc(k.why) + '</div>' : '') +
         (k.ex ? '<div class="sh-excerpt" style="margin-top:5px"><p>' + esc(k.ex) + '…</p></div>' : '') + '</details>').join('')
     : '';

@@ -89,7 +89,7 @@ export function safeUrl(raw) {
   return { ok: true, url: u.toString() };
 }
 
-async function readCapped(res, max) {
+export async function readCapped(res, max) {
   const reader = res.body && res.body.getReader ? res.body.getReader() : null;
   if (!reader) return await res.arrayBuffer();
   const parts = []; let total = 0;
