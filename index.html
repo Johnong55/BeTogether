@@ -60,24 +60,6 @@
     #app{ margin:20px auto; min-height:calc(100vh - 40px); border-radius:26px; overflow:hidden;
       box-shadow:8px 8px 0 var(--edge); border:2px solid var(--edge); }
   }
-  /* ===== MÁY TÍNH (≥900px): thanh điều hướng thành CỘT BÊN TRÁI như trang admin ===== */
-  @media(min-width:900px){
-    body:has(.nav){ padding-left:var(--side-w); }   /* chừa chỗ cho sidebar; màn đăng nhập không có .nav nên không thụt */
-    #app{ max-width:640px; margin:26px auto; padding-bottom:28px; min-height:calc(100vh - 52px);
-      border-radius:26px; overflow:visible; box-shadow:8px 8px 0 var(--edge); border:2px solid var(--edge); background:color-mix(in srgb,var(--bg1) 60%, transparent); }
-    .nav{ top:0; left:0; bottom:0; transform:none; width:var(--side-w); max-width:none; height:100vh;
-      flex-direction:column; justify-content:flex-start; align-items:stretch; gap:5px;
-      padding:16px 14px calc(16px + env(safe-area-inset-bottom)); border:none; border-right:2px solid var(--edge);
-      border-radius:0; box-shadow:none; background:var(--card); overflow-y:auto; }
-    .nav-brand{ display:flex; align-items:center; gap:11px; padding:8px 12px 14px; margin-bottom:4px; border-bottom:1px solid var(--line); }
-    .nav-brand .mono{ width:40px; height:40px; }
-    .nav-brand b{ font-family:'Fraunces',serif; font-weight:600; font-size:19px; line-height:1; }
-    .nav-brand small{ display:block; color:var(--soft); font-size:10.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; margin-top:3px; }
-    .nav button{ flex:none; flex-direction:row; justify-content:flex-start; align-items:center; gap:13px;
-      width:100%; padding:12px 15px; border-radius:14px; font-size:15px; font-stretch:100%; }
-    .nav button .ic{ width:22px; height:22px; }
-    .nav .dot{ top:50%; transform:translateY(-50%); right:14px; }
-  }
 
   /* icons */
   .ic{ width:22px; height:22px; display:inline-block; vertical-align:middle; flex:none; }
@@ -637,6 +619,51 @@
   @media (prefers-reduced-motion:reduce){
     *,*::before,*::after{ animation-duration:.001ms !important; animation-iteration-count:1 !important;
       transition-duration:.001ms !important; scroll-behavior:auto !important; }
+  }
+
+  /* ============================================================
+     GIAO DIỆN MÁY TÍNH (≥900px) — thanh điều hướng thành CỘT TRÁI cố định như trang admin.
+     ĐẶT Ở CUỐI <style> để thắng mọi rule .nav/.# app phía trên (media query KHÔNG tăng
+     độ ưu tiên, nên nếu đặt sớm sẽ bị rule .nav thường ở dưới đè — bug đã gặp).
+     ============================================================ */
+  @media(min-width:900px){
+    /* chỉ thụt nội dung khi ĐÃ đăng nhập (có .nav); màn login/pair không có .nav nên vẫn cân giữa */
+    body:has(.nav){ padding-left:var(--side-w); }
+
+    /* --- CỘT TRÁI --- */
+    .nav{
+      position:fixed; top:0; left:0; right:auto; bottom:0; transform:none;
+      width:var(--side-w); max-width:none; height:100vh;
+      display:flex; flex-direction:column; align-items:stretch; justify-content:flex-start; gap:4px;
+      padding:18px 14px calc(18px + env(safe-area-inset-bottom));
+      background:var(--card); border:none; border-right:2px solid var(--edge); border-radius:0;
+      box-shadow:none; overflow-y:auto; overflow-x:hidden; }
+    .nav-brand{ display:flex; align-items:center; gap:11px; padding:6px 10px 15px; margin-bottom:6px;
+      border-bottom:1px solid var(--line); }
+    .nav-brand .mono{ width:42px; height:42px; flex:none; }
+    .nav-brand b{ font-family:'Fraunces',serif; font-weight:600; font-size:19px; line-height:1.05; letter-spacing:-.01em; }
+    .nav-brand small{ display:block; color:var(--soft); font-size:10px; font-weight:800; letter-spacing:.08em;
+      text-transform:uppercase; margin-top:4px; }
+    .nav button{
+      flex:none; width:100%;
+      flex-direction:row; justify-content:flex-start; align-items:center; gap:14px;
+      padding:12px 14px; border-radius:14px; font-size:15px; font-stretch:100%; letter-spacing:0;
+      background:none; box-shadow:none; }
+    .nav button:hover{ background:var(--chip); color:var(--ink); }
+    .nav button .ic{ width:23px; height:23px; }
+    .nav button.on{ color:var(--p1); background:linear-gradient(90deg, color-mix(in srgb,var(--p1) 12%, transparent), transparent);
+      background-image:none; box-shadow:none; }
+    .nav button.on::before{ content:""; position:absolute; left:-14px; top:9px; bottom:9px; width:4px;
+      border-radius:0 4px 4px 0; background:var(--p1); }
+    .nav .dot{ top:50%; transform:translateY(-50%); right:12px; }
+
+    /* --- KHU NỘI DUNG --- */
+    #app{ max-width:720px; margin:0 auto; padding-bottom:40px; min-height:100vh;
+      border:none; border-radius:0; box-shadow:none; overflow:visible; background:none; }
+    .topbar{ border-bottom:1px solid var(--line); }
+  }
+  @media(min-width:1240px){
+    #app{ max-width:860px; }
   }
 </style>
 </head>
