@@ -33,6 +33,7 @@
     --blob1:#f3d2d8; --blob2:#e7dcc8;
     --edge:#4a3d43; --grid:rgba(150,105,115,.11); /* viền/bóng khối + đường kẻ ô giấy */
     --ease-smooth:cubic-bezier(.22,1,.36,1); --ease-soft:cubic-bezier(.65,0,.35,1);
+    --side-w:236px;   /* bề rộng cột điều hướng bên trái ở giao diện máy tính */
   }
   [data-theme="sage"]{ --p1:#7fa68c; --p2:#a6c4af; --accent:#c0996f; --bg1:#f6faf6; --bg2:#e9f1ea; --card:#fffefb; --ink:#384239; --soft:#86978a; --line:#dde9df; --chip:#e9f1ea; --blob1:#cfe3d3; --blob2:#e7dcc8; --edge:#37423a; --grid:rgba(90,130,105,.11); }
   [data-theme="dusk"]{ --p1:#9384c0; --p2:#b3a6dc; --accent:#cf9aa8; --bg1:#f8f6fc; --bg2:#ece7f5; --card:#fffdff; --ink:#403a52; --soft:#928aa3; --line:#e4ddf0; --chip:#ece7f5; --blob1:#dcd2ef; --blob2:#efd6dd; --edge:#3e3850; --grid:rgba(110,95,150,.11); }
@@ -55,9 +56,27 @@
   .bg::before{ width:320px; height:320px; background:var(--blob1); top:-90px; right:-70px; }
   .bg::after{ width:300px; height:300px; background:var(--blob2); bottom:-100px; left:-80px; }
   #app{ position:relative; z-index:1; max-width:480px; margin:0 auto; min-height:100vh; padding-bottom:92px; }
-  @media(min-width:520px){
+  @media(min-width:520px) and (max-width:899px){
     #app{ margin:20px auto; min-height:calc(100vh - 40px); border-radius:26px; overflow:hidden;
       box-shadow:8px 8px 0 var(--edge); border:2px solid var(--edge); }
+  }
+  /* ===== MÁY TÍNH (≥900px): thanh điều hướng thành CỘT BÊN TRÁI như trang admin ===== */
+  @media(min-width:900px){
+    body:has(.nav){ padding-left:var(--side-w); }   /* chừa chỗ cho sidebar; màn đăng nhập không có .nav nên không thụt */
+    #app{ max-width:640px; margin:26px auto; padding-bottom:28px; min-height:calc(100vh - 52px);
+      border-radius:26px; overflow:visible; box-shadow:8px 8px 0 var(--edge); border:2px solid var(--edge); background:color-mix(in srgb,var(--bg1) 60%, transparent); }
+    .nav{ top:0; left:0; bottom:0; transform:none; width:var(--side-w); max-width:none; height:100vh;
+      flex-direction:column; justify-content:flex-start; align-items:stretch; gap:5px;
+      padding:16px 14px calc(16px + env(safe-area-inset-bottom)); border:none; border-right:2px solid var(--edge);
+      border-radius:0; box-shadow:none; background:var(--card); overflow-y:auto; }
+    .nav-brand{ display:flex; align-items:center; gap:11px; padding:8px 12px 14px; margin-bottom:4px; border-bottom:1px solid var(--line); }
+    .nav-brand .mono{ width:40px; height:40px; }
+    .nav-brand b{ font-family:'Fraunces',serif; font-weight:600; font-size:19px; line-height:1; }
+    .nav-brand small{ display:block; color:var(--soft); font-size:10.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; margin-top:3px; }
+    .nav button{ flex:none; flex-direction:row; justify-content:flex-start; align-items:center; gap:13px;
+      width:100%; padding:12px 15px; border-radius:14px; font-size:15px; font-stretch:100%; }
+    .nav button .ic{ width:22px; height:22px; }
+    .nav .dot{ top:50%; transform:translateY(-50%); right:14px; }
   }
 
   /* icons */
@@ -379,6 +398,7 @@
   .nav{ position:fixed; bottom:calc(12px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%);
     width:calc(100% - 24px); max-width:452px; z-index:40; display:flex; justify-content:space-around; align-items:center;
     background:var(--card); border:2px solid var(--edge); border-radius:20px; box-shadow:4px 4px 0 var(--edge); padding:7px 7px; }
+  .nav-brand{ display:none; }   /* chỉ hiện ở đầu cột trái trên máy tính (≥900px) */
   .nav button{ background:none; border:none; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:3px;
     font-family:'Noto Serif Display','Fraunces',serif; font-stretch:75%; font-size:12px; font-weight:800; letter-spacing:.01em;
     color:var(--soft); padding:8px 10px; border-radius:13px; position:relative;
@@ -1623,7 +1643,8 @@ function nav(pop){ const pend=S.quizzes.filter(q=>q.to_person===S.me&&(q.status=
   const duelAlert = S.duel && ((S.duel.status==='waiting'&&S.duel.challenger!==S.me)||S.duel.status==='active') ? 1 : 0;
   const items=[['home','home','Nhà'],['library','cards','Học'],['arena','swords','Đấu'],['inbox','inbox','Hộp thư'],['notes','cal','Lịch']];
   const badge={inbox:pend, notes:due, arena:duelAlert};
-  return `<div class="nav">`+items.map(([v,i,l])=>`<button class="${S.view===v?('on'+(pop?' pop':'')):''}" data-act="go" data-v="${v}">${ic(i)}${l}${badge[v]?`<span class="dot">${badge[v]}</span>`:''}</button>`).join('')+`</div>`; }
+  const brand=`<div class="nav-brand"><div class="mono">${icHands('sm')}</div><div><b>cùng nhau</b><small>hai đứa mình</small></div></div>`;
+  return `<div class="nav">`+brand+items.map(([v,i,l])=>`<button class="${S.view===v?('on'+(pop?' pop':'')):''}" data-act="go" data-v="${v}">${ic(i)}${l}${badge[v]?`<span class="dot">${badge[v]}</span>`:''}</button>`).join('')+`</div>`; }
 
 /* ---------- AUTH ---------- */
 function viewAuth(){ const t=S.authTab;
