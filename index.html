@@ -689,12 +689,30 @@ const ALL_VI = LIBRARY.flatMap(t=>t.words.map(w=>w.vi));
 const topicByNo = (no)=> LIBRARY.find(t=>String(t.no)===String(no));
 function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 function scrambleWord(w){ const ls=w.split(''); let s=w,t=0; while(s===w && t<25){ s=shuffle(ls).join(''); t++; } return s; }
-function buildQuestions(words, cap){
+/* Dựng bộ câu hỏi trắc nghiệm. exMap = {từ(viết thường): câu ví dụ} lấy từ word_examples.
+   Ưu tiên "điền từ vào chỗ trống" (cloze): che từ vựng trong câu ví dụ AI rồi cho chọn từ đúng.
+   Không có ví dụ hợp lệ -> lùi về trộn chữ (từ đơn) hoặc chọn nghĩa (mc) như trước. */
+function buildQuestions(words, cap, exMap){
+  exMap = exMap||{};
   const norm = words.map(w=>({ en:(w.en||w.front||'').trim(), vi:(w.vi||w.back||'').trim() })).filter(w=>w.en&&w.vi);
   const pool = shuffle(norm).slice(0, cap||norm.length);
+  const allEn = Array.from(new Set(norm.map(x=>x.en).filter(Boolean)));
   return pool.map(w=>{
     const single = /^[a-zA-Z]+$/.test(w.en);
+    // 1) Điền chỗ trống — cần câu ví dụ CHỨA đúng từ (che được) + đủ 2 phương án nhiễu
+    const ex = exMap[w.en.toLowerCase()];
+    const blanked = ex ? blankWord(ex, w.en) : '';
+    if(blanked && blanked!==ex){
+      const dis = shuffle(allEn.filter(e=>e.toLowerCase()!==w.en.toLowerCase())).slice(0,3);
+      if(dis.length>=2){
+        // từ đơn: thỉnh thoảng trộn chữ cho đỡ nhàm (KHÔNG rơi về chọn nghĩa khi đã có ví dụ)
+        if(single && Math.random()<0.22) return { kind:'scramble', en:w.en, vi:w.vi, scrambled:scrambleWord(w.en) };
+        return { kind:'cloze', en:w.en, vi:w.vi, sentence:blanked, answer:ex, options:shuffle([w.en, ...dis]) };
+      }
+    }
+    // 2) Không có ví dụ hợp lệ -> trộn chữ cho từ đơn
     if(single && Math.random()<0.5) return { kind:'scramble', en:w.en, vi:w.vi, scrambled:scrambleWord(w.en) };
+    // 3) Cuối cùng mới chọn nghĩa
     const src = norm.length>=4 ? norm.map(x=>x.vi) : ALL_VI;
     const dis = shuffle(Array.from(new Set(src.filter(v=>v && v!==w.vi)))).slice(0,3);
     return { kind:'mc', en:w.en, vi:w.vi, options:shuffle([w.vi, ...dis]) };
@@ -1162,6 +1180,21 @@ const Store = {
   async saveWordExample(row){ const w=(row.word||'').trim().toLowerCase(); if(!w) return; row=Object.assign({},row,{word:w});
     if(useCloud){ const {error}=await sb.from('word_examples').upsert(row,{onConflict:'word'}); if(error) throw error; return; }
     try{ const o=JSON.parse(localStorage.getItem('loveapp_wordex')||'{}'); o[w]=row; localStorage.setItem('loveapp_wordex',JSON.stringify(o)); }catch(e){} },
+  /* Lấy MỘT LẦN nhiều ví dụ để dựng câu điền-chỗ-trống — trả map {từ(viết thường): câu ví dụ}. */
+  async getWordExamples(words){
+    const ws=Array.from(new Set((words||[]).map(w=>(w||'').trim().toLowerCase()).filter(Boolean)));
+    if(!ws.length) return {};
+    const map={};
+    if(useCloud){
+      for(let i=0;i<ws.length;i+=120){ const chunk=ws.slice(i,i+120);   // chia nhỏ kẻo URL quá dài
+        const {data,error}=await sb.from('word_examples').select('word,example').in('word',chunk);
+        if(error) throw error;
+        (data||[]).forEach(r=>{ if(r.example) map[r.word]=r.example; }); }
+      return map;
+    }
+    try{ const o=JSON.parse(localStorage.getItem('loveapp_wordex')||'{}');
+      ws.forEach(w=>{ if(o[w]&&o[w].example) map[w]=o[w].example; }); }catch(e){}
+    return map; },
 };
 
 /* ===================== STATE ===================== */
@@ -2489,7 +2522,32 @@ function quizView(p){ const total=p.questions.length;
     <div class="row" style="margin-bottom:8px"><button class="iconbtn" data-act="quit-play">${ic('x','sm')}</button>
       <div class="grow center" style="font-weight:800">Câu ${p.idx+1}/${total}</div><div style="width:38px"></div></div>
     ${progressBar(p.idx/total*100)}
-    ${ q.kind==='mc' ? mcBody(q,p,fb) : scrambleBody(q,p,fb) }`; }
+    ${ q.kind==='cloze' ? clozeBody(q,p,fb) : q.kind==='mc' ? mcBody(q,p,fb) : scrambleBody(q,p,fb) }`; }
+
+/* Điền từ vào chỗ trống: câu ví dụ đã che từ, chọn từ tiếng Anh đúng để điền */
+function clozeBody(q,p,fb){
+  const filled = fb ? blankFill(q.sentence, q.en) : esc(q.sentence);
+  return `<div class="card" style="padding:22px 18px">
+      <div class="muted center" style="font-weight:700;margin-bottom:10px">Điền từ còn thiếu vào câu</div>
+      <div style="font-family:'Fraunces';font-size:20px;line-height:1.7;text-align:center">${filled}</div>
+      <div class="muted center" style="margin-top:12px;font-size:13px">Gợi ý nghĩa: <b>${esc(q.vi)}</b></div></div>
+    ${q.options.map((opt,i)=>{ let cls='btn ghost block', style='justify-content:center;text-align:center;margin-bottom:10px';
+        const right=opt.toLowerCase()===q.en.toLowerCase();
+        if(fb){ if(right){ cls='btn block'; style+=';background:linear-gradient(135deg,var(--ok),#8fc4ac);border:none;color:#fff'; }
+                else if(i===p.chosen){ cls='btn block'; style+=';background:#f1c7ce;border:none;color:var(--no)'; }
+                else style+=';opacity:.45'; }
+        return `<button class="${cls}" style="${style}" ${fb?'disabled':''} data-act="answer-cloze" data-v="${i}">${esc(opt)}</button>`;
+      }).join('')}
+    ${ fb?clozeFeedback(p,q):'' }`; }
+/* Che chỗ trống bằng ô ____ ; khi hiện đáp án thì đổ đúng từ vào (tô đậm) */
+function blankFill(sentence, word){
+  return esc(sentence).replace(/____+/g, `<b style="color:var(--p1)">${esc(word)}</b>`); }
+function clozeFeedback(p,q){ const ok=p.lastCorrect;
+  return `<div class="card" style="background:${ok?'var(--chip)':'#fdeef0'};margin-top:12px">
+      <b style="color:${ok?'var(--ok)':'var(--no)'}">${ok?'Chính xác!':'Chưa đúng'}</b>
+      <div class="muted" style="margin-top:6px;line-height:1.6">${blankFill(q.sentence,q.en)}</div>
+      <div class="muted" style="margin-top:4px">${esc(q.en)} — ${esc(q.vi)}</div></div>
+    <button class="btn block" data-act="next-q">${p.idx+1<p.questions.length?'Câu tiếp':'Xem kết quả'}</button>`; }
 
 function mcBody(q,p,fb){
   return `<div class="card center" style="padding:24px 16px">
@@ -3436,6 +3494,7 @@ async function handle(act,v,id,t,e){
     case 'ai-example': await aiExampleForCurrent(); break;
     case 'speak-word': { const p=S.play; if(p&&p.cards){ const c=p.cards[p.idx]; if(c) speakWord(c.en); } } break;
     case 'answer-mc': await answerMc(parseInt(v,10)); break;
+    case 'answer-cloze': await answerCloze(parseInt(v,10)); break;
     case 'check-scramble': await checkScramble(); break;
     case 'next-q': await nextQ(); break;
     case 'to-quiz': { const p=S.play; startStudy(p.words,{mode:'quiz',src:p.src,quiz:p.quiz,title:p.title,back:p.back}); } break;
@@ -3602,12 +3661,16 @@ async function saveQuizSafe(q){ try{ await Store.saveQuiz(q); }
 async function saveLessonProgress(idx,score){ const p=S.play; if(!p||!p.quiz||p.src!=='lesson') return;
   p.quiz.progress = p.mode==='quiz' ? {mode:'quiz',idx,score,questions:p.questions} : {mode:'flash',idx,cards:p.cards};
   await saveQuizSafe(p.quiz); }
-function startStudy(words,opts){ opts=opts||{}; const mode=opts.mode||'quiz';
+async function startStudy(words,opts){ opts=opts||{}; const mode=opts.mode||'quiz';
   const norm=(words||[]).map(w=>({ en:(w.en||w.front||'').trim(), vi:(w.vi||w.back||'').trim() })).filter(w=>w.en&&w.vi);
   if(!norm.length){ toast('Chủ đề này chưa có từ để học'); return; }
   const prog = opts.quiz && opts.quiz.progress && opts.quiz.progress.mode===mode ? opts.quiz.progress : null;
   const cards = mode==='flash'? (prog && prog.cards && prog.cards.length===norm.length ? prog.cards : shuffle(norm)) : [];
-  const questions = mode==='quiz'? (prog && prog.questions && prog.questions.length ? prog.questions : buildQuestions(norm)) : [];
+  let questions=[];
+  if(mode==='quiz'){
+    if(prog && prog.questions && prog.questions.length) questions=prog.questions;   // đang làm dở -> giữ nguyên
+    else { let exMap={}; try{ exMap=await Store.getWordExamples(norm.map(w=>w.en)); }catch(e){}
+      questions=buildQuestions(norm,null,exMap); } }
   const idx = prog ? Math.max(0, prog.idx||0) : 0;
   const alreadyDone = mode==='quiz' && prog && idx>=questions.length;
   S.play={ mode, src:opts.src||'lib', quiz:opts.quiz||null, title:opts.title||'Học', back:opts.back||'library', learnKey:opts.learnKey||null,
@@ -3642,6 +3705,9 @@ function grammarMc(i){ const p=S.play; if(!p||p.phase!=='ask') return; const q=p
   p.chosen=i; p.lastCorrect=(i===q.answer); if(p.lastCorrect)p.score++; p.phase='feedback'; render(); }
 async function answerMc(i){ const p=S.play; if(!p||p.phase!=='ask') return; const q=p.questions[p.idx];
   p.chosen=i; p.lastCorrect=(q.options[i]===q.vi); if(p.lastCorrect)p.score++; p.phase='feedback'; render();
+  await saveLessonProgress(p.idx+1,p.score); }
+async function answerCloze(i){ const p=S.play; if(!p||p.phase!=='ask') return; const q=p.questions[p.idx];
+  p.chosen=i; p.lastCorrect=((q.options[i]||'').toLowerCase()===q.en.toLowerCase()); if(p.lastCorrect)p.score++; p.phase='feedback'; render();
   await saveLessonProgress(p.idx+1,p.score); }
 async function checkScramble(){ const p=S.play; if(!p||p.phase!=='ask') return; const q=p.questions[p.idx];
   const val=($('#sc_input')?.value||'').trim(); if(!val){ toast('Gõ từ đã nha'); return; }
