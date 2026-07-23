@@ -381,6 +381,7 @@
     width:calc(100% - 24px); max-width:452px; z-index:40; display:flex; justify-content:space-around; align-items:center;
     background:var(--card); border:2px solid var(--edge); border-radius:20px; box-shadow:4px 4px 0 var(--edge); padding:7px 7px; }
   .nav-brand{ display:none; }   /* chỉ hiện ở đầu cột trái trên máy tính (≥900px) */
+  .nav-foot{ display:none; }     /* nút Cài đặt ở chân cột trái — chỉ hiện trên máy tính */
   .nav button{ background:none; border:none; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:3px;
     font-family:'Noto Serif Display','Fraunces',serif; font-stretch:75%; font-size:12px; font-weight:800; letter-spacing:.01em;
     color:var(--soft); padding:8px 10px; border-radius:13px; position:relative;
@@ -656,11 +657,17 @@
     .nav button.on::before{ content:""; position:absolute; left:-14px; top:9px; bottom:9px; width:4px;
       border-radius:0 4px 4px 0; background:var(--p1); }
     .nav .dot{ top:50%; transform:translateY(-50%); right:12px; }
+    /* nút Cài đặt dồn xuống đáy cột, cách phần trên một đường kẻ */
+    .nav-foot{ display:block; margin-top:auto; padding-top:10px; border-top:1px solid var(--line); }
+    .nav-foot .dot{ position:static; transform:none; }
 
     /* --- KHU NỘI DUNG --- */
     #app{ max-width:720px; margin:0 auto; padding-bottom:40px; min-height:100vh;
       border:none; border-radius:0; box-shadow:none; overflow:visible; background:none; }
     .topbar{ border-bottom:1px solid var(--line); }
+    /* logo + nút ⚙️ đã có ở cột trái, bỏ khỏi header cho gọn */
+    .topbar .mono{ display:none; }
+    .topbar-set{ display:none; }
   }
   @media(min-width:1240px){
     #app{ max-width:860px; }
@@ -1663,7 +1670,7 @@ function header(){ if(!S.space) return '';
     <div class="who"><div class="names">${esc(S.space.person_a)} &amp; ${esc(S.space.person_b||'…')}</div>
       <div class="sub">${esc(S.space.name||'')}</div></div>
     <div class="pill">${ic('flame','sm')}${S.space.streak||0}</div>
-    <button class="iconbtn" data-act="go" data-v="settings">${ic('sliders','sm')}</button>
+    <button class="iconbtn topbar-set" data-act="go" data-v="settings">${ic('sliders','sm')}</button>
   </div>`; }
 
 function nav(pop){ const pend=S.quizzes.filter(q=>q.to_person===S.me&&(q.status==='pending'||q.status==='picked')).length; const due=dueCount();
@@ -1671,7 +1678,9 @@ function nav(pop){ const pend=S.quizzes.filter(q=>q.to_person===S.me&&(q.status=
   const items=[['home','home','Nhà'],['library','cards','Học'],['arena','swords','Đấu'],['inbox','inbox','Hộp thư'],['notes','cal','Lịch']];
   const badge={inbox:pend, notes:due, arena:duelAlert};
   const brand=`<div class="nav-brand"><div class="mono">${icHands('sm')}</div><div><b>cùng nhau</b><small>hai đứa mình</small></div></div>`;
-  return `<div class="nav">`+brand+items.map(([v,i,l])=>`<button class="${S.view===v?('on'+(pop?' pop':'')):''}" data-act="go" data-v="${v}">${ic(i)}${l}${badge[v]?`<span class="dot">${badge[v]}</span>`:''}</button>`).join('')+`</div>`; }
+  /* chân cột trái (chỉ hiện ở máy tính): nút Cài đặt — trên điện thoại vẫn dùng nút ⚙️ ở góc header */
+  const foot=`<div class="nav-foot"><button class="${S.view==='settings'?'on':''}" data-act="go" data-v="settings">${ic('sliders')}Cài đặt</button></div>`;
+  return `<div class="nav">`+brand+items.map(([v,i,l])=>`<button class="${S.view===v?('on'+(pop?' pop':'')):''}" data-act="go" data-v="${v}">${ic(i)}${l}${badge[v]?`<span class="dot">${badge[v]}</span>`:''}</button>`).join('')+foot+`</div>`; }
 
 /* ---------- AUTH ---------- */
 function viewAuth(){ const t=S.authTab;
