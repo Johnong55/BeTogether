@@ -257,8 +257,24 @@
   @keyframes progShine{ from{ background-position:135% 0; } to{ background-position:-135% 0; } }
   @keyframes runnerBob{ 0%,100%{ transform:translateY(0) rotate(-6deg);} 50%{ transform:translateY(-4px) rotate(6deg);} }
   @keyframes runnerGlow{ 0%,100%{ opacity:.35; transform:scale(1);} 50%{ opacity:.7; transform:scale(1.18);} }
+  /* runner mang ẢNH người ấy (avatar) */
+  .progress-heart .prog-runner img{ width:100%; height:100%; object-fit:cover; border-radius:50%; display:block; }
+  .progress-heart .prog-runner .rf-letter{ font-weight:800; font-size:12px; color:var(--p1); line-height:1; }
+  /* đổi màu theo đúng/sai (thắng lợi = xanh, đuối = đỏ-cam); đè lên gradient mặc định (cùng độ chọn cao hơn) */
+  .progress-heart .pfill.tone-good{ background:linear-gradient(90deg,#4fa27c,#7cc0a0);
+    box-shadow:0 0 12px color-mix(in srgb,#4fa27c 60%,transparent), 0 1px 2px rgba(0,0,0,.14); }
+  .progress-heart .pfill.tone-bad{ background:linear-gradient(90deg,#e08a93,#e2a663);
+    box-shadow:0 0 12px color-mix(in srgb,#e08a93 60%,transparent), 0 1px 2px rgba(0,0,0,.14); }
+  /* PHÁO HOA khi đạt 100% */
+  .progress-heart .prog-runner.cheer{ animation:runnerCheer .7s var(--ease-smooth); }
+  @keyframes runnerCheer{ 0%{ transform:translateY(0) scale(1);} 35%{ transform:translateY(-14px) scale(1.35) rotate(-8deg);} 70%{ transform:translateY(-2px) scale(1.1);} 100%{ transform:translateY(0) scale(1);} }
+  .pf-spark{ position:absolute; left:50%; top:50%; width:7px; height:7px; border-radius:50%; z-index:6; pointer-events:none;
+    transform:translate(-50%,-50%); animation:pfSpark .85s ease-out forwards; }
+  @keyframes pfSpark{ 0%{ transform:translate(-50%,-50%) scale(1); opacity:1; }
+    100%{ transform:translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(.25); opacity:0; } }
   @media (prefers-reduced-motion:reduce){ .progress-heart .pfill::before,.progress-heart .prog-runner::after{ display:none; }
-    .progress-heart .prog-runner{ animation:none; } .progress-heart .pfill{ transition:none; } }
+    .progress-heart .prog-runner{ animation:none; } .progress-heart .pfill{ transition:none; }
+    .progress-heart .prog-runner.cheer{ animation:none; } .pf-spark{ display:none; } }
 
   /* đấm kiếm mở màn khi trận đấu bắt đầu (2 lưỡi kiếm lao vào nhau, nổ tia sáng) */
   .duel-clash{ min-height:56vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; text-align:center; }
@@ -1032,7 +1048,7 @@ function duelCrosswordPlayView(du){
       <p class="muted center" style="font-size:12px;margin:6px 0 0">Ô <b style="color:var(--p1)">hồng</b> là bạn giải đúng · ô <b>xám</b> là đáp án bạn chưa ra</p>
       <div class="card" style="margin-top:12px"><div class="row"><span class="muted grow">Tiến độ của ${esc(partner()||'người ấy')}</span>
         <span class="muted" id="opp-txt">${esc(partner()||'Người ấy')}: ${op}/${total}</span></div>
-        ${progressBar(op/total*100,{id:'opp-fill'})}</div>
+        ${progressBar(op/total*100,{id:'opp-fill',face:other(S.me)})}</div>
       <button class="btn danger block sm" data-act="duel-cancel-active">Huỷ trận (nếu chờ lâu quá)</button>`;
   }
   const activeQ = p.active!=null ? du.questions[p.active] : null;
@@ -1041,8 +1057,8 @@ function duelCrosswordPlayView(du){
       <div class="grow center" style="font-weight:800">🧩 Ô chữ · ${p.score}/${total}</div><div style="width:38px"></div></div>
     <div class="row" style="margin:6px 2px 2px"><span class="muted grow">Bạn: ${p.score} đúng</span>
       <span class="muted" id="opp-txt">${esc(partner()||'Người ấy')}: ${op}/${total}</span></div>
-    ${progressBar(op/total*100,{id:'opp-fill',style:'background:linear-gradient(90deg,var(--accent),var(--p2))'})}
-    ${progressBar(p.score/total*100)}
+    ${progressBar(op/total*100,{id:'opp-fill',face:other(S.me),style:'background:linear-gradient(90deg,var(--accent),var(--p2))'})}
+    ${progressBar(p.score/total*100,{face:S.me})}
     <div class="cw-wrap">${crosswordGridHTML(du,p)}</div>
     ${ activeQ ? `<div class="card center" style="padding:14px 16px;margin-top:10px">
         <div class="muted" style="font-weight:700">${activeQ.num} ${activeQ.dir==='across'?'Ngang →':'Dọc ↓'} · ${activeQ.en.length} ô</div>
@@ -1114,21 +1130,48 @@ const fitPx = (s)=>{ const n=(s||'').length; return n>26?19:(n>15?24:30); }; // 
 function daysDiff(fromStr){ if(!fromStr) return null; const a=new Date(fromStr+'T00:00:00'); const n=new Date();
   const t=new Date(n.getFullYear(),n.getMonth(),n.getDate()); return Math.round((t-a)/86400000); }
 /* Thanh tiến độ "thanh trụ" + trái tim bay vòng quanh — dùng cho màn học/thi và đấu trường */
+/* "Người dẫn đường" ở đầu thanh = ẢNH người ấy (avatar). Không có ảnh -> chữ cái đầu tên; không có gì -> tim.
+   opts.face = 'a'|'b' để chỉ định; mặc định là NGƯỜI ẤY (other(S.me)) — như người ấy đang chạy dẫn đường 💕 */
+function runnerFace(face){
+  const person = face || (S.me?other(S.me):null);
+  if(person && S.space){ const url=avatarUrl(person);
+    if(url) return `<img src="${url}" alt="">`;
+    const nm=(nameOf(person)||'').trim()[0]; if(nm) return `<span class="rf-letter">${esc(nm.toUpperCase())}</span>`; }
+  return '💗'; }
+/* Đổi màu thanh theo kết quả: thi -> tỉ lệ đúng; thẻ lật -> tỉ lệ đã hiểu. 'good'|'bad'|null(mặc định hồng) */
+function studyTone(p){ if(!p) return null;
+  if(p.mode==='flash'){ const k=(p.mark||[]).filter(m=>m==='known').length, u=(p.mark||[]).filter(m=>m==='unknown').length, t=k+u;
+    if(t<2) return null; const r=k/t; return r>=0.8?'good':r<0.5?'bad':null; }
+  const ans=(p.idx||0)+(p.phase==='feedback'?1:0); if(ans<2) return null; const r=(p.score||0)/ans;
+  return r>=0.8?'good':r<0.5?'bad':null; }
+
 /* Thanh tiến độ. pct 0..100. opts.id -> gán id cho lõi (đấu trường cập nhật trực tiếp #opp-fill),
-   opts.style -> đổi màu (thanh đối thủ). Thanh CỦA MÌNH (không id) tự "chảy tới" từ mốc trước
-   (_progLast.main) cho có cảm giác tiến lên; runner tim luôn nảy ở đầu mũi. */
+   opts.style -> đổi màu (thanh đối thủ), opts.tone 'good'|'bad', opts.face 'a'|'b', opts.celebrate -> pháo hoa khi tới 100%.
+   Thanh CỦA MÌNH (không id) tự "chảy tới" từ mốc trước (_progLast.main). */
 const _progLast = {};
 function progressBar(pct,opts){ opts=opts||{}; pct=Math.max(0,Math.min(100, pct||0));
   const idAttr=opts.id?` id="${opts.id}"`:''; const bg=opts.style?`;${opts.style}`:'';
+  const toneCls=opts.tone==='good'?' tone-good':opts.tone==='bad'?' tone-bad':'';
   let start=pct, grow='';
-  if(!opts.id){ const from=_progLast.main??0; start=(pct>=from)?from:pct; _progLast.main=pct; grow=` data-progfill="${pct}"`; }
+  if(!opts.id){ const from=_progLast.main??0; start=(pct>=from)?from:pct; _progLast.main=pct; grow=` data-progfill="${pct}"`;
+    if(opts.celebrate && start<pct) grow+=' data-celebrate="1"'; }   // chỉ bắn pháo hoa khi THỰC SỰ chảy tới 100% (lần đầu), không lặp lại mỗi lần poll
   return `<div class="progress-heart"><div class="progress">
-    <i class="pfill"${idAttr}${grow} style="width:${start}%${bg}"><span class="prog-runner">💗</span></i>
+    <i class="pfill${toneCls}"${idAttr}${grow} style="width:${start}%${bg}"><span class="prog-runner">${runnerFace(opts.face)}</span></i>
   </div></div>`; }
-/* Sau khi render: cho thanh "của mình" chạy mượt từ mốc trước tới mốc mới (kích hoạt transition width) */
+/* Sau khi render: cho thanh "của mình" chạy mượt từ mốc trước tới mốc mới; tới 100% (celebrate) thì bắn pháo hoa */
 function animateProgressBars(){ document.querySelectorAll('.pfill[data-progfill]').forEach(el=>{
-  const target=el.getAttribute('data-progfill');
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{ el.style.width=target+'%'; })); }); }
+  const target=el.getAttribute('data-progfill'), celeb=el.hasAttribute('data-celebrate');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{ el.style.width=target+'%';
+    if(celeb){ const r=el.querySelector('.prog-runner');
+      setTimeout(()=>{ if(r){ r.classList.add('cheer'); progressFireworks(r); } }, 560); } })); }); }
+function progressFireworks(runner){ const cols=['#e7a3b4','#c79a72','#6cab8e','#d97a92','#f0c674'];
+  for(let i=0;i<12;i++){ const s=document.createElement('span'); s.className='pf-spark';
+    const ang=Math.PI*2*i/12 + Math.random()*0.4, dist=20+Math.random()*20;
+    s.style.setProperty('--dx',(Math.cos(ang)*dist).toFixed(1)+'px');
+    s.style.setProperty('--dy',(Math.sin(ang)*dist).toFixed(1)+'px');
+    s.style.background=cols[i%cols.length];
+    runner.appendChild(s); setTimeout(()=>s.remove(),900); }
+  if(navigator.vibrate){ try{ navigator.vibrate([8,30,8]); }catch(e){} } }
 
 /* ===================== STORE (cloud / máy) ===================== */
 const useCloud = !!(SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase);
@@ -2167,7 +2210,7 @@ function duelPlayView(du){
         <div class="muted">Đợi ${esc(partner()||'người ấy')} làm xong là biết ai thắng…</div></div>
       <div class="card"><div class="row"><span class="muted grow">Tiến độ của ${esc(partner()||'người ấy')}</span>
         <span class="muted" id="opp-txt">${esc(partner()||'Người ấy')}: ${op}/${total}</span></div>
-        ${progressBar(op/total*100,{id:'opp-fill'})}</div>
+        ${progressBar(op/total*100,{id:'opp-fill',face:other(S.me)})}</div>
       <button class="btn danger block sm" data-act="duel-cancel-active">Huỷ trận (nếu chờ lâu quá)</button>`;
   }
   const q=qs[p.idx], fb=p.phase==='feedback';
@@ -2176,8 +2219,8 @@ function duelPlayView(du){
       <div class="grow center" style="font-weight:800">${icon} Câu ${p.idx+1}/${total}</div><div style="width:38px"></div></div>
     <div class="row" style="margin:6px 2px 2px"><span class="muted grow">Bạn: ${p.score} đúng</span>
       <span class="muted" id="opp-txt">${esc(partner()||'Người ấy')}: ${op}/${total}</span></div>
-    ${progressBar(op/total*100,{id:'opp-fill',style:'background:linear-gradient(90deg,var(--accent),var(--p2))'})}
-    ${progressBar(p.idx/total*100)}
+    ${progressBar(op/total*100,{id:'opp-fill',face:other(S.me),style:'background:linear-gradient(90deg,var(--accent),var(--p2))'})}
+    ${progressBar(p.idx/total*100,{face:S.me})}
     ${ q.kind==='mc' ? duelMcBody(q,p,fb) : q.kind==='hangman' ? duelHangmanBody(q,p,fb) : duelScrBody(q,p,fb) }`;
 }
 function duelChainBody(du){
@@ -2511,6 +2554,7 @@ function grammarPracticeView(p){ const total=p.questions.length;
     return `<div class="screen center">
       <div class="brand-mark" style="margin:18px auto 0">${ic(pct>=80?'trophy':'heart')}</div>
       <h1 style="margin:14px 0 4px">${p.score}/${total} đúng</h1><p style="font-weight:700">${msg}</p>
+      ${progressBar(100,{celebrate:true, tone:(pct>=80?'good':pct<50?'bad':null)})}
       ${p.streakUp?`<div class="card" style="background:linear-gradient(150deg,var(--p1),var(--p2));color:#fff;margin-top:12px">
         <b style="font-size:19px">Chuỗi ${S.space.streak} ngày</b><div style="opacity:.9">Giữ được chuỗi hôm nay rồi</div></div>`:''}
       <div class="row" style="gap:10px;margin-top:16px">
@@ -2520,7 +2564,7 @@ function grammarPracticeView(p){ const total=p.questions.length;
   return `<div class="screen">
     <div class="row" style="margin-bottom:8px"><button class="iconbtn" data-act="quit-play">${ic('x','sm')}</button>
       <div class="grow center" style="font-weight:800">Câu ${p.idx+1}/${total}</div><div style="width:38px"></div></div>
-    ${progressBar(p.idx/total*100)}
+    ${progressBar(p.idx/total*100,{tone:studyTone(p)})}
     ${ q.type==='mc' ? grMcBody(q,p,fb) : grConjBody(q,p,fb) }`; }
 
 function grConjBody(q,p,fb){
@@ -2558,7 +2602,7 @@ function flashView(p){ const total=p.cards.length;
     <div class="row" style="margin-bottom:8px"><button class="iconbtn" data-act="quit-play">${ic('x','sm')}</button>
       <div class="grow center" style="font-weight:800">Thẻ ${p.idx+1}/${total}</div>
       <div style="width:52px;text-align:right;font-size:12px;font-weight:800">${known?`<span style="color:var(--ok)">✓${known}</span> `:''}${unknown?`<span style="color:var(--no)">✗${unknown}</span>`:''}</div></div>
-    ${progressBar(p.idx/total*100)}
+    ${progressBar(p.idx/total*100,{tone:studyTone(p)})}
     <div class="flash-wrap" style="margin-top:10px">
       <div class="flash ${p.flip?'flip':''}" data-act="flip">
         <span class="swipe-stamp know">Đã hiểu ✓</span>
@@ -2584,6 +2628,7 @@ function flashDoneView(p){ const total=p.cards.length;
   return `<div class="screen center">
       <div class="brand-mark" style="margin:18px auto 0">${ic(allGood?'trophy':'spark')}</div>
       <h1 style="margin:14px 0 6px">Đã xem hết ${total} thẻ</h1>
+      ${progressBar(100,{celebrate:true, tone:(nKnow/total>=0.8?'good':nKnow/total<0.5?'bad':null)})}
       <div class="row" style="gap:8px;justify-content:center">
         <span class="pill" style="border-color:var(--ok);color:var(--ok)">✓ ${nKnow} đã hiểu</span>
         ${nUn?`<span class="pill" style="border-color:var(--no);color:var(--no)">✗ ${nUn} chưa hiểu</span>`:''}</div>
@@ -2625,6 +2670,7 @@ function quizView(p){ const total=p.questions.length;
     return `<div class="screen center">
       <div class="brand-mark" style="margin:18px auto 0">${ic(pct>=80?'trophy':'heart')}</div>
       <h1 style="margin:14px 0 4px">${p.score}/${total} đúng</h1><p style="font-weight:700">${msg}</p>
+      ${progressBar(100,{celebrate:true, tone:(pct>=80?'good':pct<50?'bad':null)})}
       ${p.streakUp?`<div class="card" style="background:linear-gradient(150deg,var(--p1),var(--p2));color:#fff;margin-top:12px">
         <b style="font-size:19px">Chuỗi ${S.space.streak} ngày</b><div style="opacity:.9">Giữ được chuỗi hôm nay rồi</div></div>`:''}
       <div class="row" style="gap:10px;margin-top:16px">
@@ -2634,7 +2680,7 @@ function quizView(p){ const total=p.questions.length;
   return `<div class="screen">
     <div class="row" style="margin-bottom:8px"><button class="iconbtn" data-act="quit-play">${ic('x','sm')}</button>
       <div class="grow center" style="font-weight:800">Câu ${p.idx+1}/${total}</div><div style="width:38px"></div></div>
-    ${progressBar(p.idx/total*100)}
+    ${progressBar(p.idx/total*100,{tone:studyTone(p)})}
     ${ q.kind==='cloze' ? clozeBody(q,p,fb) : q.kind==='mc' ? mcBody(q,p,fb) : scrambleBody(q,p,fb) }`; }
 
 /* Điền từ vào chỗ trống: câu ví dụ đã che từ, chọn từ tiếng Anh đúng để điền */
