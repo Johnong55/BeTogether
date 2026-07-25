@@ -170,6 +170,10 @@
   .lrn:active{ transform:translate(2px,2px); box-shadow:0 0 0 var(--edge); }
   .lrn.on{ background:linear-gradient(135deg,#3ecf6a,#22a85a); color:#fff; }
   .listitem.learned .thumb{ opacity:.5; }
+  /* nhãn "đã gửi cho người ấy" trên thẻ chủ đề/bộ */
+  .sent-tag{ display:inline-flex; align-items:center; gap:3px; font-size:10.5px; font-weight:800; padding:1px 7px; border-radius:99px; vertical-align:middle; white-space:nowrap;
+    background:color-mix(in srgb,var(--p1) 14%, transparent); color:var(--p1); border:1px solid color-mix(in srgb,var(--p1) 32%, transparent); }
+  .sent-tag.done{ background:color-mix(in srgb,var(--accent) 16%, transparent); color:var(--accent); border-color:color-mix(in srgb,var(--accent) 36%, transparent); }
   .listitem.learned>.grow>b{ color:var(--soft); }
   .badge{ background:var(--chip); color:var(--p1); font-weight:800; font-size:11.5px; padding:3px 9px; border-radius:999px; }
   .status{ font-size:11px; font-weight:800; padding:3px 9px; border-radius:999px; }
@@ -1930,18 +1934,34 @@ function learnKeyForTitle(title){ if(!title) return null;
   const t=LIBRARY.find(x=>x.name===title); if(t) return 't:'+t.no;
   const d=(S.decks||[]).find(x=>x.name===title); if(d) return 'd:'+d.id;
   return null; }
+/* "Đã gửi cho người ấy" — SUY RA từ các bài dò MÌNH đã gửi (S.quizzes), không cần cột DB mới.
+   Ưu tiên bản người ấy ĐÃ LÀM, rồi tới bản mới nhất. */
+function sentQuizFor(title){ if(!title) return null;
+  const mine=(S.quizzes||[]).filter(q=>q.from_person===S.me && q.title===title);
+  if(!mine.length) return null;
+  return mine.find(q=>q.status==='answered') || mine.slice().sort((a,b)=>(a.created_at||'')<(b.created_at||'')?1:-1)[0]; }
+const isSent = (title)=> !!sentQuizFor(title);
+/* Nhãn nhỏ trên thẻ danh sách */
+function sentBadge(title){ const q=sentQuizFor(title); if(!q) return '';
+  const done=q.status==='answered';
+  return `<span class="sent-tag${done?' done':''}" title="${done?esc(partner()||'Người ấy')+' đã làm '+q.score+'/'+q.total:'Đã gửi cho '+esc(partner()||'người ấy')}">${done?'✓ đã làm':'✈ đã gửi'}</span>`; }
+/* Dòng trạng thái trong màn chi tiết chủ đề/bộ */
+function sentStatusLine(title){ const q=sentQuizFor(title); if(!q) return ''; const who=esc(partner()||'người ấy');
+  if(q.status==='answered') return `<div class="card center" style="border-color:var(--accent);color:var(--accent);font-weight:800;margin-bottom:6px">✓ ${who} đã làm bài này rồi · ${q.score}/${q.total} đúng</div>`;
+  if(q.status==='picked')   return `<div class="card center" style="border-color:var(--p1);color:var(--p1);font-weight:800;margin-bottom:6px">✈ Đã gửi — ${who} đang làm…</div>`;
+  return `<div class="card center" style="border-color:var(--p1);color:var(--p1);font-weight:800;margin-bottom:6px">✈ Đã gửi cho ${who} rồi · đang chờ làm</div>`; }
 
 function topicRow(t,i){ const key='t:'+t.no, on=isLearned(key);
   return `<div class="card listitem${on?' learned':''}" data-act="open-topic" data-id="${t.no}" data-flt="lib" data-name="${esc(topicSearchName(t))}" data-lkey="${key}" data-learned="${on?1:0}">
     <div class="thumb" style="background:${DECK_TINT[i%DECK_TINT.length]};font-family:'Fraunces';font-weight:600;color:var(--p1)">${topicTag(t)}</div>
-    <div class="grow"><b>${esc(t.name)}</b><div class="muted">${esc(t.vi||'')} · ${t.words.length} ${unitWord(t)} ${partnerLearnedMark(key)}</div></div>
+    <div class="grow"><b>${esc(t.name)}</b><div class="muted">${esc(t.vi||'')} · ${t.words.length} ${unitWord(t)} ${partnerLearnedMark(key)} ${sentBadge(t.name)}</div></div>
     ${lrnBtn(key)}<span class="muted">›</span></div>`;
 }
 function grammarRow(g,i){
   const nm=noDiacritics(g.name+' '+g.en+' ngu phap grammar '+(g.tag||'')).toLowerCase();
   return `<div class="card listitem" data-act="open-grammar" data-id="${g.id}" data-flt="lib" data-name="${esc(nm)}">
     <div class="thumb" style="background:${DECK_TINT[i%DECK_TINT.length]};font-family:'Fraunces';font-weight:600;color:var(--p1);font-size:13px">${esc(g.tag||'NP')}</div>
-    <div class="grow"><b>${esc(g.name)}</b><div class="muted">${esc(g.en)} · ${g.practice.length} câu luyện</div></div>
+    <div class="grow"><b>${esc(g.name)}</b><div class="muted">${esc(g.en)} · ${g.practice.length} câu luyện ${sentBadge('📖 '+g.name)}</div></div>
     <span class="muted">›</span></div>`;
 }
 function grammarSections(){
@@ -1958,7 +1978,7 @@ function viewLibrary(){
     const key='d:'+d.id, on=isLearned(key);
     return `<div class="card listitem${on?' learned':''}" data-act="open-deck" data-id="${d.id}" data-flt="lib" data-name="${esc(name)}" data-lkey="${key}" data-learned="${on?1:0}">
       <div class="thumb" style="background:${d.color||DECK_TINT[i%DECK_TINT.length]}">${ic('heart')}</div>
-      <div class="grow"><b>${esc(d.name)}</b><div class="muted">${d.lang?esc(d.lang)+' · ':''}${n} từ ${partnerLearnedMark(key)}</div></div>
+      <div class="grow"><b>${esc(d.name)}</b><div class="muted">${d.lang?esc(d.lang)+' · ':''}${n} từ ${partnerLearnedMark(key)} ${sentBadge(d.name)}</div></div>
       ${lrnBtn(key)}<span class="muted">›</span></div>`; }).join('');
   const vocab=LIBRARY.filter(t=>!isColloc(t)&&!isTopic(t)), colloc=LIBRARY.filter(isColloc), topics=LIBRARY.filter(isTopic);
   const chip=(v,label)=>`<div class="chip ${filter===v?'on':''}" data-act="lib-filter" data-v="${v}">${label}</div>`;
@@ -2000,10 +2020,10 @@ function viewTopic(){ const t=topicByNo(S.sub);
       <button class="btn soft block" data-act="study-topic" data-id="${t.no}" data-mode="flash">${ic('cards','sm')} Thẻ lật</button>
       <button class="btn block" data-act="study-topic" data-id="${t.no}" data-mode="quiz">${ic('spark','sm')} Trắc nghiệm</button></div>
     <div class="row" style="gap:10px;margin-bottom:8px">
-      <button class="btn ghost block" data-act="send-topic" data-id="${t.no}">${ic('send','sm')} Gửi ${esc(partner()||'người ấy')}</button>
+      <button class="btn ghost block" data-act="send-topic" data-id="${t.no}">${ic('send','sm')} ${isSent(t.name)?'Gửi lại':'Gửi '+esc(partner()||'người ấy')}</button>
       <button class="btn ghost block" data-act="duel-from" data-v="t:${t.no}">${ic('swords','sm')} Rủ đấu</button></div>
     ${ (()=>{ const key='t:'+t.no, on=isLearned(key), pon=isLearned(key,other(S.me));
-      let s='';
+      let s=sentStatusLine(t.name);
       if(on) s+=`<div class="card center" style="border-color:#22a85a;color:#22a85a;font-weight:800;margin-bottom:6px">✓ Bạn đã học chủ đề này</div>`;
       if(pon) s+=`<p class="sub-h" style="margin:0 0 4px;text-align:center">💗 ${esc(partner()||'Người ấy')} đã học chủ đề này rồi</p>`;
       return s; })() }
@@ -2027,7 +2047,8 @@ function viewGrammar(){ const g=grammarById(String(S.sub).slice(2));
 
     <div class="row" style="gap:10px;margin-bottom:14px">
       <button class="btn block" data-act="grammar-practice" data-id="${g.id}">${ic('spark','sm')} Luyện tập (${g.practice.length})</button>
-      <button class="btn ghost block" data-act="send-grammar" data-id="${g.id}">${ic('send','sm')} Gửi ${esc(partner()||'người ấy')}</button></div>
+      <button class="btn ghost block" data-act="send-grammar" data-id="${g.id}">${ic('send','sm')} ${isSent('📖 '+g.name)?'Gửi lại':'Gửi '+esc(partner()||'người ấy')}</button></div>
+    ${sentStatusLine('📖 '+g.name)}
 
     <div class="label" style="margin-top:0">${g.forms?'Cấu trúc':'Công thức'}</div>
     <div class="card" style="padding:8px 14px">
@@ -2056,8 +2077,9 @@ function viewMyDeck(d){ const cards=S.cards.filter(c=>c.deck_id===d.id);
       <button class="btn soft block" data-act="study-deck" data-id="${d.id}" data-mode="flash">${ic('cards','sm')} Thẻ lật</button>
       <button class="btn block" data-act="study-deck" data-id="${d.id}" data-mode="quiz">${ic('spark','sm')} Trắc nghiệm</button></div>
     <div class="row" style="gap:10px;margin-bottom:8px">
-      <button class="btn ghost block" data-act="send-deck" data-id="${d.id}">${ic('send','sm')} Gửi ${esc(partner()||'người ấy')}</button>
-      <button class="btn ghost block" data-act="duel-from" data-v="d:${d.id}">${ic('swords','sm')} Rủ đấu</button></div>`:'' }
+      <button class="btn ghost block" data-act="send-deck" data-id="${d.id}">${ic('send','sm')} ${isSent(d.name)?'Gửi lại':'Gửi '+esc(partner()||'người ấy')}</button>
+      <button class="btn ghost block" data-act="duel-from" data-v="d:${d.id}">${ic('swords','sm')} Rủ đấu</button></div>
+    ${sentStatusLine(d.name)}`:'' }
     <div class="card">
       <div class="label" style="margin-top:0">Thêm từ — gõ rồi nhấn Enter</div>
       <div class="row" style="gap:8px">
