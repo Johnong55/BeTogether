@@ -1,100 +1,84 @@
-# cùng nhau
-
-Một web nhỏ cho hai người **học từ vựng & dò bài cho nhau**, **giữ chuỗi** mỗi ngày, **đếm ngày bên nhau** và **cùng ghi chú**.
-
-- **Nhà** — đếm ngày bên nhau, chuỗi ngày liên tiếp, nhiệm vụ hôm nay
-- **Học** — bộ **từ vựng B2 có sẵn** (14 chủ đề, ~780 từ, lấy từ file PDF), học bằng **trắc nghiệm** + **trộn chữ cái** (không phải flashcard). Cả hai đứa đều học được cùng một chủ đề.
-- **Hộp thư** — gửi một chủ đề cho người ấy; **cả người gửi lẫn người nhận** đều học được → giữ chuỗi
-- **Ghi chú** — khu ghi chú chung hai đứa cùng viết và lưu giữ
-- **Câu hỏi mỗi ngày** — một câu hỏi, cả hai trả lời rồi mới lộ đáp án của nhau
-
-> Bộ từ vựng được **nhúng sẵn** trong file `library.js` — dùng ngay, không cần tự tạo. Muốn thêm/sửa chủ đề thì sửa `library.js`.
-
-Mỗi người có **tài khoản riêng** (tên đăng nhập + mã PIN). Ghép đôi bằng cách **gửi lời mời theo tên** hoặc **chia sẻ mã phòng**.
-
----
-
-## 1. Xem thử ngay (không cần cài gì)
-
-Mở file `index.html` bằng trình duyệt (nhấp đúp). App chạy ở **chế độ thử** — dữ liệu lưu trên máy này. Đủ để xem giao diện và chơi thử.
-
-> Lưu ý: chế độ thử **không** đồng bộ giữa hai máy. Muốn hai người dùng riêng ở hai nơi → làm bước 2.
+<div align="center">
+  <img src="icons/icon-192.png" width="112" alt="Biểu tượng cùng nhau" />
+  <h1>cùng nhau</h1>
+  <p><strong>Một không gian nhỏ dành cho hai người — để học, chơi, lên lịch và lưu lại những điều thuộc về nhau.</strong></p>
+  <p>
+    <a href="https://cungnhau.pages.dev"><strong>Trải nghiệm ứng dụng ↗</strong></a>
+    ·
+    <a href="https://johnong55.github.io/BeTogether/">GitHub Pages</a>
+  </p>
+  <p>
+    <img src="https://img.shields.io/badge/PWA-installable-d97a92?style=flat-square" alt="PWA installable" />
+    <img src="https://img.shields.io/badge/Vanilla-JavaScript-f0c84b?style=flat-square" alt="Vanilla JavaScript" />
+    <img src="https://img.shields.io/badge/Supabase-synced-3ecf8e?style=flat-square" alt="Supabase" />
+    <img src="https://img.shields.io/badge/Cloudflare-Pages-f38020?style=flat-square" alt="Cloudflare Pages" />
+  </p>
+</div>
 
 ---
 
-## 2. Bật đồng bộ qua mạng (Supabase — miễn phí)
+## “cùng nhau” là gì?
 
-### Bước 1 — Tạo dự án Supabase
-1. Vào https://supabase.com → đăng ký (miễn phí).
-2. **New project** → đặt tên, đặt mật khẩu database (lưu lại), chọn region gần (Singapore).
-3. Đợi ~1 phút cho dự án khởi tạo xong.
+**cùng nhau** là một web app cho các cặp đôi muốn có thêm những hoạt động nhỏ để làm mỗi ngày. Hai người ghép đôi vào cùng một phòng, dùng tài khoản riêng và cùng xây dựng một không gian chung.
 
-### Bước 2 — Tạo bảng dữ liệu
-1. Bên trái chọn **SQL Editor** → **New query**.
-2. Mở file `schema.sql` trong dự án này, **copy toàn bộ**, dán vào và bấm **Run**.
-3. Thấy "Success" là xong.
+Đây không chỉ là app học từ vựng, cũng không chỉ là app đếm ngày yêu. Nó kết hợp học tập, trò chơi đối kháng, lịch sinh hoạt và những tương tác tình cảm trong cùng một trải nghiệm nhẹ nhàng.
 
-### Bước 3 — Lấy khoá kết nối
-1. Bên trái: **Project Settings** (bánh răng) → **API**.
-2. Copy hai thứ:
-   - **Project URL** (vd: `https://abcdxyz.supabase.co`)
-   - **anon public** key (chuỗi dài bắt đầu bằng `eyJ...`)
+## Có gì bên trong?
 
-### Bước 4 — Dán khoá vào app
-Mở `index.html`, tìm đoạn gần đầu phần `<script>`:
+| Khu vực | Trải nghiệm |
+| --- | --- |
+| 🏠 **Nhà** | Đếm ngày bên nhau, giữ chuỗi hoạt động, xem nhiệm vụ hôm nay và những lời nhắc đang chờ. |
+| 📚 **Học** | Học từ vựng B2, collocation TOEIC, 19 chủ điểm ngữ pháp hoặc tự tạo bộ từ riêng. |
+| ⚔️ **Đấu** | Rủ người ấy thi trắc nghiệm, giải ô chữ, nối chữ cuối Bo3 hoặc chơi Speed Round theo chủ đề. |
+| 💌 **Hộp thư** | Gửi bài dò và chủ đề học cho nhau, theo dõi người ấy đã nhận và hoàn thành hay chưa. |
+| 📅 **Lịch** | Đặt lịch sinh hoạt song song, tìm khoảng cùng rảnh, tạo thói quen chung và nhắc nhau đúng lúc. |
+| ✨ **Mỗi ngày** | Cùng trả lời một câu hỏi; chỉ khi cả hai hoàn thành mới được xem câu trả lời của nhau. |
 
-```js
-const SUPABASE_URL = "";       // dán Project URL vào đây
-const SUPABASE_ANON_KEY = "";  // dán anon public key vào đây
-```
+## Học cùng nhau, không học một mình
 
-Điền vào, lưu lại. Mở lại app → giờ đã đồng bộ qua mạng ☁️ (góc Cài đặt sẽ ghi "Đồng bộ qua mạng đang BẬT").
+Ứng dụng có sẵn thư viện từ vựng và ngữ pháp, đồng thời cho phép hai người tự tạo nội dung riêng. Một bộ từ có thể được học bằng nhiều cách:
 
----
+- Lật thẻ và vuốt để đánh dấu đã hiểu hoặc chưa hiểu.
+- Điền từ vào ngữ cảnh, trắc nghiệm và sắp xếp chữ.
+- Học lại riêng những từ chưa nhớ.
+- Gửi bài dò cho người ấy hoặc dùng chính bộ từ đó để mở một trận đấu.
 
-## 3. Đưa web lên mạng để hai người cùng vào (miễn phí)
+Mỗi hoạt động hoàn thành đều góp vào chuỗi ngày chung — biến việc học thành một thói quen mà hai người cùng duy trì.
 
-🌐 **Đang chạy tại: https://cungnhau.pages.dev** (Cloudflare Pages)
+## Đấu trường dành cho hai người
 
-Cập nhật sau này bằng lệnh (từ thư mục dự án):
-```
-npx wrangler pages deploy . --project-name=cungnhau --branch=main --commit-dirty=true
-```
+Phần thi đấu được thiết kế như một trò chơi thực sự, không chỉ là màn câu hỏi có tính điểm:
 
-Cách khác nếu cần — **Netlify Drop**:
-1. Vào https://app.netlify.com/drop
-2. Kéo–thả **cả thư mục `love`** vào trang đó.
-3. Netlify cho bạn một link (vd: `https://ten-gi-do.netlify.app`). Gửi link này cho người yêu.
+- **Nối chữ cuối Bo3:** có mạng, combo, điểm thưởng cho từ dài, đồng hồ 15 giây và vật phẩm hỗ trợ.
+- **Speed Round:** cả hai cùng liệt kê đáp án theo một chủ đề trong 45 giây; hệ thống AI kiểm tra tính hợp lệ, nhận biết đáp án trùng và chấm thêm điểm cho lựa chọn hiếm.
+- **Ô chữ:** tự do chọn và giải các từ trên cùng một bảng, đồng thời nhìn thấy tiến độ của đối phương.
+- **Trắc nghiệm:** thi trực tiếp trên bộ từ hai người đã chọn.
 
-> Cũng có thể dùng **Vercel** hoặc **GitHub Pages** — đều miễn phí cho web tĩnh như thế này.
+Trận đấu có phản ứng nhanh, hiệu ứng âm thanh, rung chạm, màn kết quả và nút tái đấu để giữ nhịp chơi liên tục.
 
----
+## Những chi tiết tạo nên cảm giác “của hai người”
 
-## 4. Dùng thế nào?
+- Ly tim vật lý trên màn Nhà chuyển động theo độ nghiêng của điện thoại và có thể chứa ảnh kỷ niệm.
+- Câu hỏi mỗi ngày có cảm xúc, trả lời qua lại và nhật ký của những ngày trước.
+- Lịch ngày hiển thị hai cột song song, đánh dấu lịch chung và các khoảng cả hai cùng rảnh.
+- Ghi chú, lời nhắc, thói quen và thông báo được đồng bộ giữa hai thiết bị.
+- Giao diện pastel, animation, sound effect và haptic feedback có thể bật/tắt theo từng máy.
+- Có thể cài lên màn hình chính như một ứng dụng PWA trên điện thoại.
 
-1. **Người tạo (A)**: mở app → *Tạo tài khoản* (tên + tên đăng nhập + mã PIN) → *Tạo phòng* → đặt ngày bắt đầu yêu → có **mã phòng**.
-2. **Mời người yêu** bằng một trong hai cách:
-   - Vào ⚙️ **Cài đặt** → *Mời người yêu bằng tên đăng nhập* (người kia sẽ thấy lời mời khi đăng nhập), **hoặc**
-   - **Gửi mã phòng** cho người kia.
-3. **Người kia (B)**: mở cùng link → *Tạo tài khoản* → bấm **Đồng ý** ở lời mời, *hoặc* nhập **mã phòng** → *Vào phòng*.
-4. Tạo **bộ thẻ** → thêm thẻ (gõ nhanh + Enter, hoặc **Thêm nhiều** để dán cả danh sách) → vào **Dò bài** chọn bộ → gửi.
-5. Người nhận vào **Hộp thư** → **Nhận & làm bài** → giữ chuỗi.
-6. Cùng viết **Ghi chú** và trả lời **Câu hỏi mỗi ngày**.
+## Công nghệ
 
-**Giữ chuỗi:** mỗi ngày chỉ cần **làm xong một bài** *hoặc* **trả lời câu hỏi hôm nay** là chuỗi +1. Bỏ trọn một ngày thì chuỗi về 0.
+**cùng nhau** được xây dựng theo hướng gọn và trực tiếp:
 
-**Thêm nhiều thẻ một lúc:** trong một bộ, bấm *Thêm nhiều* rồi dán mỗi dòng một thẻ, ngăn cách từ và nghĩa bằng dấu `=`, `,` hoặc tab. Ví dụ:
-```
-apple = quả táo
-hello, xin chào
-thank you    cảm ơn
-```
+- Vanilla HTML, CSS và JavaScript, không dùng frontend framework.
+- Supabase cho dữ liệu đồng bộ giữa hai người.
+- Cloudflare Pages, Pages Functions và Workers AI cho triển khai cùng các tính năng AI.
+- Service Worker và Web App Manifest cho trải nghiệm PWA.
+- Web Audio API và Vibration API cho phản hồi âm thanh/rung.
 
----
+## Trạng thái dự án
 
-## Ghi chú nhỏ
-- Web riêng tư cho hai người: đăng nhập bằng tên + PIN, dữ liệu bảo vệ bằng **mã phòng khó đoán**. Mã PIN chỉ được băm nhẹ — **đừng dùng PIN trùng mật khẩu quan trọng** và đừng lưu thông tin nhạy cảm.
-- Muốn đổi tên, tông màu, ngày bắt đầu: vào ⚙️ **Cài đặt** trong app.
-- Mọi thứ gói gọn trong **một file** `index.html` — dễ sao lưu, dễ chỉnh.
+Dự án đang được phát triển tích cực và đã có bản chạy thật tại **[cungnhau.pages.dev](https://cungnhau.pages.dev)**. Giao diện được ưu tiên cho điện thoại, đặc biệt là Safari trên iPhone và Chrome trên Android.
 
-Chúc hai bạn học vui và giữ chuỗi thật dài nha.
+<div align="center">
+  <p><em>Một chút học, một chút chơi, và thêm một lý do để hai người mở app cùng nhau mỗi ngày.</em></p>
+</div>
