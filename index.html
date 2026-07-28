@@ -2565,9 +2565,15 @@ function isTopicDuel(du){ return !!(du && du.questions && du.questions[0] && du.
 function isTurnDuel(du){ return isChainDuel(du)||isTopicDuel(du); }
 const TOPIC_VERIFY_GRACE_SEC=14;
 function turnGraceSec(du){ return isTopicDuel(du)?TOPIC_VERIFY_GRACE_SEC:CHAIN_GRACE_SEC; }
+/* Máy của người TỚI LƯỢT chốt ngay ở 0s nếu họ không gửi gì. Chỉ giữ grace khi một đáp án
+   đã được bấm gửi đúng hạn và còn đang xác minh/lưu; máy đối phương vẫn chờ grace để không chốt oan. */
+function activeTurnGraceSec(du){
+  const mine=chainTurn(du)===S.me, p=S.duelPlay;
+  return mine&&!(p&&p.id===du.id&&p.chainSending) ? 0 : turnGraceSec(du);
+}
 function chainTurn(du){ const chain=du.questions||[]; return chain.length%2===1 ? other(du.challenger) : du.challenger; }
 /* Mốc bắt đầu đếm giờ của lượt hiện tại = lúc người TỚI LƯỢT thực sự NHÌN THẤY màn hình (seenAt),
-   KHÔNG phải lúc đối phương gửi xong (at) — tránh trừ oan thời gian animation/mở app trễ vào 10s của họ.
+   KHÔNG phải lúc đối phương gửi xong (at) — tránh trừ oan thời gian animation/mở app trễ vào 15s của họ.
    null = người tới lượt CHƯA mở màn hình này lần nào -> chưa bắt đầu đếm, chờ. */
 function chainLastAt(du){ const chain=du.questions||[]; if(!chain.length) return null;
   const last=chain[chain.length-1]; return last.seenAt ? new Date(last.seenAt).getTime() : null; }
@@ -2590,7 +2596,7 @@ function startChainTimer(){ if(chainTimerT) return;
     const remain=Math.max(0,Math.ceil(remainRaw));
     if(el) el.textContent=remain+'s';
     const box=$('#chain-turn-box'); if(box) box.classList.toggle('warn', remain<=3);
-    if(remainRaw<=-turnGraceSec(du)) handleChainTimeout(); // dùng remainRaw thô (chưa clamp) + trừ khoảng đệm
+    if(remainRaw<=-activeTurnGraceSec(du)) handleChainTimeout(); // không gửi: chốt ở 0s; đang gửi: mới dùng grace
   }, 1000); }
 function stopChainTimer(){ if(chainTimerT){ clearInterval(chainTimerT); chainTimerT=null; } }
 /* Hết giờ (bất kỳ máy nào phát hiện trước cũng tự chốt được, ghi cùng 1 kết quả nên vô hại nếu cả 2 cùng chạy) */
@@ -2648,17 +2654,18 @@ async function dictWordExists(word){
   }catch(e){ return null; } }
 async function sendChainWord(){ const du=S.duel, p=S.duelPlay; if(!du||du.status!=='active'||!isTurnDuel(du)) return;
   if(chainTurn(du)!==S.me || (p&&p.chainSending)) return;
+  const remainRaw=chainRemainSec(du);
+  if(remainRaw!=null&&remainRaw<=0){ await handleChainTimeout(); return; }
   const topicMode=isTopicDuel(du), val=($('#dchain_input')?.value||'').trim().replace(/\s+/g,' ');
   const err=topicMode?validateTopicItem(val,du):validateChainWord(val,du); if(err){ toast(err); return; }
   if(p) p.chainSending=true;
   const inp=$('#dchain_input'), btn=$('[data-act="d-chain-send"]');
   const idleText=topicMode?'Gửi để hệ thống kiểm tra ✓':'Gửi từ ⚡';
   if(inp) inp.disabled=true; if(btn){ btn.disabled=true; btn.textContent=topicMode?'Hệ thống đang kiểm tra…':'Đang tra từ điển…'; }
-  const resetSend=()=>{ if(inp) inp.disabled=false; if(btn){ btn.disabled=false; btn.textContent=idleText; } };
+  const resetSend=()=>{ if(p) p.chainSending=false; if(inp) inp.disabled=false; if(btn){ btn.disabled=false; btn.textContent=idleText; } };
   let verdict=null, exists=null;
   if(topicMode) verdict=await verifyTopicItem(String((du.questions[0]||{}).topic||''),val,du);
   else exists=await dictWordExists(val.toLowerCase());
-  if(p) p.chainSending=false;
   if(topicMode&&verdict===null){
     resetSend(); toast('Hệ thống chưa kiểm tra được — thử gửi lại nha'); return; }
   if(topicMode&&!verdict.valid){
@@ -2671,6 +2678,7 @@ async function sendChainWord(){ const du=S.duel, p=S.duelPlay; if(!du||du.status
     key:topicMode?topicItemKey(val):undefined, by:S.me, at:new Date(serverNow()).toISOString() }];
   try{ await Store.updateDuel(du.id,S.space.id,{questions:chain}); }
   catch(e){ toast('Gửi đáp án lỗi rồi, thử lại nha'); resetSend(); return; }
+  if(p) p.chainSending=false;
   du.questions=chain;
   Feedback.cue(topicMode?'correct':'send'); render(); }
 function dAnswerMc(i){ const p=S.duelPlay, du=S.duel; if(!p||p.phase!=='ask') return;
