@@ -131,6 +131,15 @@
     cursor:pointer; font-family:inherit; font-size:14px; }
   .seg button{ transition:background .16s var(--ease-smooth), color .16s var(--ease-smooth); }
   .seg button.on{ background:var(--card); color:var(--p1); border-color:var(--edge); box-shadow:2px 2px 0 var(--edge); }
+  .feedback-prefs{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .feedback-opt{ border:2px solid var(--edge); border-radius:15px; background:var(--card); color:var(--soft); padding:12px;
+    font:inherit; text-align:left; cursor:pointer; box-shadow:2px 2px 0 var(--edge); transition:transform .16s var(--ease-smooth),box-shadow .16s var(--ease-smooth),background .16s,color .16s; }
+  .feedback-opt b{ display:flex; align-items:center; gap:7px; color:var(--ink); font-size:13.5px; }
+  .feedback-opt small{ display:block; margin-top:3px; font-size:11.5px; }
+  .feedback-opt.on{ background:var(--chip); color:var(--p1); }
+  .feedback-opt.on b{ color:var(--p1); }
+  .feedback-opt:active{ transform:translate(2px,2px); box-shadow:0 0 0 var(--edge); }
+  .feedback-opt:disabled{ cursor:not-allowed; opacity:.48; box-shadow:none; }
 
   /* hero couple */
   .couple{ background:linear-gradient(150deg, color-mix(in srgb,var(--p1) 14%, var(--card)), var(--card));
@@ -771,6 +780,8 @@ const ICONS = {
   list:'<path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1.3" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.3" fill="currentColor" stroke="none"/>',
   trophy:'<path d="M7 4h10v4a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M9 20h6M12 13v4"/>',
   bell:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M10.5 21a2 2 0 0 0 3 0"/>',
+  sound:'<path d="M5 10v4h3l4 3V7l-4 3H5Z"/><path d="M15 9.2a4 4 0 0 1 0 5.6M17.5 6.5a7.5 7.5 0 0 1 0 11"/>',
+  haptic:'<rect x="8" y="4" width="8" height="16" rx="2"/><path d="M5 8 3.5 10 5 12M19 8l1.5 2-1.5 2M11 17h2"/>',
   swords:'<path d="M4.5 19.5 18 6M18 6V4h-2M18 6h-3.5"/><path d="M19.5 19.5 6 6M6 6V4h2M6 6h3.5"/><path d="M4.5 19.5l-1 1M19.5 19.5l1 1"/>',
 };
 function ic(name,cls){ return `<svg class="ic ${cls||''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]||''}</svg>`; }
@@ -790,6 +801,52 @@ const grammarById = (id)=> GRAMMAR.find(g=>g.id===id);
 const GRAMMAR_GROUPS = [['present','Các thì Hiện tại'],['past','Các thì Quá khứ'],['future','Các thì Tương lai'],['conditional','Câu điều kiện'],['passive','Câu bị động'],['reported','Câu tường thuật'],['comparison','So sánh']];
 const ALL_VI = LIBRARY.flatMap(t=>t.words.map(w=>w.vi));
 const topicByNo = (no)=> LIBRARY.find(t=>String(t.no)===String(no));
+
+/* ===================== SOUND + HAPTIC FEEDBACK =====================
+   Âm được tổng hợp bằng Web Audio (không tải file). AudioContext chỉ mở sau lần chạm đầu tiên để
+   đúng chính sách autoplay của Safari/Chrome. Tuỳ chọn lưu theo thiết bị vì mỗi máy có hoàn cảnh dùng khác nhau. */
+const Feedback = {
+  soundOn: localStorage.getItem('loveapp_feedback_sound')!=='0',
+  hapticOn: localStorage.getItem('loveapp_feedback_haptic')!=='0',
+  audioSupported: !!(window.AudioContext||window.webkitAudioContext),
+  hapticSupported: !!(navigator&&navigator.vibrate),
+  ctx:null, master:null, lastTap:0,
+  unlock(){
+    if(!this.soundOn||!this.audioSupported) return null;
+    try{
+      if(!this.ctx){ const AC=window.AudioContext||window.webkitAudioContext; this.ctx=new AC();
+        this.master=this.ctx.createGain(); this.master.gain.value=.34; this.master.connect(this.ctx.destination); }
+      if(this.ctx.state==='suspended') this.ctx.resume().catch(()=>{});
+      return this.ctx;
+    }catch(e){ return null; }
+  },
+  pulse(pattern){ if(!this.hapticOn||!this.hapticSupported) return;
+    try{ navigator.vibrate(pattern); }catch(e){} },
+  note(freq,delay,dur,vol,type,endFreq){ const ctx=this.unlock(); if(!ctx||!this.soundOn||!this.master) return;
+    try{ const at=ctx.currentTime+(delay||0), o=ctx.createOscillator(), g=ctx.createGain();
+      o.type=type||'sine'; o.frequency.setValueAtTime(freq,at);
+      if(endFreq) o.frequency.exponentialRampToValueAtTime(endFreq,at+dur);
+      g.gain.setValueAtTime(.0001,at); g.gain.exponentialRampToValueAtTime(vol||.035,at+.008);
+      g.gain.exponentialRampToValueAtTime(.0001,at+dur); o.connect(g); g.connect(this.master);
+      o.start(at); o.stop(at+dur+.025); }catch(e){} },
+  cue(kind){
+    if(kind==='tap'){ const now=performance.now(); if(now-this.lastTap<45) return; this.lastTap=now;
+      this.pulse(6); this.note(520,0,.032,.014,'sine',610); return; }
+    if(kind==='correct'){ this.pulse(18); this.note(523,0,.075,.04,'sine'); this.note(659,.055,.11,.038,'sine'); return; }
+    if(kind==='wrong'){ this.pulse([18,42,18]); this.note(210,0,.13,.035,'triangle',145); return; }
+    if(kind==='known'){ this.pulse(12); this.note(590,0,.055,.028,'sine',720); return; }
+    if(kind==='unknown'){ this.pulse([6,30,6]); this.note(280,0,.075,.025,'triangle',220); return; }
+    if(kind==='send'){ this.pulse(10); this.note(440,0,.06,.028,'sine'); this.note(660,.045,.095,.032,'sine'); return; }
+    if(kind==='duel'){ this.pulse([15,40,15]); this.note(165,0,.09,.045,'sawtooth',240); this.note(330,.08,.12,.035,'triangle',520); return; }
+    if(kind==='lose'){ this.pulse([24,55,18]); this.note(294,0,.13,.032,'sine'); this.note(220,.11,.18,.03,'sine'); return; }
+    if(kind==='complete'||kind==='preview'){ this.pulse([10,32,16]);
+      [[523,0],[659,.07],[784,.14],[1047,.23]].forEach(([f,d],i)=>this.note(f,d,i===3?.2:.11,.035,'sine')); }
+  },
+  answer(ok){ this.cue(ok?'correct':'wrong'); },
+  set(which,on){ if(which==='sound'){ this.soundOn=!!on; localStorage.setItem('loveapp_feedback_sound',on?'1':'0'); if(on)this.unlock(); }
+    if(which==='haptic'){ this.hapticOn=!!on; localStorage.setItem('loveapp_feedback_haptic',on?'1':'0'); } },
+  toggle(which){ const on=which==='sound'?!this.soundOn:!this.hapticOn; this.set(which,on); return on; }
+};
 function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 function scrambleWord(w){ const ls=w.split(''); let s=w,t=0; while(s===w && t<25){ s=shuffle(ls).join(''); t++; } return s; }
 /* Dựng bộ câu hỏi trắc nghiệm. exMap = {từ(viết thường): câu ví dụ} lấy từ word_examples.
@@ -1018,7 +1075,7 @@ function crosswordCheckWord(){ const p=S.duelPlay, du=S.duel; if(!p||!du||p.acti
   if(val.toLowerCase()===q.en.toLowerCase()) crosswordSolve();
   else crosswordWrongWord(); }
 function crosswordWrongWord(){ const p=S.duelPlay; if(!p||p.active==null) return; const idx=p.active;
-  if(navigator.vibrate){ try{ navigator.vibrate([25,40,25]); }catch(e){} }
+  Feedback.cue('wrong');
   cwFlash(idx,'cw-wrong',420); toast('Chưa đúng, thử lại nha 🥺');
   // sau animation ngắn -> xoá chữ đã gõ, render lại (ô về gợi ý) rồi focus cho gõ tiếp
   setTimeout(()=>{ if(S.duelPlay!==p || p.active!==idx) return; p.buffer=''; render();
@@ -1026,7 +1083,7 @@ function crosswordWrongWord(){ const p=S.duelPlay; if(!p||p.active==null) return
 async function crosswordSolve(){ const p=S.duelPlay, du=S.duel; if(!p||p.active==null) return;
   const idx=p.active;
   p.solved.add(idx); p.score=p.solved.size; p.active=null; p.buffer='';
-  if(navigator.vibrate){ try{ navigator.vibrate(22); }catch(e){} }
+  Feedback.cue('correct');
   const patch={}; patch['progress_'+S.me]=setToBitmask(p.solved); patch['score_'+S.me]=p.score;
   if(p.solved.size>=(du.questions||[]).length && !p.doneLocal){ p.doneLocal=true; patch['done_'+S.me]=true; }
   Object.assign(du,patch);
@@ -1175,7 +1232,7 @@ function progressFireworks(runner){ const cols=['#e7a3b4','#c79a72','#6cab8e','#
     s.style.setProperty('--dy',(Math.sin(ang)*dist).toFixed(1)+'px');
     s.style.background=cols[i%cols.length];
     runner.appendChild(s); setTimeout(()=>s.remove(),900); }
-  if(navigator.vibrate){ try{ navigator.vibrate([8,30,8]); }catch(e){} } }
+  Feedback.pulse([8,30,8]); }
 
 /* ===================== STORE (cloud / máy) ===================== */
 const useCloud = !!(SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase);
@@ -1365,14 +1422,14 @@ const initials = ()=>{ const a=(S.space?.person_a||'?').trim()[0]||'?'; const b=
 let toastT;
 function toast(m){ clearTimeout(toastT); let t=$('#toast'); if(!t){ t=document.createElement('div'); t.id='toast'; t.className='toast'; document.body.appendChild(t); }
   t.textContent=m; t.style.display='block'; toastT=setTimeout(()=>t.style.display='none',2200); }
-function celebrate(){ const cv=$('#confetti'),ctx=cv.getContext('2d'); cv.width=innerWidth; cv.height=innerHeight;
+function celebrate(){ Feedback.cue('complete'); const cv=$('#confetti'),ctx=cv.getContext('2d'); cv.width=innerWidth; cv.height=innerHeight;
   const cols=['#d97a92','#e7a3b4','#c79a72','#7fa68c','#9384c0'],N=110,ps=[];
   for(let i=0;i<N;i++) ps.push({x:Math.random()*cv.width,y:-20-Math.random()*cv.height*.4,r:4+Math.random()*6,c:cols[i%cols.length],vy:2+Math.random()*3.5,vx:-2+Math.random()*4,a:Math.random()*6,va:-.2+Math.random()*.4});
   let f=0;(function loop(){ f++; ctx.clearRect(0,0,cv.width,cv.height);
     ps.forEach(p=>{ p.y+=p.vy;p.x+=p.vx;p.a+=p.va; ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.a); ctx.fillStyle=p.c; ctx.fillRect(-p.r/2,-p.r/2,p.r,p.r*1.5); ctx.restore(); });
     if(f<150) requestAnimationFrame(loop); else ctx.clearRect(0,0,cv.width,cv.height); })(); }
 /* Mưa rơi cả màn hình (khi thua) — “pháo hoa buồn” 🌧️ */
-function rainfall(){ const cv=$('#confetti'),ctx=cv.getContext('2d'); cv.width=innerWidth; cv.height=innerHeight;
+function rainfall(){ Feedback.cue('lose'); const cv=$('#confetti'),ctx=cv.getContext('2d'); cv.width=innerWidth; cv.height=innerHeight;
   const cols=['rgba(112,140,176,.55)','rgba(140,164,198,.42)','rgba(96,124,160,.5)'],N=130,ps=[];
   for(let i=0;i<N;i++) ps.push({x:Math.random()*(cv.width+80)-20,y:-Math.random()*cv.height,l:11+Math.random()*15,v:8+Math.random()*7,w:1+Math.random()*1.3,c:cols[i%cols.length]});
   let f=0;(function loop(){ f++; ctx.clearRect(0,0,cv.width,cv.height); ctx.lineCap='round';
@@ -2217,7 +2274,7 @@ function duelPlayView(du){
   if(!S.tmp.duelClashDone) S.tmp.duelClashDone=new Set(clashSeenIds());
   if(!S.tmp.duelClashDone.has(du.id)){
     S.tmp.duelClashDone.add(du.id); markClashSeen(du.id);
-    if(navigator.vibrate){ try{ navigator.vibrate([15,40,15]); }catch(e){} }
+    Feedback.cue('duel');
     setTimeout(()=>{ if(S.view==='arena' && S.duel && S.duel.id===du.id) render(); }, 1500);
     return duelClashView();
   }
@@ -2517,24 +2574,25 @@ async function sendChainWord(){ const du=S.duel, p=S.duelPlay; if(!du||du.status
   du.questions=chain;
   try{ await Store.updateDuel(du.id,S.space.id,{questions:chain}); }
   catch(e){ toast('Gửi từ lỗi rồi, thử lại nha'); if(inp) inp.disabled=false; if(btn){ btn.disabled=false; btn.textContent='Gửi từ ⚡'; } return; }
-  render(); }
+  Feedback.cue('send'); render(); }
 function dAnswerMc(i){ const p=S.duelPlay, du=S.duel; if(!p||p.phase!=='ask') return;
   const q=du.questions[p.idx]; p.chosen=i; p.lastCorrect=(q.options[i]===q.vi); if(p.lastCorrect)p.score++;
-  p.phase='feedback'; persistDuelProgress(); render(); }
+  Feedback.answer(p.lastCorrect); p.phase='feedback'; persistDuelProgress(); render(); }
 function dCheckScramble(){ const p=S.duelPlay, du=S.duel; if(!p||p.phase!=='ask') return;
   const q=du.questions[p.idx]; const val=($('#dsc_input')?.value||'').trim(); if(!val){ toast('Gõ từ đã nha'); return; }
   p.answerGiven=val; p.lastCorrect=(val.toLowerCase()===q.en.toLowerCase()); if(p.lastCorrect)p.score++;
-  p.phase='feedback'; persistDuelProgress(); render(); }
+  Feedback.answer(p.lastCorrect); p.phase='feedback'; persistDuelProgress(); render(); }
 function guessLetter(letter){ const p=S.duelPlay, du=S.duel; if(!p||p.phase!=='ask') return;
   const q=du.questions[p.idx]; letter=(letter||'').toLowerCase(); if(!letter) return;
   p.guessed=p.guessed||new Set(); if(p.guessed.has(letter)) return;
   p.guessed.add(letter);
   if(q.en.includes(letter)){
     const solved=q.en.split('').every(ch=>p.guessed.has(ch));
-    if(solved){ p.lastCorrect=true; p.score++; p.phase='feedback'; persistDuelProgress(); }
+    if(solved){ p.lastCorrect=true; p.score++; Feedback.cue('correct'); p.phase='feedback'; persistDuelProgress(); }
   } else {
     p.wrongCount=(p.wrongCount||0)+1;
-    if(p.wrongCount>=HANGMAN_MAX_WRONG){ p.lastCorrect=false; p.phase='feedback'; persistDuelProgress(); }
+    if(p.wrongCount>=HANGMAN_MAX_WRONG){ p.lastCorrect=false; Feedback.cue('wrong'); p.phase='feedback'; persistDuelProgress(); }
+    else Feedback.pulse(9);
   }
   render(); }
 async function dNext(){ const p=S.duelPlay, du=S.duel; if(!p||!du) return;
@@ -3290,7 +3348,7 @@ document.addEventListener('pointerdown',(e)=>{
   SchDrag.h0=parseInt(col.dataset.h0,10)||0;
   SchDrag.startY=e.clientY; SchDrag.y0=e.clientY-rect.top; SchDrag.y1=SchDrag.y0;
   const begin=()=>{ SchDrag.on=true;
-    if(navigator.vibrate){ try{ navigator.vibrate(14); }catch(err){} }
+    Feedback.pulse(14);
     SchDrag.body?.classList.add('dragging');
     const g=document.createElement('div'); g.className='tl-ghost'; SchDrag.ghost=g; col.appendChild(g); schGhostUpdate(); };
   if(e.pointerType==='mouse'){ e.preventDefault(); begin(); }   // chuột: kéo NGAY, chặn luôn chọn text
@@ -3460,6 +3518,14 @@ function viewSettings(){
   return `<div class="row" style="margin-bottom:8px"><button class="iconbtn" data-act="go" data-v="home">${ic('back','sm')}</button><h2 class="title grow" style="margin:0">Cài đặt</h2></div>
     ${ !isStandalone()?installCard():`<div class="card center" style="background:linear-gradient(150deg, color-mix(in srgb,var(--p1) 14%, var(--card)), var(--card))">
         <b>${ic('heart','sm')} Đang chạy dạng app rồi nè!</b><div class="muted">Cài xong xuôi hết cả 💕</div></div>` }
+    <div class="card"><div class="label" style="margin-top:0">Cảm giác khi chạm</div>
+      <p class="sub-h" style="margin:0 0 11px">Tiếng phản hồi dịu nhẹ và rung ngắn được lưu riêng trên máy này.</p>
+      <div class="feedback-prefs">
+        <button class="feedback-opt ${Feedback.soundOn&&Feedback.audioSupported?'on':''}" data-act="feedback-toggle" data-v="sound" aria-pressed="${Feedback.soundOn&&Feedback.audioSupported}" ${Feedback.audioSupported?'':'disabled'}>
+          <b>${ic('sound','sm')} Âm thanh</b><small>${Feedback.audioSupported?(Feedback.soundOn?'Đang bật':'Đang tắt'):'Máy không hỗ trợ'}</small></button>
+        <button class="feedback-opt ${Feedback.hapticOn&&Feedback.hapticSupported?'on':''}" data-act="feedback-toggle" data-v="haptic" aria-pressed="${Feedback.hapticOn&&Feedback.hapticSupported}" ${Feedback.hapticSupported?'':'disabled'}>
+          <b>${ic('haptic','sm')} Rung chạm</b><small>${Feedback.hapticSupported?(Feedback.hapticOn?'Đang bật':'Đang tắt'):'Trình duyệt chưa hỗ trợ'}</small></button>
+      </div></div>
     <div class="card"><div class="label" style="margin-top:0">Mã phòng</div>
       <div class="row"><div class="grow" style="font-family:'Fraunces';font-size:22px;color:var(--p1)">${esc(S.space.id)}</div>
         <button class="btn sm" data-act="copy-code">${ic('copy','sm')} Chép</button></div>
@@ -3544,7 +3610,7 @@ function lpCancel(){ if(lpTimer){ clearTimeout(lpTimer); lpTimer=null; } if(lpEl
 document.addEventListener('pointerdown',(e)=>{ const el=e.target.closest('[data-longpress]'); if(!el) return;
   lpCancel(); lpEl=el; el.classList.add('lp-active');
   lpTimer=setTimeout(()=>{ lpTimer=null; el.classList.remove('lp-active'); lpEl=null;
-    if(navigator.vibrate){ try{ navigator.vibrate(12); }catch(err){} }
+    Feedback.pulse(12);
     const kind=el.dataset.longpress;
     if(kind==='daily-react'){ S.tmp.dReactOpen=el.dataset.who; S.tmp.dReplyOpen=null; render(); }
     else if(kind==='duel-stake'){ openDuelStakeModal(el.dataset.id); }
@@ -3555,9 +3621,12 @@ document.addEventListener('pointercancel', lpCancel);
 document.addEventListener('scroll', lpCancel, true);
 
 /* ===================== EVENTS ===================== */
+/* Phản hồi rất nhẹ ngay lúc ngón tay chạm xuống; bỏ qua ô nhập, thẻ đang vuốt và phần tử bị khoá. */
+document.addEventListener('pointerdown',(e)=>{ const t=e.target.closest('button,[data-act]');
+  if(!t||t.disabled||e.target.closest('input,textarea,select,.flash')) return; Feedback.cue('tap'); },{passive:true,capture:true});
 document.addEventListener('click', async (e)=>{ const t=e.target.closest('[data-act]'); if(!t) return;
   try{ await handle(t.dataset.act, t.dataset.v, t.dataset.id, t, e); }
-  catch(err){ console.error(err); toast(err && err.message ? ('Lỗi: '+err.message) : 'Có lỗi rồi, thử lại nha'); } });
+  catch(err){ console.error(err); Feedback.cue('wrong'); toast(err && err.message ? ('Lỗi: '+err.message) : 'Có lỗi rồi, thử lại nha'); } });
 
 /* Bấm ra ngoài -> đóng thanh cảm xúc nhanh đang mở (chạy sau handler chính nên emoji vẫn nhận) */
 document.addEventListener('click',(e)=>{ if(!S.tmp.dReactOpen) return;
@@ -3619,6 +3688,9 @@ async function handle(act,v,id,t,e){
 
     case 'close-modal': closeModal(); break;
     case 'stop': break;
+    case 'feedback-toggle': { const on=Feedback.toggle(v); render();
+      if(on){ if(v==='sound') Feedback.cue('preview'); else Feedback.pulse([12,30,12]); }
+      toast((v==='sound'?'Âm thanh':'Rung chạm')+(on?' đã bật':' đã tắt')); } break;
 
     case 'lib-filter': S.tmp.libFilter=v; render(); break;
     case 'lib-learnfilter': S.tmp.learnFilter=v; render(); break;
@@ -3822,19 +3894,19 @@ async function sendTopic(topicNo){ const t=topicByNo(topicNo); if(!t) return;
   const items=t.words.map(w=>({en:w.en, vi:w.vi}));
   await Store.saveQuiz({ id:uid(), space_id:S.space.id, from_person:S.me, to_person:other(S.me), title:t.name, message:'',
     status:'pending', items, score:0, total:items.length, created_at:new Date().toISOString(), picked_at:null, answered_at:null });
-  await loadAll(); S.view='inbox'; S.inboxTab='out'; render(); toast('Đã gửi cho '+(partner()||'người ấy')); }
+  await loadAll(); S.view='inbox'; S.inboxTab='out'; render(); Feedback.cue('send'); toast('Đã gửi cho '+(partner()||'người ấy')); }
 async function sendGrammar(id){ const g=grammarById(id); if(!g) return;
   const items=(g.practice||[]).map(p=>Object.assign({},p));  // gửi kèm câu luyện (có .type để nhận diện là ngữ pháp)
   if(!items.length){ toast('Chủ điểm này chưa có câu luyện'); return; }
   await Store.saveQuiz({ id:uid(), space_id:S.space.id, from_person:S.me, to_person:other(S.me), title:'📖 '+g.name, message:'',
     status:'pending', items, score:0, total:items.length, created_at:new Date().toISOString(), picked_at:null, answered_at:null });
-  await loadAll(); S.view='inbox'; S.inboxTab='out'; render(); toast('Đã gửi ngữ pháp cho '+(partner()||'người ấy')); }
+  await loadAll(); S.view='inbox'; S.inboxTab='out'; render(); Feedback.cue('send'); toast('Đã gửi ngữ pháp cho '+(partner()||'người ấy')); }
 async function sendDeck(deckId){ const d=S.decks.find(x=>x.id===deckId); if(!d) return;
   const items=S.cards.filter(c=>c.deck_id===deckId).map(c=>({en:c.front, vi:c.back}));
   if(!items.length){ toast('Bộ này chưa có từ nào'); return; }
   await Store.saveQuiz({ id:uid(), space_id:S.space.id, from_person:S.me, to_person:other(S.me), title:d.name, message:'',
     status:'pending', items, score:0, total:items.length, created_at:new Date().toISOString(), picked_at:null, answered_at:null });
-  await loadAll(); S.view='inbox'; S.inboxTab='out'; render(); toast('Đã gửi cho '+(partner()||'người ấy')); }
+  await loadAll(); S.view='inbox'; S.inboxTab='out'; render(); Feedback.cue('send'); toast('Đã gửi cho '+(partner()||'người ấy')); }
 function studyTopic(topicNo){ const t=topicByNo(topicNo); if(!t) return; startStudy(t.words,{src:'lib',title:t.name,back:'library'}); }
 async function pickup(qid){ const q=S.quizzes.find(x=>x.id===qid); if(!q) return;
   if(q.status==='pending' && q.to_person===S.me){ q.status='picked'; q.picked_at=new Date().toISOString(); await Store.saveQuiz(q); }
@@ -3886,18 +3958,18 @@ function matchAnswer(val,q){ const v=normAns(val);
   return cands.some(c=>normAns(c)===v); }
 async function checkGrammar(){ const p=S.play; if(!p||p.phase!=='ask') return; const q=p.questions[p.idx];
   const val=($('#gr_input')?.value||'').trim(); if(!val){ toast('Điền đáp án đã nha'); return; }
-  p.answerGiven=val; p.lastCorrect=matchAnswer(val,q); if(p.lastCorrect)p.score++; p.phase='feedback'; render(); }
+  p.answerGiven=val; p.lastCorrect=matchAnswer(val,q); if(p.lastCorrect)p.score++; Feedback.answer(p.lastCorrect); p.phase='feedback'; render(); }
 function grammarMc(i){ const p=S.play; if(!p||p.phase!=='ask') return; const q=p.questions[p.idx];
-  p.chosen=i; p.lastCorrect=(i===q.answer); if(p.lastCorrect)p.score++; p.phase='feedback'; render(); }
+  p.chosen=i; p.lastCorrect=(i===q.answer); if(p.lastCorrect)p.score++; Feedback.answer(p.lastCorrect); p.phase='feedback'; render(); }
 async function answerMc(i){ const p=S.play; if(!p||p.phase!=='ask') return; const q=p.questions[p.idx];
-  p.chosen=i; p.lastCorrect=(q.options[i]===q.vi); if(p.lastCorrect)p.score++; p.phase='feedback'; render();
+  p.chosen=i; p.lastCorrect=(q.options[i]===q.vi); if(p.lastCorrect)p.score++; Feedback.answer(p.lastCorrect); p.phase='feedback'; render();
   await saveLessonProgress(p.idx+1,p.score); }
 async function answerCloze(i){ const p=S.play; if(!p||p.phase!=='ask') return; const q=p.questions[p.idx];
-  p.chosen=i; p.lastCorrect=((q.options[i]||'').toLowerCase()===q.en.toLowerCase()); if(p.lastCorrect)p.score++; p.phase='feedback'; render();
+  p.chosen=i; p.lastCorrect=((q.options[i]||'').toLowerCase()===q.en.toLowerCase()); if(p.lastCorrect)p.score++; Feedback.answer(p.lastCorrect); p.phase='feedback'; render();
   await saveLessonProgress(p.idx+1,p.score); }
 async function checkScramble(){ const p=S.play; if(!p||p.phase!=='ask') return; const q=p.questions[p.idx];
   const val=($('#sc_input')?.value||'').trim(); if(!val){ toast('Gõ từ đã nha'); return; }
-  p.answerGiven=val; p.lastCorrect=(val.toLowerCase()===q.en.toLowerCase()); if(p.lastCorrect)p.score++; p.phase='feedback'; render();
+  p.answerGiven=val; p.lastCorrect=(val.toLowerCase()===q.en.toLowerCase()); if(p.lastCorrect)p.score++; Feedback.answer(p.lastCorrect); p.phase='feedback'; render();
   await saveLessonProgress(p.idx+1,p.score); }
 async function nextQ(){ const p=S.play; if(!p) return;
   if(p.idx+1<p.questions.length){ p.idx++; p.phase='ask'; p.chosen=null; p.answerGiven=''; render(); }
@@ -3914,49 +3986,60 @@ async function prevCard(){ const p=S.play; if(!p||p.idx<=0) return;
 /* ----- Vuốt thẻ: trái = chưa hiểu, phải = đã hiểu ----- */
 function cardVerdict(known){ const p=S.play; if(!p||p.mode!=='flash'||p.done) return;
   p.mark=p.mark||[]; p.mark[p.idx]=known?'known':'unknown';
-  if(navigator.vibrate){ try{ navigator.vibrate(known?12:[5,35,5]); }catch(e){} }
+  Feedback.cue(known?'known':'unknown');
   CardSwipe.busy=false;
   if(p.idx+1>=p.cards.length){ finishStudy(); return; }
   p.idx++; p.flip=false; render(); saveLessonProgress(p.idx,null); }
 /* bay thẻ ra rồi mới sang thẻ kế (dùng cho cả nút bấm lẫn vuốt) */
 function flingCard(known){ const p=S.play; if(!p||p.mode!=='flash'||p.done||CardSwipe.busy) return;
-  const el=$('.flash'); CardSwipe.busy=true; CardSwipe.blockClickUntil=Date.now()+450;
-  if(el){ el.style.transition='transform .22s var(--ease-soft), opacity .22s';
-    el.style.transform=`translateX(${known?120:-120}%) rotate(${known?18:-18}deg)`; el.style.opacity='0';
+  const el=$('.flash'); CardSwipe.busy=true; CardSwipe.blockClickUntil=Date.now()+400;
+  if(el){ el.style.transition='transform .18s cubic-bezier(.25,.8,.4,1), opacity .18s';
+    el.style.transform=`translateX(${known?130:-130}%) rotate(${known?14:-14}deg)`; el.style.opacity='0';
     const stamp=el.querySelector(known?'.swipe-stamp.know':'.swipe-stamp.dunno'); if(stamp) stamp.style.opacity='1';
-    setTimeout(()=>cardVerdict(known),195);
+    setTimeout(()=>cardVerdict(known),175);
   } else cardVerdict(known); }
 
-const CardSwipe = { el:null, x0:0, y0:0, on:false, may:false, busy:false, blockClickUntil:0 };
+/* ----- Vuốt thẻ: theo kịp ngón tay bằng rAF + tính cả VẬN TỐC (vuốt nhanh dù ngắn vẫn ăn) ----- */
+const CardSwipe = { el:null, x0:0, y0:0, lastX:0, lastT:0, vx:0, on:false, may:false, busy:false, blockClickUntil:0, raf:null, pendingDx:0 };
 function cardSwipeClear(snapBack){ const el=CardSwipe.el;
-  if(el && snapBack){ el.style.transition='transform .2s var(--ease-soft)'; el.style.transform='';
+  if(CardSwipe.raf){ cancelAnimationFrame(CardSwipe.raf); CardSwipe.raf=null; }
+  if(el && snapBack){ el.style.transition='transform .16s cubic-bezier(.25,.8,.4,1)'; el.style.transform='';
     const k=el.querySelector('.swipe-stamp.know'), d=el.querySelector('.swipe-stamp.dunno');
     if(k) k.style.opacity=''; if(d) d.style.opacity=''; }
   CardSwipe.el=null; CardSwipe.on=false; CardSwipe.may=false; }
+function cardSwipeApply(){ CardSwipe.raf=null; const el=CardSwipe.el; if(!el) return;
+  const dx=CardSwipe.pendingDx;
+  el.style.transform=`translateX(${dx}px) rotate(${dx/26}deg)`;   // /26 thay /18 -> xoay nhẹ hơn
+  const k=el.querySelector('.swipe-stamp.know'), d=el.querySelector('.swipe-stamp.dunno');
+  if(k) k.style.opacity=Math.max(0,Math.min(1,dx/100));
+  if(d) d.style.opacity=Math.max(0,Math.min(1,-dx/100)); }
 document.addEventListener('pointerdown',(e)=>{
   if(!S.play || S.play.mode!=='flash' || S.play.done || CardSwipe.busy) return;
   if($('.overlay')) return;
   if(e.pointerType==='mouse' && e.button!==0) return;
   const el=e.target.closest('.flash'); if(!el) return;
-  CardSwipe.el=el; CardSwipe.x0=e.clientX; CardSwipe.y0=e.clientY; CardSwipe.on=false; CardSwipe.may=true;
-  el.style.transition='none'; });
+  CardSwipe.el=el; CardSwipe.x0=e.clientX; CardSwipe.y0=e.clientY;
+  CardSwipe.lastX=e.clientX; CardSwipe.lastT=performance.now(); CardSwipe.vx=0;
+  CardSwipe.on=false; CardSwipe.may=true; el.style.transition='none'; el.style.willChange='transform'; });
 document.addEventListener('pointermove',(e)=>{
   if(!CardSwipe.el || !CardSwipe.may) return;
   const dx=e.clientX-CardSwipe.x0, dy=e.clientY-CardSwipe.y0;
   if(!CardSwipe.on){
-    if(Math.abs(dy)>Math.abs(dx) && Math.abs(dy)>10){ cardSwipeClear(false); return; }  // cuộn dọc -> nhả cho trang
-    if(Math.abs(dx)>10) CardSwipe.on=true; else return; }
-  const el=CardSwipe.el;
-  el.style.transform=`translateX(${dx}px) rotate(${dx/18}deg)`;
-  const k=el.querySelector('.swipe-stamp.know'), d=el.querySelector('.swipe-stamp.dunno');
-  if(k) k.style.opacity=Math.max(0,Math.min(1,dx/110));
-  if(d) d.style.opacity=Math.max(0,Math.min(1,-dx/110)); });
+    if(Math.abs(dy)>Math.abs(dx) && Math.abs(dy)>8){ cardSwipeClear(false); return; }
+    if(Math.abs(dx)>6) CardSwipe.on=true; else return; }        // 6 thay 10 -> bắt cử chỉ sớm hơn
+  const now=performance.now(), dt=now-CardSwipe.lastT;
+  if(dt>0){ CardSwipe.vx=(e.clientX-CardSwipe.lastX)/dt; CardSwipe.lastX=e.clientX; CardSwipe.lastT=now; }
+  CardSwipe.pendingDx=dx;
+  if(!CardSwipe.raf) CardSwipe.raf=requestAnimationFrame(cardSwipeApply);   // gộp update theo khung hình -> hết giật
+});
 document.addEventListener('pointerup',(e)=>{
   if(!CardSwipe.el) return;
   const dx=e.clientX-CardSwipe.x0, wasOn=CardSwipe.on;
-  const w=CardSwipe.el.getBoundingClientRect().width||300, thresh=Math.max(64, w*0.28);
-  if(wasOn && Math.abs(dx)>thresh){ const known=dx>0; cardSwipeClear(false); flingCard(known); return; }
-  if(wasOn) CardSwipe.blockClickUntil=Date.now()+300;   // đã kéo (chưa đủ) -> đừng lật, để snap về
+  const w=CardSwipe.el.getBoundingClientRect().width||300;
+  const thresh=Math.max(52, w*0.22);                             // 0.22 thay 0.28 -> đỡ phải kéo xa
+  const flick=Math.abs(CardSwipe.vx)>0.5 && Math.abs(dx)>24;      // hất tay nhanh dù ngắn vẫn tính
+  if(wasOn && (Math.abs(dx)>thresh || flick)){ const known=dx>0; cardSwipeClear(false); flingCard(known); return; }
+  if(wasOn) CardSwipe.blockClickUntil=Date.now()+300;
   cardSwipeClear(true); });
 document.addEventListener('pointercancel',()=>{ if(CardSwipe.el) cardSwipeClear(true); });
 /* Xin AI ví dụ + cách dùng cho thẻ đang xem (cache theo từ để khỏi gọi lại) */
@@ -4057,7 +4140,7 @@ async function dailyReact(who,emoji){ const d=S.dailyToday; if(!d) return; const
   if(val) emojiPushRecent(val); await saveDailySafe({[key]:val}); render(); }
 async function dailyReplySave(who){ const d=S.dailyToday; if(!d) return;
   const val=($('#d_reply_input')?.value||'').trim(); S.tmp.dReplyOpen=null;
-  await saveDailySafe({['reply_'+who]:val||null}); render(); toast(val?'Đã gửi 💬':'Đã xoá lời nhắn'); }
+  await saveDailySafe({['reply_'+who]:val||null}); if(val)Feedback.cue('send'); render(); toast(val?'Đã gửi 💬':'Đã xoá lời nhắn'); }
 
 /* ---------- AVATAR: chọn ảnh từ máy -> nén 128x128 JPEG -> lưu vào phòng ---------- */
 function chooseAvatar(){ const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
