@@ -197,6 +197,7 @@ Streak (`bumpStreak`): học/thi/trả lời câu hỏi xong → chuỗi +1 (1 l
 ## Sự cố đã xử lý (đừng lặp lại)
 - Nút trong popup không chạy: do `onclick="event.stopPropagation()"` chặn event delegation → đã thay bằng `data-act="stop"` + case no-op. Nếu "nút bấm không gọi API", nghi ngờ delegation bị chặn.
 - Local mode (không key) khác cloud mode — mọi hàm Store phải làm được cả hai.
+- Trong màn thi đấu, **không đặt nút huỷ cạnh ô nhập/nút gửi**. Huỷ trận nằm trong menu ba chấm góc phải và luôn qua thêm một bước xác nhận; nút × chỉ rời màn hình, không huỷ trận.
 
 ## Đặc điểm người dùng
 Không rành kỹ thuật. Muốn thấy kết quả chạy thật. Thích chữ nhẹ nhàng ("Rủ đấu", "Biết rồi 💕" thay vì câu gượng). Test trên iPhone (Safari) và Android. Luôn deploy Cloudflare + đưa link + hướng dẫn Ctrl+Shift+R / cài lại app sau khi đổi.

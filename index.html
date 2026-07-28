@@ -816,6 +816,7 @@ const ICONS = {
   sound:'<path d="M5 10v4h3l4 3V7l-4 3H5Z"/><path d="M15 9.2a4 4 0 0 1 0 5.6M17.5 6.5a7.5 7.5 0 0 1 0 11"/>',
   haptic:'<rect x="8" y="4" width="8" height="16" rx="2"/><path d="M5 8 3.5 10 5 12M19 8l1.5 2-1.5 2M11 17h2"/>',
   swords:'<path d="M4.5 19.5 18 6M18 6V4h-2M18 6h-3.5"/><path d="M19.5 19.5 6 6M6 6V4h2M6 6h3.5"/><path d="M4.5 19.5l-1 1M19.5 19.5l1 1"/>',
+  more:'<circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/>',
 };
 function ic(name,cls){ return `<svg class="ic ${cls||''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]||''}</svg>`; }
 
@@ -1173,7 +1174,9 @@ function duelCrosswordPlayView(du){
   const p=S.duelPlay, total=(du.questions||[]).length||1;
   const op=popcount(du['progress_'+other(S.me)]||0);
   if(p.doneLocal){
-    return `<h2 class="title">Xong phần bạn! 🎉</h2>
+    return `<div class="row" style="margin-bottom:8px"><button class="iconbtn" data-act="go" data-v="home" aria-label="Rời màn đấu">${ic('x','sm')}</button>
+        <div class="grow"></div>${duelMenuButton()}</div>
+      <h2 class="title">Xong phần bạn! 🎉</h2>
       <div class="card couple center"><b style="font-size:22px">${p.score}/${total} đúng</b>
         <div class="muted">Đợi ${esc(partner()||'người ấy')} làm xong là biết ai thắng…</div></div>
       <div class="label" style="margin:14px 2px 6px">Đáp án ô chữ</div>
@@ -1181,13 +1184,12 @@ function duelCrosswordPlayView(du){
       <p class="muted center" style="font-size:12px;margin:6px 0 0">Ô <b style="color:var(--p1)">hồng</b> là bạn giải đúng · ô <b>xám</b> là đáp án bạn chưa ra</p>
       <div class="card" style="margin-top:12px"><div class="row"><span class="muted grow">Tiến độ của ${esc(partner()||'người ấy')}</span>
         <span class="muted" id="opp-txt">${esc(partner()||'Người ấy')}: ${op}/${total}</span></div>
-        ${progressBar(op/total*100,{id:'opp-fill',face:other(S.me)})}</div>
-      <button class="btn danger block sm" data-act="duel-cancel-active">Huỷ trận (nếu chờ lâu quá)</button>`;
+        ${progressBar(op/total*100,{id:'opp-fill',face:other(S.me)})}</div>`;
   }
   const activeQ = p.active!=null ? du.questions[p.active] : null;
   prefetchCrosswordClues(du,p); // sinh trước gợi ý ở nền cho đỡ chờ khi chạm từ
-  return `<div class="row" style="margin-bottom:2px"><button class="iconbtn" data-act="go" data-v="home">${ic('x','sm')}</button>
-      <div class="grow center" style="font-weight:800">🧩 Ô chữ · ${p.score}/${total}</div><div style="width:38px"></div></div>
+  return `<div class="row" style="margin-bottom:2px"><button class="iconbtn" data-act="go" data-v="home" aria-label="Rời màn đấu">${ic('x','sm')}</button>
+      <div class="grow center" style="font-weight:800">🧩 Ô chữ · ${p.score}/${total}</div>${duelMenuButton()}</div>
     <div class="row" style="margin:6px 2px 2px"><span class="muted grow">Bạn: ${p.score} đúng</span>
       <span class="muted" id="opp-txt">${esc(partner()||'Người ấy')}: ${op}/${total}</span></div>
     ${progressBar(op/total*100,{id:'opp-fill',face:other(S.me),style:'background:linear-gradient(90deg,var(--accent),var(--p2))'})}
@@ -2373,6 +2375,7 @@ function duelClashView(){
     <div class="clash-txt">Bắt đầu đấu!</div>
   </div>`;
 }
+function duelMenuButton(){ return `<button class="iconbtn" data-act="duel-menu" aria-label="Tuỳ chọn trận đấu">${ic('more','sm')}</button>`; }
 function duelPlayView(du){
   if(!S.tmp.duelClashDone) S.tmp.duelClashDone=new Set(clashSeenIds());
   if(!S.tmp.duelClashDone.has(du.id)){
@@ -2388,18 +2391,19 @@ function duelPlayView(du){
   const p=S.duelPlay, qs=du.questions||[], total=qs.length||1;
   const op=du['progress_'+other(S.me)]||0;
   if(p.doneLocal){
-    return `<h2 class="title">Xong phần bạn! 🎉</h2>
+    return `<div class="row" style="margin-bottom:8px"><button class="iconbtn" data-act="go" data-v="home" aria-label="Rời màn đấu">${ic('x','sm')}</button>
+        <div class="grow"></div>${duelMenuButton()}</div>
+      <h2 class="title">Xong phần bạn! 🎉</h2>
       <div class="card couple center"><b style="font-size:22px">${p.score}/${total} đúng</b>
         <div class="muted">Đợi ${esc(partner()||'người ấy')} làm xong là biết ai thắng…</div></div>
       <div class="card"><div class="row"><span class="muted grow">Tiến độ của ${esc(partner()||'người ấy')}</span>
         <span class="muted" id="opp-txt">${esc(partner()||'Người ấy')}: ${op}/${total}</span></div>
-        ${progressBar(op/total*100,{id:'opp-fill',face:other(S.me)})}</div>
-      <button class="btn danger block sm" data-act="duel-cancel-active">Huỷ trận (nếu chờ lâu quá)</button>`;
+        ${progressBar(op/total*100,{id:'opp-fill',face:other(S.me)})}</div>`;
   }
   const q=qs[p.idx], fb=p.phase==='feedback';
   const icon = q.kind==='hangman' ? '🎪' : '⚔️';
-  return `<div class="row" style="margin-bottom:2px"><button class="iconbtn" data-act="go" data-v="home">${ic('x','sm')}</button>
-      <div class="grow center" style="font-weight:800">${icon} Câu ${p.idx+1}/${total}</div><div style="width:38px"></div></div>
+  return `<div class="row" style="margin-bottom:2px"><button class="iconbtn" data-act="go" data-v="home" aria-label="Rời màn đấu">${ic('x','sm')}</button>
+      <div class="grow center" style="font-weight:800">${icon} Câu ${p.idx+1}/${total}</div>${duelMenuButton()}</div>
     <div class="row" style="margin:6px 2px 2px"><span class="muted grow">Bạn: ${p.score} đúng</span>
       <span class="muted" id="opp-txt">${esc(partner()||'Người ấy')}: ${op}/${total}</span></div>
     ${progressBar(op/total*100,{id:'opp-fill',face:other(S.me),style:'background:linear-gradient(90deg,var(--accent),var(--p2))'})}
@@ -2416,8 +2420,8 @@ function duelChainBody(du){
   const topic=topicMode?String((chain[0]||{}).topic||''):'';
   const last=chain[chain.length-1], lastChar=topicMode?'':last.word[last.word.length-1].toUpperCase();
   const syl=chainSyl(du), sylTxt=syl?sylLabel(syl):'';
-  return `<div class="row" style="margin-bottom:8px"><button class="iconbtn" data-act="go" data-v="home">${ic('x','sm')}</button>
-      <div class="grow center" style="font-weight:800">${topicMode?'💡 Kể theo chủ đề · '+entries.length+' ý':'🔗 Nối từ · '+chain.length+' từ'+(sylTxt?' · '+sylTxt:'')}</div><div style="width:38px"></div></div>
+  return `<div class="row" style="margin-bottom:8px"><button class="iconbtn" data-act="go" data-v="home" aria-label="Rời màn đấu">${ic('x','sm')}</button>
+      <div class="grow center" style="font-weight:800">${topicMode?'💡 Kể theo chủ đề · '+entries.length+' ý':'🔗 Nối từ · '+chain.length+' từ'+(sylTxt?' · '+sylTxt:'')}</div>${duelMenuButton()}</div>
     ${topicMode?`<div class="card center" style="padding:13px;border-style:dashed"><span class="muted">Chủ đề hai đứa đã chọn</span><br><b style="font-family:'Fraunces';font-size:20px">${esc(topic)}</b></div>`:''}
     <div class="card chain-list">${entries.length?entries.slice().reverse().map((c,ri)=>{ const i=entries.length-1-ri;
         return `<div class="chain-item">${avatarEl(c.by,26)}<b class="grow">${esc(c.word)}</b>
@@ -2430,8 +2434,7 @@ function duelChainBody(du){
     </div>
     ${ myTurn ? `
     <input id="dchain_input" placeholder="${topicMode?'Nhập một đáp án…':'Từ '+(sylTxt?sylTxt+', ':'')+'bắt đầu bằng '+lastChar+'...'}" autocapitalize="${topicMode?'sentences':'none'}" autocomplete="off" autocorrect="${topicMode?'on':'off'}" spellcheck="${topicMode?'true':'false'}" maxlength="60" style="text-align:center;font-size:18px;margin-top:12px"/>
-    <button class="btn block" style="margin-top:10px" data-act="d-chain-send">${topicMode?'Gửi để hệ thống kiểm tra ✓':'Gửi từ ⚡'}</button>` : '' }
-    <button class="btn ghost block sm" style="margin-top:12px" data-act="duel-cancel-active">Huỷ trận (nếu chờ lâu quá)</button>`;
+    <button class="btn block" style="margin-top:10px" data-act="d-chain-send">${topicMode?'Gửi để hệ thống kiểm tra ✓':'Gửi từ ⚡'}</button>` : '' }`;
 }
 function livesHTML(n,max){ let s=''; for(let i=0;i<max;i++) s+=`<span class="life-dot${i>=n?' off':''}"></span>`; return s; }
 function duelReactsHTML(){ return `<div class="quick-reacts"><button class="btn soft sm" data-act="duel-react" data-v="hay">Hay!</button>
@@ -2444,8 +2447,8 @@ function duelChainV2Body(du){
   const syl=chainSyl(du), sylTxt=syl?sylLabel(syl):'', reaction=chainReaction(du), oppTyping=(du['progress_'+other(S.me)]||0)>0;
   const myLives=chainLivesLeft(du,S.me), theirLives=chainLivesLeft(du,other(S.me));
   const current=words.slice().reverse();
-  return `<div class="row" style="margin-bottom:6px"><button class="iconbtn" data-act="go" data-v="home">${ic('x','sm')}</button>
-      <div class="grow center" style="font-weight:900">Nối chữ cuối · Bo3</div><div style="width:38px"></div></div>
+  return `<div class="row" style="margin-bottom:6px"><button class="iconbtn" data-act="go" data-v="home" aria-label="Rời màn đấu">${ic('x','sm')}</button>
+      <div class="grow center" style="font-weight:900">Nối chữ cuối · Bo3</div>${duelMenuButton()}</div>
     <div class="duel-hud"><div class="duel-side"><b>Bạn</b><div class="duel-lives">${livesHTML(myLives,max)}</div><div class="duel-score">${chainPoints(du,S.me)} điểm · combo ${chainCombo(du,S.me)}</div></div>
       <div class="duel-round">Ván ${round}</div>
       <div class="duel-side r"><b>${esc(partner()||'Người ấy')}</b><div class="duel-lives">${livesHTML(theirLives,max)}</div><div class="duel-score">${chainPoints(du,other(S.me))} điểm · combo ${chainCombo(du,other(S.me))}</div></div></div>
@@ -2461,8 +2464,7 @@ function duelChainV2Body(du){
       <button class="btn block" style="margin-top:9px" data-act="d-chain-send">Gửi từ</button>
       <div class="duel-tools"><button class="btn soft" data-act="chain-power" data-v="time" ${chainPowerUsed(du,S.me,'time')?'disabled':''}>+5 giây ${chainPowerUsed(du,S.me,'time')?'· đã dùng':''}</button>
         <button class="btn soft" data-act="chain-power" data-v="skip" ${chainPowerUsed(du,S.me,'skip')?'disabled':''}>Đổi từ mở đầu ${chainPowerUsed(du,S.me,'skip')?'· đã dùng':''}</button></div>`:''}
-    ${duelReactsHTML()}
-    <button class="btn ghost block sm" style="margin-top:10px" data-act="duel-cancel-active">Huỷ trận</button>`;
+    ${duelReactsHTML()}`;
 }
 const TOPIC_SPEED_SEC=45, TOPIC_INTRO_SEC=3;
 function topicConfig(du){ return (du.questions||[])[0]||{}; }
@@ -2489,8 +2491,8 @@ function topicSpeedView(du){
   const pending=(p&&p.topicPending)||[], rejected=(p&&p.topicRejected)||[], done=!!du['done_'+S.me], oppTyping=topicProgressTyping(du['progress_'+other(S.me)]||0);
   const localChips=[...accepted.map(x=>({...x,status:'ok'})),...pending.map(x=>({...x,status:'pending'})),...rejected.slice(-2).map(x=>({...x,status:'bad'}))];
   const reaction=chainReaction(du), grading=raw<=0&&(pending.length>0||!done);
-  return `<div class="row" style="margin-bottom:8px"><button class="iconbtn" data-act="go" data-v="home">${ic('x','sm')}</button>
-      <div class="grow center" style="font-weight:900">Speed Round · 45 giây</div><div style="width:38px"></div></div>
+  return `<div class="row" style="margin-bottom:8px"><button class="iconbtn" data-act="go" data-v="home" aria-label="Rời màn đấu">${ic('x','sm')}</button>
+      <div class="grow center" style="font-weight:900">Speed Round · 45 giây</div>${duelMenuButton()}</div>
     <div class="speed-stage center">
       <div class="muted" style="position:relative;font-weight:800">${intro?'Bắt đầu sau':'Chủ đề'}</div>
       <div style="position:relative;font-family:'Fraunces';font-size:21px;font-weight:800;margin:3px 0 12px">${esc(cfg.topic||'')}</div>
@@ -2506,8 +2508,7 @@ function topicSpeedView(du){
     <div class="speed-entries">${localChips.length?localChips.map((x,i)=>`<span class="speed-chip ${x.status==='pending'?'pending':x.status==='bad'?'bad':''}" style="animation-delay:${Math.min(i,8)*35}ms" title="${esc(x.reason||'')}">${esc(x.word)}${x.status==='pending'?' · đang kiểm tra':''}</span>`).join(''):`<span class="muted">Đáp án của bạn sẽ xuất hiện ở đây.</span>`}</div>
     ${rejected.length?`<div class="row" style="gap:8px;margin-top:8px"><p class="muted grow" style="color:var(--no);margin:0">${esc(rejected[rejected.length-1].reason||'Đáp án chưa phù hợp')}</p>
       ${raw>0?`<button class="btn soft sm" data-act="topic-appeal" data-id="${rejected[rejected.length-1].id}">Phản đối</button>`:''}</div>`:''}
-    ${duelReactsHTML()}
-    <button class="btn ghost block sm" style="margin-top:10px" data-act="duel-cancel-active">Huỷ trận</button>`;
+    ${duelReactsHTML()}`;
 }
 function duelMcBody(q,p,fb){
   return `<div class="card center" style="padding:24px 16px">
@@ -3969,6 +3970,15 @@ function modal(html){ const ov=document.createElement('div'); ov.className='over
   ov.innerHTML=`<div class="sheet" data-act="stop">${html}</div>`; document.body.appendChild(ov); return ov; }
 function closeModal(){ $('.overlay')?.remove(); }
 
+function openDuelMenu(){
+  if(!S.duel || S.duel.status!=='active') return;
+  modal(`<h2 class="title" style="margin-top:0">Tuỳ chọn trận đấu</h2>
+    <p class="muted" style="margin:0 0 14px">Nút × chỉ rời màn hình. Trận đấu vẫn tiếp tục và bạn có thể quay lại bất cứ lúc nào.</p>
+    <button class="btn soft block" data-act="duel-leave-view">Rời màn đấu, không huỷ</button>
+    <button class="btn danger block" style="margin-top:10px" data-act="duel-cancel-active">Huỷ trận cho cả hai</button>
+    <button class="btn ghost block" style="margin-top:10px" data-act="close-modal">Đóng</button>`);
+}
+
 function openDeckModal(){ S.tmp.tint=DECK_TINT[S.decks.length%DECK_TINT.length];
   modal(`<h2 class="title" style="margin-top:0">Bộ từ của mình 💗</h2>
     <label class="fld"><span class="lab">Tên bộ</span><input id="m_name" placeholder="vd: Từ vựng IELTS của tụi mình"/></label>
@@ -4137,7 +4147,9 @@ async function handle(act,v,id,t,e){
     case 'duel-join': await joinDuel(id); break;
     case 'duel-decline': if(confirm('Từ chối lời rủ đấu này?')){ await Store.updateDuel(id,S.space.id,{status:'cancelled'}); S.duel=null; render(); } break;
     case 'duel-cancel': if(confirm('Huỷ trận này?')){ await Store.updateDuel(S.duel.id,S.space.id,{status:'cancelled'}); S.duel=null; S.duelPlay=null; render(); } break;
-    case 'duel-cancel-active': if(confirm('Huỷ trận đang diễn ra? (cả hai sẽ mất kết quả)')){ await Store.updateDuel(S.duel.id,S.space.id,{status:'cancelled'}); S.duel=null; S.duelPlay=null; render(); } break;
+    case 'duel-menu': openDuelMenu(); break;
+    case 'duel-leave-view': closeModal(); saveScrollNow(); S.view='home'; render(); restoreScrollSoon(); break;
+    case 'duel-cancel-active': if(confirm('Chắc chắn huỷ trận cho cả hai? Toàn bộ kết quả trận này sẽ bị mất.')){ closeModal(); await Store.updateDuel(S.duel.id,S.space.id,{status:'cancelled'}); S.duel=null; S.duelPlay=null; render(); } break;
     case 'd-answer-mc': dAnswerMc(parseInt(v,10)); break;
     case 'd-check-scramble': dCheckScramble(); break;
     case 'd-guess-letter': guessLetter(v); break;
