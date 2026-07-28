@@ -19,20 +19,21 @@ export function parseVerdict(output) {
     try { data = JSON.parse(match ? match[0] : text); } catch (e) { return null; }
   }
   if (!data || typeof data.valid !== 'boolean') return null;
-  return { valid: data.valid, reason: clean(data.reason, 160) };
+  return { valid: data.valid, reason: clean(data.reason, 160), rarity: data.rarity === 'rare' ? 'rare' : 'common', canonical: clean(data.canonical, 60) };
 }
 
 export async function onRequestPost({ request, env }) {
   try {
     const body = await request.json();
     const topic = clean(body.topic, 80), item = clean(body.item, 60);
+    const appeal = body.appeal === true;
     const used = Array.isArray(body.used) ? body.used.map(x => clean(x, 60)).filter(Boolean).slice(-60) : [];
     if (topic.length < 2 || !item) return Response.json({ error: 'Thiếu chủ đề hoặc đáp án' }, { status: 400 });
 
     const key = itemKey(item);
     if (!key) return Response.json({ valid: false, reason: 'Đáp án cần có chữ hoặc số.' });
     if (used.some(x => itemKey(x) === key)) {
-      return Response.json({ valid: false, reason: 'Đáp án này đã được kể rồi.' });
+      return Response.json({ valid: false, reason: 'Đáp án này đã được kể rồi.', rarity: 'common', canonical: '' });
     }
 
     const system = [
@@ -42,13 +43,15 @@ export async function onRequestPost({ request, env }) {
       'Chấp nhận tên riêng, cách gọi thông dụng, biến thể chính tả nhỏ và đáp án bằng tiếng Việt hoặc tiếng Anh nếu quan hệ rõ ràng.',
       'Từ chối thứ chỉ liên tưởng xa, câu giải thích, ý kiến chủ quan, nội dung vô nghĩa hoặc đáp án không đủ cụ thể.',
       'Danh sách đã dùng chỉ để phát hiện đáp án trùng nghĩa rõ ràng; từ chối cả số ít/số nhiều hay cách viết khác của cùng một đáp án.',
-      'Trả về duy nhất JSON: {"valid":true|false,"reason":"một lý do ngắn bằng tiếng Việt"}.',
+      'Nếu hợp lệ, đánh giá rarity="rare" chỉ khi đây là đáp án đúng nhưng ít người thường nghĩ tới trong chủ đề; còn lại rarity="common".',
+      'canonical là tên tiếng Việt ngắn, phổ biến của chính đáp án để ghép các từ đồng nghĩa hoặc khác ngôn ngữ.',
+      'Trả về duy nhất JSON: {"valid":true|false,"reason":"một lý do ngắn bằng tiếng Việt","rarity":"common|rare","canonical":"tên chuẩn ngắn"}.',
       'Nếu không chắc, đặt valid=false.'
     ].join(' ');
-    const payload = JSON.stringify({ topic, item, used });
+    const payload = JSON.stringify({ topic, item, used, appeal, note: appeal ? 'Người chơi yêu cầu xem xét lại; hãy kiểm tra kỹ nhưng không hạ tiêu chuẩn.' : undefined });
     const out = await env.AI.run(MODEL, {
       messages: [{ role: 'system', content: system }, { role: 'user', content: payload }],
-      max_tokens: 140,
+      max_tokens: 180,
       temperature: 0.1,
     });
     const verdict = parseVerdict(out);

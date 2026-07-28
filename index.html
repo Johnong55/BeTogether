@@ -427,6 +427,39 @@
   .chain-turn.warn{ border-color:var(--no) !important; }
   .chain-countdown{ font-size:36px; font-weight:800; color:var(--p1); font-variant-numeric:tabular-nums; }
   .chain-turn.warn .chain-countdown{ color:var(--no); }
+  .duel-hud{ display:grid; grid-template-columns:1fr auto 1fr; gap:10px; align-items:center; margin:8px 0 12px; }
+  .duel-side{ min-width:0; }
+  .duel-side.r{ text-align:right; }
+  .duel-lives{ display:flex; gap:4px; margin-top:4px; }
+  .duel-side.r .duel-lives{ justify-content:flex-end; }
+  .life-dot{ width:16px; height:16px; border:2px solid var(--edge); border-radius:50% 50% 48% 52%; background:var(--p1); transform:rotate(-8deg); }
+  .life-dot.off{ background:transparent; opacity:.28; }
+  .duel-score{ font-size:13px; font-weight:800; color:var(--soft); }
+  .duel-round{ min-width:70px; text-align:center; padding:8px 10px; border:1.5px solid var(--edge); border-radius:14px; background:var(--card); font-weight:800; }
+  .duel-tools{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
+  .duel-tools .btn{ min-height:42px; padding:9px 10px; }
+  .quick-reacts{ display:flex; justify-content:center; gap:7px; margin:12px 0 2px; }
+  .quick-reacts .btn{ padding:7px 12px; min-height:34px; font-size:12px; }
+  .typing-dot::after{ content:'…'; display:inline-block; width:16px; overflow:hidden; vertical-align:bottom; animation:typeDots 1.1s steps(4,end) infinite; }
+  @keyframes typeDots{ from{width:0} to{width:16px} }
+  .speed-stage{ position:relative; overflow:hidden; padding:18px; border:2px solid var(--edge); border-radius:22px; background:var(--card); box-shadow:4px 4px 0 var(--edge); }
+  .speed-stage::before{ content:''; position:absolute; inset:0; pointer-events:none; opacity:.32; background:radial-gradient(circle at 18% 12%,var(--chip),transparent 38%); }
+  .speed-clock{ position:relative; font-size:48px; line-height:1; font-weight:900; font-variant-numeric:tabular-nums; color:var(--p1); }
+  .speed-clock.warn{ color:var(--no); animation:clockBeat .7s ease-in-out infinite; }
+  @keyframes clockBeat{ 50%{transform:scale(1.06)} }
+  .speed-counts{ position:relative; display:grid; grid-template-columns:1fr 1px 1fr; gap:12px; align-items:center; margin-top:14px; }
+  .speed-counts .cut{ width:1px; height:42px; background:var(--line); }
+  .speed-big{ font-size:25px; font-weight:900; }
+  .speed-entries{ display:flex; flex-wrap:wrap; gap:7px; min-height:44px; margin-top:12px; }
+  .speed-chip{ padding:7px 10px; border:1.5px solid var(--edge); border-radius:999px; background:var(--chip); font-size:12px; font-weight:800; animation:chipIn .32s var(--ease-bounce) both; }
+  .speed-chip.pending{ opacity:.58; border-style:dashed; }
+  .speed-chip.bad{ color:var(--no); background:#fdeef0; text-decoration:line-through; }
+  @keyframes chipIn{ from{opacity:0;transform:translateY(8px) scale(.92)} }
+  .reveal-list{ display:grid; gap:8px; margin-top:14px; }
+  .reveal-row{ display:grid; grid-template-columns:1fr auto 1fr; gap:9px; align-items:center; padding:10px 12px; border-top:1px solid var(--line); animation:revealIn .42s var(--ease-bounce) both; }
+  .reveal-row .mine{ text-align:right; }
+  .reveal-pts{ min-width:38px; text-align:center; font-weight:900; color:var(--p1); }
+  @keyframes revealIn{ from{opacity:0;transform:translateY(12px)} }
 
   /* notes */
   .note{ border-radius:18px; padding:14px; margin-bottom:14px; box-shadow:4px 4px 0 var(--edge); border:2px solid var(--edge); position:relative; }
@@ -851,6 +884,8 @@ const Feedback = {
     if(kind==='remove'){ this.pulse([10,28,8]); this.noise(0,.11,.024,500,'lowpass'); this.note(145,0,.12,.03,'triangle',105); return; }
     if(kind==='pop'){ this.pulse(8); this.note(680,0,.045,.026,'sine',920); this.note(980,.055,.065,.022,'sine'); return; }
     if(kind==='bell'){ this.pulse([8,35,8]); this.note(880,0,.16,.029,'sine'); this.note(1175,.085,.2,.026,'sine'); return; }
+    if(kind==='tick'){ this.pulse(5); this.note(720,0,.045,.024,'triangle',790); return; }
+    if(kind==='final-tick'){ this.pulse(13); this.note(920,0,.075,.034,'triangle',1080); return; }
     if(kind==='start'){ this.pulse([10,30,14]); this.note(262,0,.07,.028,'triangle'); this.note(392,.07,.08,.03,'triangle'); this.note(587,.15,.13,.032,'sine'); return; }
     if(kind==='toggle'){ this.pulse(7); this.note(470,0,.05,.024,'triangle',650); return; }
     if(kind==='correct'){ this.pulse(18); this.note(523,0,.075,.04,'sine'); this.note(659,.055,.11,.038,'sine'); return; }
@@ -868,13 +903,13 @@ const Feedback = {
     if(act==='go') return el&&el.dataset.v==='home'?'close':'nav';
     if(['open-topic','open-grammar','open-deck','sch-open','sch-note','new-deck','bulk-open','edit-card','note-new','rt-new','ics-open','d-react-open','avatar-pick','heart-photo-pick'].includes(act)) return 'open';
     if(['close-modal','quit-play'].includes(act)) return 'close';
-    if(['lib-filter','lib-learnfilter','inbox-tab','sch-tab','sch-pick','duel-game','chain-mode','rt-who','rt-freq','rt-dow','rt-tint','pick-tint','emoji-cat','set-theme'].includes(act)) return 'select';
+    if(['lib-filter','lib-learnfilter','inbox-tab','sch-tab','sch-pick','duel-game','chain-mode','chain-power','rt-who','rt-freq','rt-dow','rt-tint','pick-tint','emoji-cat','set-theme'].includes(act)) return 'select';
     if(act==='flip') return 'flip';
     if(['next-q','next-card','prev-card','d-next','to-quiz','restudy','study-unknown'].includes(act)) return 'next';
     if(['save-deck-modal','save-card','bulk-save','quick-add','note-save','rt-save','save-start','save-names','save-daily','d-reply-send'].includes(act)) return 'save';
     if(['copy-code','ics-copy'].includes(act)) return 'copy';
     if(['del-deck','del-card','note-del','rt-del','heart-photo-remove','avatar-remove','leave','logout'].includes(act)) return 'remove';
-    if(['daily-react','emoji-pick','d-react-toggle','toggle-done','sch-done'].includes(act)) return 'pop';
+    if(['daily-react','emoji-pick','d-react-toggle','duel-react','toggle-done','sch-done'].includes(act)) return 'pop';
     if(['enable-notif','sch-nudge','ics-sub'].includes(act)) return 'bell';
     if(['study-topic','study-deck','grammar-practice','study-lesson','duel-from','duel-create','duel-join'].includes(act)) return 'start';
     if(['atab','feedback-toggle','install-app','hide-install'].includes(act)) return 'toggle';
@@ -1737,16 +1772,20 @@ async function duelTick(){
   try{
     const list=await Store.listDuels(S.space.id);
     const prev=S.duel, prevStatus=prev&&prev.status, prevOppDone=prev&&prev['done_'+other(S.me)], prevId=prev&&prev.id;
-    const prevChainLen=(prev&&prev.questions||[]).length;
+    const prevTurnCount=turnEventCount(prev),prevReact=(prev&&chainReaction(prev)||{}).id;
     applyDuels(list);
     const cur=S.duel;
+    const nextReact=(cur&&chainReaction(cur)||{});if(nextReact.id&&nextReact.id!==prevReact&&nextReact.by!==S.me){Feedback.cue('pop');toast((partner()||'Người ấy')+': '+nextReact.text);}
+    if(cur&&isTopicSpeedDuel(cur)) reconcileTopicLocal(cur);
     // cả hai đã xong nhưng chưa ai chốt -> chốt trận
     if(cur && cur.status==='active' && cur.done_a && cur.done_b){
-      await Store.updateDuel(cur.id,S.space.id,{status:'done',finished_at:new Date().toISOString()});
-      cur.status='done'; S.duelHistory=[cur,...S.duelHistory];
+      if(isTopicSpeedDuel(cur)){const sc=topicScoreData(cur),patch={status:'done',score_a:sc.a,score_b:sc.b,finished_at:new Date().toISOString()};
+        await Store.updateDuel(cur.id,S.space.id,patch);Object.assign(cur,patch);}
+      else{await Store.updateDuel(cur.id,S.space.id,{status:'done',finished_at:new Date().toISOString()});cur.status='done';}
+      S.duelHistory=[cur,...S.duelHistory];
     }
     // game luân phiên: đối thủ vừa gửi đáp án mới (đổi lượt) -> phải vẽ lại toàn màn
-    const chainChanged = cur && prevId===cur.id && isTurnDuel(cur) && (cur.questions||[]).length!==prevChainLen;
+    const chainChanged = cur && prevId===cur.id && isTurnDuel(cur) && turnEventCount(cur)!==prevTurnCount;
     const changed = (!!prev!==!!cur) || (cur&&prevId!==cur.id) || (cur&&prevStatus!==cur.status) || (cur&&prevOppDone!==cur['done_'+other(S.me)]) || chainChanged;
     if(changed){
       if(cur&&cur.challenger!==S.me&&S.view!=='arena') Feedback.cue(cur.status==='active'?'start':'bell');
@@ -1756,6 +1795,15 @@ async function duelTick(){
     }
     // đang chơi: chỉ cập nhật tiến độ đối thủ, không vẽ lại (giữ ô nhập)
     if(cur && cur.status==='active'){
+      if(isTopicSpeedDuel(cur)){
+        const mine=topicEntries(cur).filter(x=>x.by===S.me).length, theirs=topicEntries(cur).filter(x=>x.by===other(S.me)).length;
+        const mc=$('#speed-my-count'),oc=$('#speed-opp-count'),os=$('#speed-opp-state'),typing=topicProgressTyping(cur['progress_'+other(S.me)]||0);
+        if(mc)mc.textContent=String(mine);if(oc)oc.textContent=String(theirs);
+        if(os){os.textContent=typing?(partner()||'Người ấy')+' đang nhập':(partner()||'Người ấy')+' đã có';os.classList.toggle('typing-dot',typing);}
+        return;
+      }
+      if(chainV2(cur)){const el=$('#chain-opp-state'),typing=(cur['progress_'+other(S.me)]||0)>0;
+        if(el){el.textContent=typing?(partner()||'Người ấy')+' đang nhập':'Đợi '+(partner()||'người ấy')+' nối từ';el.classList.toggle('typing-dot',typing);}}
       const total=(cur.questions||[]).length||1;
       const rawOp=cur['progress_'+other(S.me)]||0;
       const op = isCrosswordDuel(cur) ? popcount(rawOp) : rawOp;
@@ -1831,6 +1879,7 @@ function render(){ const app=$('#app');
   if(S.view==='home' && !S.play) mountHeartTank(); else HeartTank.stop();
   if(S.view==='notes' && !S.play) mountSchScroll();
   if(S.view==='arena' && S.duel && S.duel.status==='active' && isTurnDuel(S.duel)) startChainTimer(); else stopChainTimer();
+  if(S.view==='arena' && S.duel && S.duel.status==='active' && isTopicSpeedDuel(S.duel)) startTopicSpeedTimer(); else stopTopicSpeedTimer();
   hideLoading(); mountLotties(); animateProgressBars();
 }
 
@@ -2217,9 +2266,9 @@ function viewArena(){
   const du=S.duel;
   if(du && du.status==='waiting'){
     const dqKind = du.questions&&du.questions[0]&&du.questions[0].kind;
-    const duGame = dqKind==='hangman'?'hangman':dqKind==='crossword'?'crossword':dqKind==='chain'?'chain':dqKind==='topic-list'?'topic':'quiz';
+    const duGame = dqKind==='hangman'?'hangman':dqKind==='crossword'?'crossword':dqKind==='chain'?'chain':(dqKind==='topic-list'||dqKind==='topic-speed')?'topic':'quiz';
     const gameIcon = duGame==='hangman'?'🎪':duGame==='crossword'?'🧩':duGame==='chain'?'🔗':duGame==='topic'?'💡':'⚔️';
-    const gameLabel = duGame==='hangman' ? ' · 🎪 Hangman' : duGame==='crossword' ? ' · 🧩 Ô chữ' : duGame==='chain' ? ' · 🔗 Nối chữ cuối' : duGame==='topic' ? ' · 💡 Kể theo chủ đề' : '';
+    const gameLabel = duGame==='hangman' ? ' · 🎪 Hangman' : duGame==='crossword' ? ' · 🧩 Ô chữ' : duGame==='chain' ? ` · 🔗 Nối chữ cuối${(du.questions[0]||{}).version>=2?' · Bo3':''}` : duGame==='topic' ? ' · 💡 Speed Round' : '';
     const countLine = duGame==='chain' ? `Từ mở đầu: <b>${esc((du.questions[0]||{}).word||'').toUpperCase()}</b>${gameLabel}`
       : duGame==='topic' ? `Chủ đề: <b>${esc((du.questions[0]||{}).topic||'')}</b>${gameLabel}` : `${(du.questions||[]).length} câu${gameLabel}`;
     const waitInfo=(duGame==='topic'?'':esc(du.title||'')+' · ')+countLine;
@@ -2269,7 +2318,7 @@ function duelCreateView(){
           <button type="button" class="${chainMode==='topic'?'on':''}" data-act="chain-mode" data-v="topic">Kể theo chủ đề 💡</button></div></label>`:''}
       ${game!=='chain'||chainMode==='word'?`<label class="fld"><span class="lab">Chọn bộ từ</span>
         <select id="du_src">${srcs.map(o=>`<option value="${esc(o.v)}" ${o.v===pre?'selected':''}>${esc(o.label)}</option>`).join('')}</select></label>`:''}
-      ${game==='chain'&&chainMode==='word'?`<p class="muted" style="margin:-4px 0 12px;font-size:12.5px">Chọn 1 từ ngẫu nhiên trong bộ này làm từ mở đầu. Sau đó hai đứa <b>thay phiên gõ từ tiếp theo</b> (bắt đầu bằng chữ cái cuối từ trước, không lặp từ, không cần nằm trong bộ từ) — mỗi lượt có <b>${CHAIN_TURN_SEC}s</b>, hết giờ hoặc bí từ là thua nha!</p>
+      ${game==='chain'&&chainMode==='word'?`<p class="muted" style="margin:-4px 0 12px;font-size:12.5px">Đấu <b>Bo3 với 2 mạng</b>: hết giờ mất một mạng, chưa thua cả trận. Từ dài được +2 điểm, có combo và mỗi người được dùng một lần +5 giây hoặc đổi từ mở đầu.</p>
       <label class="fld"><span class="lab">Giới hạn âm tiết (khó hơn, dễ bí 😏)</span>
         <select id="du_syl">
           <option value="">Tự do — từ nào cũng được</option>
@@ -2277,9 +2326,10 @@ function duelCreateView(){
           <option value="3">Đúng 3 âm tiết</option>
           <option value="4">Từ 4 âm tiết trở lên</option>
         </select></label>`
-      :game==='chain'&&chainMode==='topic'?`<p class="muted" style="margin:-4px 0 12px;font-size:12.5px">Hai đứa thay phiên kể một thứ <b>thật sự thuộc chủ đề</b>, không lặp đáp án. Hệ thống sẽ kiểm tra từng lượt — mỗi người có <b>${CHAIN_TURN_SEC}s</b>.</p>
+      :game==='chain'&&chainMode==='topic'?`<p class="muted" style="margin:-4px 0 12px;font-size:12.5px">Hai đứa <b>cùng nhập thật nhanh</b> trong 45 giây. Hệ thống kiểm tra ngầm; đáp án chỉ một người nghĩ ra được 2 điểm, đáp án hiếm được 3 điểm.</p>
       <label class="fld"><span class="lab">Chủ đề hai đứa cùng chơi</span>
-        <input id="du_topic" maxlength="80" placeholder="vd: Động vật biển, món ăn Việt Nam…" value="${esc(S.tmp.chainTopic||'')}"/></label>`
+        <input id="du_topic" maxlength="80" placeholder="vd: Động vật biển, món ăn Việt Nam…" value="${esc(S.tmp.chainTopic||'')}"/></label>
+      <div class="chips" style="margin:-4px 0 13px">${['Món hai đứa từng ăn','Nơi muốn đi cùng nhau','Điều làm người ấy vui','Phim hai đứa thích','Kỷ niệm đáng nhớ','Động vật biển'].map(x=>`<button class="chip" data-act="topic-suggest" data-v="${esc(x)}">${esc(x)}</button>`).join('')}</div>`
       :game!=='quiz'?`<p class="muted" style="margin:-4px 0 12px;font-size:12.5px">Ô chữ cần từ đơn (không phải cụm) — nếu bộ từ toàn cụm sẽ báo chọn bộ khác nha.</p>`:''}
       ${game!=='chain'?`<label class="fld"><span class="lab">Số ${game==='quiz'?'câu':'từ'}</span>
         <select id="du_n"><option value="10">10 ${game==='quiz'?'câu':'từ'} (nhanh gọn)</option><option value="20">20 ${game==='quiz'?'câu':'từ'}</option><option value="all">Tất cả</option></select></label>`:''}
@@ -2332,6 +2382,7 @@ function duelPlayView(du){
     return duelClashView();
   }
   if(!S.duelPlay || S.duelPlay.id!==du.id) initDuelPlay(du);
+  if(isTopicSpeedDuel(du)) return topicSpeedView(du);
   if(isTurnDuel(du)) return duelChainBody(du);
   if(isCrosswordDuel(du)) return duelCrosswordPlayView(du);
   const p=S.duelPlay, qs=du.questions||[], total=qs.length||1;
@@ -2356,6 +2407,7 @@ function duelPlayView(du){
     ${ q.kind==='mc' ? duelMcBody(q,p,fb) : q.kind==='hangman' ? duelHangmanBody(q,p,fb) : duelScrBody(q,p,fb) }`;
 }
 function duelChainBody(du){
+  if(chainV2(du)) return duelChainV2Body(du);
   ensureChainSeen(du); // tới lượt mình mà chưa "xem" -> đánh dấu ngay, đồng hồ bắt đầu đếm đúng từ đây
   const chain=du.questions||[]; const turn=chainTurn(du); const myTurn=turn===S.me;
   const remainRaw=chainRemainSec(du);
@@ -2380,6 +2432,82 @@ function duelChainBody(du){
     <input id="dchain_input" placeholder="${topicMode?'Nhập một đáp án…':'Từ '+(sylTxt?sylTxt+', ':'')+'bắt đầu bằng '+lastChar+'...'}" autocapitalize="${topicMode?'sentences':'none'}" autocomplete="off" autocorrect="${topicMode?'on':'off'}" spellcheck="${topicMode?'true':'false'}" maxlength="60" style="text-align:center;font-size:18px;margin-top:12px"/>
     <button class="btn block" style="margin-top:10px" data-act="d-chain-send">${topicMode?'Gửi để hệ thống kiểm tra ✓':'Gửi từ ⚡'}</button>` : '' }
     <button class="btn ghost block sm" style="margin-top:12px" data-act="duel-cancel-active">Huỷ trận (nếu chờ lâu quá)</button>`;
+}
+function livesHTML(n,max){ let s=''; for(let i=0;i<max;i++) s+=`<span class="life-dot${i>=n?' off':''}"></span>`; return s; }
+function duelReactsHTML(){ return `<div class="quick-reacts"><button class="btn soft sm" data-act="duel-react" data-v="hay">Hay!</button>
+  <button class="btn soft sm" data-act="duel-react" data-v="cang">Căng!</button><button class="btn soft sm" data-act="duel-react" data-v="nao">Nào!</button></div>`; }
+function duelChainV2Body(du){
+  ensureChainSeen(du);
+  const cfg=du.questions[0]||{}, max=Number(cfg.lives)||2, round=chainRound(du), words=chainRoundWords(du);
+  const turn=chainTurn(du), myTurn=turn===S.me, last=chainLastWord(du), lastChar=String(last.word).slice(-1).toUpperCase();
+  const remainRaw=chainRemainSec(du), remain=remainRaw==null?null:Math.max(0,Math.ceil(remainRaw));
+  const syl=chainSyl(du), sylTxt=syl?sylLabel(syl):'', reaction=chainReaction(du), oppTyping=(du['progress_'+other(S.me)]||0)>0;
+  const myLives=chainLivesLeft(du,S.me), theirLives=chainLivesLeft(du,other(S.me));
+  const current=words.slice().reverse();
+  return `<div class="row" style="margin-bottom:6px"><button class="iconbtn" data-act="go" data-v="home">${ic('x','sm')}</button>
+      <div class="grow center" style="font-weight:900">Nối chữ cuối · Bo3</div><div style="width:38px"></div></div>
+    <div class="duel-hud"><div class="duel-side"><b>Bạn</b><div class="duel-lives">${livesHTML(myLives,max)}</div><div class="duel-score">${chainPoints(du,S.me)} điểm · combo ${chainCombo(du,S.me)}</div></div>
+      <div class="duel-round">Ván ${round}</div>
+      <div class="duel-side r"><b>${esc(partner()||'Người ấy')}</b><div class="duel-lives">${livesHTML(theirLives,max)}</div><div class="duel-score">${chainPoints(du,other(S.me))} điểm · combo ${chainCombo(du,other(S.me))}</div></div></div>
+    ${reaction?`<div class="card center" style="padding:8px 12px"><b>${reaction.by===S.me?'Bạn':esc(partner()||'Người ấy')}</b>: ${reaction.text}</div>`:''}
+    <div class="card chain-list">${current.map((c,ri)=>`<div class="chain-item">${avatarEl(c.by,26)}<b class="grow">${esc(c.word)}</b>
+      <span class="muted" style="font-size:11px">${c.starter?'Mở ván':String(c.word).length>=7?'+2':'+1'}</span></div>`).join('')}</div>
+    <div class="card chain-turn${remain!=null&&remain<=3?' warn':''}" id="chain-turn-box" style="margin-top:12px">
+      <div class="chain-countdown" id="chain-countdown">${remain==null?'—':remain+'s'}</div>
+      ${myTurn?`<div class="muted" style="font-weight:800">Tới lượt bạn · từ ${sylTxt?'<b>'+sylTxt+'</b> ':''}bắt đầu bằng “${lastChar}”</div>`
+        :`<div class="muted${oppTyping?' typing-dot':''}" id="chain-opp-state">${oppTyping?esc(partner()||'Người ấy')+' đang nhập':remain==null?'Đợi người ấy mở lượt':`Đợi ${esc(partner()||'người ấy')} nối từ`}</div>`}
+    </div>
+    ${myTurn?`<input id="dchain_input" placeholder="Từ bắt đầu bằng ${lastChar}…" autocapitalize="none" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="32" style="text-align:center;font-size:18px;margin-top:12px"/>
+      <button class="btn block" style="margin-top:9px" data-act="d-chain-send">Gửi từ</button>
+      <div class="duel-tools"><button class="btn soft" data-act="chain-power" data-v="time" ${chainPowerUsed(du,S.me,'time')?'disabled':''}>+5 giây ${chainPowerUsed(du,S.me,'time')?'· đã dùng':''}</button>
+        <button class="btn soft" data-act="chain-power" data-v="skip" ${chainPowerUsed(du,S.me,'skip')?'disabled':''}>Đổi từ mở đầu ${chainPowerUsed(du,S.me,'skip')?'· đã dùng':''}</button></div>`:''}
+    ${duelReactsHTML()}
+    <button class="btn ghost block sm" style="margin-top:10px" data-act="duel-cancel-active">Huỷ trận</button>`;
+}
+const TOPIC_SPEED_SEC=45, TOPIC_INTRO_SEC=3;
+function topicConfig(du){ return (du.questions||[])[0]||{}; }
+function topicEntries(du){ return (du.questions||[]).filter(x=>x.kind==='topic-entry'&&x.word&&x.id); }
+function topicStartMs(du){ return new Date(du.joined_at||du.created_at).getTime()+TOPIC_INTRO_SEC*1000; }
+function topicRemainSec(du){ return (Number(topicConfig(du).duration)||TOPIC_SPEED_SEC)-(serverNow()-topicStartMs(du))/1000; }
+function topicIntroRemain(du){ return Math.max(0,Math.ceil((topicStartMs(du)-serverNow())/1000)); }
+function topicProgressPending(raw){ return Math.max(0,Number(raw)||0)%1000; }
+function topicProgressTyping(raw){ return (Number(raw)||0)>=1000; }
+function topicPendingCount(du,p){
+  if(isTopicSpeedDuel(du)&&p===S.me&&S.duelPlay&&S.duelPlay.id===du.id) return (S.duelPlay.topicPending||[]).length;
+  return isTopicSpeedDuel(du)?topicProgressPending(du['progress_'+p]||0):0;
+}
+function topicScoreData(du){
+  const all=topicEntries(du),uniq=arr=>[...new Map(arr.map(x=>[x.key,x])).values()],a=uniq(all.filter(x=>x.by==='a')),b=uniq(all.filter(x=>x.by==='b'));
+  const ak=new Set(a.map(x=>x.key)), bk=new Set(b.map(x=>x.key));
+  const points=(x,otherKeys)=>otherKeys.has(x.key)?1:(x.rarity==='rare'?3:2);
+  const rows={a:a.map(x=>({...x,points:points(x,bk)})),b:b.map(x=>({...x,points:points(x,ak)}))};
+  return {rows,a:rows.a.reduce((n,x)=>n+x.points,0),b:rows.b.reduce((n,x)=>n+x.points,0)};
+}
+function topicSpeedView(du){
+  const p=S.duelPlay, cfg=topicConfig(du), intro=topicIntroRemain(du), raw=topicRemainSec(du), remain=Math.max(0,Math.ceil(raw));
+  const accepted=mergeTopicEvents(topicEntries(du).filter(x=>x.by===S.me),(p&&p.topicLocal)||[]), theirs=topicEntries(du).filter(x=>x.by===other(S.me));
+  const pending=(p&&p.topicPending)||[], rejected=(p&&p.topicRejected)||[], done=!!du['done_'+S.me], oppTyping=topicProgressTyping(du['progress_'+other(S.me)]||0);
+  const localChips=[...accepted.map(x=>({...x,status:'ok'})),...pending.map(x=>({...x,status:'pending'})),...rejected.slice(-2).map(x=>({...x,status:'bad'}))];
+  const reaction=chainReaction(du), grading=raw<=0&&(pending.length>0||!done);
+  return `<div class="row" style="margin-bottom:8px"><button class="iconbtn" data-act="go" data-v="home">${ic('x','sm')}</button>
+      <div class="grow center" style="font-weight:900">Speed Round · 45 giây</div><div style="width:38px"></div></div>
+    <div class="speed-stage center">
+      <div class="muted" style="position:relative;font-weight:800">${intro?'Bắt đầu sau':'Chủ đề'}</div>
+      <div style="position:relative;font-family:'Fraunces';font-size:21px;font-weight:800;margin:3px 0 12px">${esc(cfg.topic||'')}</div>
+      <div class="speed-clock${remain<=5&&!intro?' warn':''}" id="speed-clock">${intro?intro:remain+'s'}</div>
+      <div class="speed-counts"><div><div class="speed-big" id="speed-my-count">${accepted.length}</div><div class="muted">Bạn đã có</div></div><div class="cut"></div>
+        <div><div class="speed-big" id="speed-opp-count">${theirs.length}</div><div class="muted${oppTyping?' typing-dot':''}" id="speed-opp-state">${oppTyping?esc(partner()||'Người ấy')+' đang nhập':esc(partner()||'Người ấy')+' đã có'}</div></div></div>
+    </div>
+    ${reaction?`<div class="card center" style="padding:8px 12px;margin-top:11px"><b>${reaction.by===S.me?'Bạn':esc(partner()||'Người ấy')}</b>: ${reaction.text}</div>`:''}
+    ${intro?'':done||grading?`<div class="card center" style="margin-top:12px"><b>${pending.length?'Đang kiểm tra những đáp án cuối…':'Đã nộp danh sách'}</b><div class="muted">${du['done_'+other(S.me)]?'Đang cộng điểm và chuẩn bị công bố…':'Đợi người ấy hoàn tất vòng chơi…'}</div></div>`
+      :`<label class="fld" style="margin-top:12px"><span class="lab">Nhập liên tục — hệ thống kiểm tra ngầm</span>
+        <div class="row" style="gap:8px"><input class="grow" id="topic_speed_input" maxlength="60" placeholder="Một đáp án thuộc chủ đề…" autocomplete="off" value="${esc((p&&p.topicDraft)||'')}"/>
+          <button class="btn" data-act="topic-speed-send">Gửi</button></div></label>`}
+    <div class="speed-entries">${localChips.length?localChips.map((x,i)=>`<span class="speed-chip ${x.status==='pending'?'pending':x.status==='bad'?'bad':''}" style="animation-delay:${Math.min(i,8)*35}ms" title="${esc(x.reason||'')}">${esc(x.word)}${x.status==='pending'?' · đang kiểm tra':''}</span>`).join(''):`<span class="muted">Đáp án của bạn sẽ xuất hiện ở đây.</span>`}</div>
+    ${rejected.length?`<div class="row" style="gap:8px;margin-top:8px"><p class="muted grow" style="color:var(--no);margin:0">${esc(rejected[rejected.length-1].reason||'Đáp án chưa phù hợp')}</p>
+      ${raw>0?`<button class="btn soft sm" data-act="topic-appeal" data-id="${rejected[rejected.length-1].id}">Phản đối</button>`:''}</div>`:''}
+    ${duelReactsHTML()}
+    <button class="btn ghost block sm" style="margin-top:10px" data-act="duel-cancel-active">Huỷ trận</button>`;
 }
 function duelMcBody(q,p,fb){
   return `<div class="card center" style="padding:24px 16px">
@@ -2441,11 +2569,12 @@ function duelFeedback(p,q){ const ok=p.lastCorrect;
     <button class="btn block" data-act="d-next">${p.idx+1<((S.duel&&S.duel.questions)||[]).length?'Câu tiếp':'Hoàn thành ⚔️'}</button>`;
 }
 function duelResultView(du){
-  const isChain=isChainDuel(du), isTopic=isTopicDuel(du), isTurn=isTurnDuel(du);
-  const total=isTopic?(du.questions||[]).filter(x=>x.word).length:(du.questions||[]).length;
+  const isChain=isChainDuel(du), isTopic=isTopicDuel(du), isSpeed=isTopicSpeedDuel(du), isTurn=isTurnDuel(du);
+  const total=isTopic?topicEntries(du).length:isChain?chainWords(du).length:(du.questions||[]).length;
   const my=S.me==='a'?(du.score_a||0):(du.score_b||0), their=S.me==='a'?(du.score_b||0):(du.score_a||0);
   const tie=my===their, iWin=my>their;
-  if(S.tmp.duelCeleb!==du.id){ S.tmp.duelCeleb=du.id; if(iWin||tie) setTimeout(celebrate,300); else setTimeout(rainfall,300); }
+  if(S.tmp.duelCeleb!==du.id){ S.tmp.duelCeleb=du.id; if(iWin||tie) setTimeout(celebrate,300); else setTimeout(rainfall,300);
+    if(isSpeed)for(let i=0;i<Math.min(8,total);i++)setTimeout(()=>Feedback.cue('pop'),520+i*105); }
   const anim = tie ? `<div style="font-size:56px">🤝</div>` : (iWin
       ? `<div class="lottie-box" data-lottie="crown"></div>`
       : `<div class="lottie-box rain" data-lottie="rain"></div>`);
@@ -2472,16 +2601,45 @@ function duelResultView(du){
   return `<div class="center" style="padding-top:12px">
       ${anim}
       <h2 class="title" style="margin:8px 0 2px">${tie?'Hòa nhau!':(iWin?'Bạn thắng rồi!':esc(partner()||'Người ấy')+' thắng!')}</h2>
-      <p class="muted">${isTopic?`Kể được ${total} ý · ${esc(((du.questions||[])[0]||{}).topic||'')}`:isChain?`Nối được ${total} từ`:`${esc(du.title||'')} · ${total} câu`}</p></div>
-    ${isTurn?'':`<div class="stat">
+      <p class="muted">${isSpeed?`Speed Round · ${esc(topicConfig(du).topic||'')}`:isTopic?`Kể được ${total} ý · ${esc(((du.questions||[])[0]||{}).topic||'')}`:isChain?`Bo3 · ${total} từ · ${chainPoints(du,S.me)} điểm cá nhân`:`${esc(du.title||'')} · ${total} câu`}</p></div>
+    ${chainV2(du)?`<div class="stat"><div class="card"><div class="big">${my}</div><div class="ttl">Ván thắng của bạn</div><div class="muted">${chainPoints(du,S.me)} điểm từ</div></div>
+      <div class="card"><div class="big">${their}</div><div class="ttl">Ván thắng của ${esc(partner()||'người ấy')}</div><div class="muted">${chainPoints(du,other(S.me))} điểm từ</div></div></div>`:isTurn?'':`<div class="stat">
       <div class="card"><div class="big">${my}</div><div class="ttl">Bạn</div></div>
       <div class="card"><div class="big">${their}</div><div class="ttl">${esc(partner()||'Người ấy')}</div></div>
     </div>`}
+    ${isSpeed?topicRevealHTML(du):''}
+    ${(isSpeed||chainV2(du))?duelMetaHTML(du):''}
     ${stakeCard}
-    <button class="btn block" style="margin-top:16px" data-act="duel-seen" data-id="${du.id}">Biết rồi 💕</button>`;
+    ${(isSpeed||chainV2(du))?`<button class="btn block" style="margin-top:16px" data-act="duel-rematch" data-id="${du.id}">Đấu lại ngay</button>`:''}
+    <button class="btn ${isSpeed||chainV2(du)?'soft':'block'} block" style="margin-top:9px" data-act="duel-seen" data-id="${du.id}">Biết rồi 💕</button>`;
 }
+function topicRevealHTML(du){ const sc=topicScoreData(du), mine=sc.rows[S.me], theirs=sc.rows[other(S.me)], n=Math.max(mine.length,theirs.length);
+  if(!n)return `<div class="card center"><b>Chưa có đáp án hợp lệ</b><div class="muted">Đấu lại với một chủ đề dễ mở màn hơn nha.</div></div>`;
+  const used=new Set(),pairs=[];mine.forEach(a=>{const j=theirs.findIndex((b,i)=>!used.has(i)&&b.key===a.key);if(j>=0){used.add(j);pairs.push([a,theirs[j]]);}});
+  const am=mine.filter(a=>!pairs.some(x=>x[0].id===a.id)),bm=theirs.filter((b,i)=>!used.has(i)),left=Math.max(am.length,bm.length);
+  for(let i=0;i<left;i++)pairs.push([am[i],bm[i]]);
+  let rows='';for(let i=0;i<pairs.length;i++){const [a,b]=pairs[i];rows+=`<div class="reveal-row" style="animation-delay:${Math.min(i,12)*90}ms">
+    <div class="mine">${a?`<b>${esc(a.word)}</b><small class="muted"> ${a.rarity==='rare'?'· hiếm':''}</small>`:'<span class="muted">—</span>'}</div>
+    <div class="reveal-pts">${a?'+'+a.points:''}${a&&b?' · ':''}${b?'+'+b.points:''}</div>
+    <div>${b?`<b>${esc(b.word)}</b><small class="muted"> ${b.rarity==='rare'?'· hiếm':''}</small>`:'<span class="muted">—</span>'}</div></div>`;}
+  return `<div class="card" style="padding:10px 4px"><div class="row" style="padding:4px 12px"><b class="grow" style="text-align:right">Bạn</b><span style="width:48px"></span><b class="grow">${esc(partner()||'Người ấy')}</b></div><div class="reveal-list">${rows}</div>
+    <p class="muted center" style="margin:10px 8px 2px">Trùng nhau +1 · riêng biệt +2 · đáp án hiếm +3</p></div>`;
+}
+function duelMetaHTML(du){const all=[du,...(S.duelHistory||[])].filter((x,i,a)=>a.findIndex(y=>y.id===x.id)===i).sort((a,b)=>String(b.finished_at||b.created_at).localeCompare(String(a.finished_at||a.created_at)));
+  let streak=0;for(const x of all){const mine=x['score_'+S.me]||0,theirs=x['score_'+other(S.me)]||0;if(mine>theirs)streak++;else break;}
+  let best=0,label='Kỷ lục điểm từ';if(isTopicSpeedDuel(du)){const key=topicItemKey(topicConfig(du).topic);label='Kỷ lục chủ đề';
+    all.filter(x=>isTopicSpeedDuel(x)&&topicItemKey(topicConfig(x).topic)===key).forEach(x=>{best=Math.max(best,x['score_'+S.me]||0);});}
+  else all.filter(chainV2).forEach(x=>{best=Math.max(best,chainPoints(x,S.me));});
+  return `<div class="row" style="gap:9px"><div class="card grow center" style="padding:11px"><b>${best}</b><div class="muted">${label}</div></div>
+    <div class="card grow center" style="padding:11px"><b>${streak}</b><div class="muted">Chuỗi thắng</div></div></div>`;}
 /* ----- logic đấu ----- */
 function initDuelPlay(du){ const qs=du.questions||[]; const prog=du['progress_'+S.me]||0;
+  if(isTopicSpeedDuel(du)){
+    S.duelPlay={id:du.id,topicPending:[],topicRejected:[],topicLocal:topicEntries(du).filter(x=>x.by===S.me),topicDraft:'',topicFinishing:false};
+    if(prog){const patch={};patch['progress_'+S.me]=0;du['progress_'+S.me]=0;Store.updateDuel(du.id,S.space.id,patch).catch(()=>{});}
+    return;
+  }
+  if(chainV2(du)&&prog){const patch={};patch['progress_'+S.me]=0;du['progress_'+S.me]=0;Store.updateDuel(du.id,S.space.id,patch).catch(()=>{});}
   if(isCrosswordDuel(du)){
     const solved=bitmaskToSet(prog);
     S.duelPlay={ id:du.id, solved, active:null, buffer:'', score:solved.size, clueCache:{},
@@ -2514,7 +2672,7 @@ async function createDuel(){
     topic=(($('#du_topic')?.value||S.tmp.chainTopic||'').trim().replace(/\s+/g,' '));
     if(topic.length<2){ toast('Nhập chủ đề hai đứa muốn chơi đã nha'); return; }
     if(topic.length>80){ toast('Chủ đề ngắn hơn 80 ký tự nha'); return; }
-    questions=[{ kind:'topic-list', topic, by:S.me, at:new Date(serverNow()).toISOString() }];
+    questions=[{ kind:'topic-speed', version:2, topic, duration:TOPIC_SPEED_SEC, by:S.me, at:new Date(serverNow()).toISOString() }];
     S.tmp.chainTopic=topic;
   } else if(game==='chain'){
     const syl=$('#du_syl')?.value||'';
@@ -2524,7 +2682,9 @@ async function createDuel(){
       if(!filtered.length){ toast('Bộ này không có từ '+sylLabel(syl)+' để mở đầu — chọn bộ khác hoặc bỏ giới hạn nha'); return; }
       eligible=filtered; }
     const starter=shuffle(eligible)[0];
-    const q0={ kind:'chain', word:starter.en.toLowerCase(), by:S.me, at:new Date(serverNow()).toISOString() };
+    const seeds=shuffle(eligible).slice(0,24).map(w=>w.en.toLowerCase());
+    const q0={ kind:'chain', version:2, round:1, starter:true, word:starter.en.toLowerCase(), by:S.me,
+      seeds, lives:2, at:new Date(serverNow()).toISOString() };
     if(syl) q0.syl=syl;
     questions = [q0];
   } else {
@@ -2561,8 +2721,10 @@ const CHAIN_TURN_SEC=15;
    phương/chính mình) phát hiện "hết giờ" ngay giữa lúc đang chờ API trả lời rồi báo thua oan. */
 const CHAIN_GRACE_SEC=5;
 function isChainDuel(du){ return !!(du && du.questions && du.questions[0] && du.questions[0].kind==='chain'); }
-function isTopicDuel(du){ return !!(du && du.questions && du.questions[0] && du.questions[0].kind==='topic-list'); }
-function isTurnDuel(du){ return isChainDuel(du)||isTopicDuel(du); }
+function isTopicSpeedDuel(du){ return !!(du&&du.questions&&du.questions[0]&&du.questions[0].kind==='topic-speed'); }
+function isTopicDuel(du){ return !!(du && du.questions && du.questions[0] && (du.questions[0].kind==='topic-list'||du.questions[0].kind==='topic-speed')); }
+function isLegacyTopicDuel(du){ return !!(du&&du.questions&&du.questions[0]&&du.questions[0].kind==='topic-list'); }
+function isTurnDuel(du){ return isChainDuel(du)||isLegacyTopicDuel(du); }
 const TOPIC_VERIFY_GRACE_SEC=14;
 function turnGraceSec(du){ return isTopicDuel(du)?TOPIC_VERIFY_GRACE_SEC:CHAIN_GRACE_SEC; }
 /* Máy của người TỚI LƯỢT chốt ngay ở 0s nếu họ không gửi gì. Chỉ giữ grace khi một đáp án
@@ -2571,21 +2733,38 @@ function activeTurnGraceSec(du){
   const mine=chainTurn(du)===S.me, p=S.duelPlay;
   return mine&&!(p&&p.id===du.id&&p.chainSending) ? 0 : turnGraceSec(du);
 }
-function chainTurn(du){ const chain=du.questions||[]; return chain.length%2===1 ? other(du.challenger) : du.challenger; }
+function chainV2(du){ return isChainDuel(du)&&Number((du.questions[0]||{}).version)>=2; }
+function chainWords(du){ return (du.questions||[]).filter(x=>x.kind==='chain'&&x.word); }
+function chainRound(du){ const ws=chainWords(du); return ws.length?Math.max(...ws.map(x=>Number(x.round)||1)):1; }
+function chainRoundWords(du){ const r=chainRound(du); return chainWords(du).filter(x=>(Number(x.round)||1)===r); }
+function chainActiveWords(du){ const ws=chainRoundWords(du); let at=0; ws.forEach((x,i)=>{if(x.starter)at=i;}); return ws.slice(at); }
+function chainTurn(du){
+  if(chainV2(du)){ const ws=chainActiveWords(du), starter=ws[0]; return ws.length%2===1?other(starter.by):starter.by; }
+  const chain=du.questions||[]; return chain.length%2===1 ? other(du.challenger) : du.challenger;
+}
+function chainLosses(du,p){ return (du.questions||[]).filter(x=>x.kind==='chain-loss'&&x.loser===p).length; }
+function chainLivesLeft(du,p){ return Math.max(0,(Number((du.questions[0]||{}).lives)||2)-chainLosses(du,p)); }
+function chainPoints(du,p){ return chainWords(du).filter((x,i)=>i>0&&x.by===p&&!x.starter).reduce((n,x)=>n+(String(x.word).length>=7?2:1),0); }
+function chainCombo(du,p){ return chainActiveWords(du).filter(x=>!x.starter&&x.by===p).length; }
+function chainPowerUsed(du,p,power){ return (du.questions||[]).some(x=>x.kind==='chain-power'&&x.by===p&&x.power===power); }
+function chainReaction(du){ return (du.questions||[]).filter(x=>x.kind==='duel-react').slice(-1)[0]||null; }
+function turnEventCount(du){ return (du&&du.questions||[]).filter(x=>x.kind==='chain'||x.kind==='topic-list'||x.kind==='chain-loss'||x.kind==='chain-power').length; }
 /* Mốc bắt đầu đếm giờ của lượt hiện tại = lúc người TỚI LƯỢT thực sự NHÌN THẤY màn hình (seenAt),
    KHÔNG phải lúc đối phương gửi xong (at) — tránh trừ oan thời gian animation/mở app trễ vào 15s của họ.
    null = người tới lượt CHƯA mở màn hình này lần nào -> chưa bắt đầu đếm, chờ. */
-function chainLastAt(du){ const chain=du.questions||[]; if(!chain.length) return null;
-  const last=chain[chain.length-1]; return last.seenAt ? new Date(last.seenAt).getTime() : null; }
-function chainRemainSec(du){ const t=chainLastAt(du); return t==null ? null : CHAIN_TURN_SEC-(serverNow()-t)/1000; }
+function chainLastWord(du){ const ws=isChainDuel(du)?chainActiveWords(du):(du.questions||[]); return ws[ws.length-1]; }
+function chainLastAt(du){ const last=chainLastWord(du); return last&&last.seenAt ? new Date(last.seenAt).getTime() : null; }
+function chainRemainSec(du){ const t=chainLastAt(du); if(t==null) return null;
+  const bonus=(du.questions||[]).some(x=>x.kind==='chain-power'&&x.power==='time'&&x.round===chainRound(du))?5:0;
+  return CHAIN_TURN_SEC+bonus-(serverNow()-t)/1000; }
 /* Gọi mỗi lần vẽ màn nối từ: nếu ĐANG tới lượt mình mà lượt này chưa ai "xem" -> đánh dấu NGAY (optimistic,
    set cục bộ trước khi lưu) để đồng hồ bắt đầu đếm đúng từ lúc mình thực sự thấy màn hình, không sớm hơn. */
 function ensureChainSeen(du){ const chain=du.questions||[]; if(!chain.length) return;
-  const last=chain[chain.length-1];
+  const last=chainLastWord(du); if(!last) return;
   if(last.seenAt || chainTurn(du)!==S.me) return;
   last.seenAt=new Date(serverNow()).toISOString();
   Store.updateDuel(du.id,S.space.id,{questions:chain}).catch(()=>{}); }
-let chainTimerT=null;
+let chainTimerT=null,chainBeepSec=null;
 function startChainTimer(){ if(chainTimerT) return;
   chainTimerT=setInterval(()=>{
     const du=S.duel;
@@ -2596,12 +2775,32 @@ function startChainTimer(){ if(chainTimerT) return;
     const remain=Math.max(0,Math.ceil(remainRaw));
     if(el) el.textContent=remain+'s';
     const box=$('#chain-turn-box'); if(box) box.classList.toggle('warn', remain<=3);
+    if(remain>0&&remain<=3&&chainBeepSec!==remain){chainBeepSec=remain;Feedback.cue(remain===1?'final-tick':'tick');}
     if(remainRaw<=-activeTurnGraceSec(du)) handleChainTimeout(); // không gửi: chốt ở 0s; đang gửi: mới dùng grace
   }, 1000); }
-function stopChainTimer(){ if(chainTimerT){ clearInterval(chainTimerT); chainTimerT=null; } }
+function stopChainTimer(){ if(chainTimerT){ clearInterval(chainTimerT); chainTimerT=null; } chainBeepSec=null; }
 /* Hết giờ (bất kỳ máy nào phát hiện trước cũng tự chốt được, ghi cùng 1 kết quả nên vô hại nếu cả 2 cùng chạy) */
 async function handleChainTimeout(){ const du=S.duel; if(!du||du.status!=='active'||!isTurnDuel(du)) return;
   stopChainTimer(); const loser=chainTurn(du);
+  if(chainV2(du)){
+    const round=chainRound(du); if((du.questions||[]).some(x=>x.kind==='chain-loss'&&x.round===round)) return;
+    const loss={kind:'chain-loss',id:'loss:'+round,round,loser,at:new Date(serverNow()).toISOString()};
+    const qs=[...(du.questions||[]),loss], left=chainLivesLeft({questions:qs},loser);
+    let patch;
+    if(left<=0){ patch={questions:qs,status:'done',finished_at:new Date().toISOString(),
+        score_a:qs.filter(x=>x.kind==='chain-loss'&&x.loser==='b').length,
+        score_b:qs.filter(x=>x.kind==='chain-loss'&&x.loser==='a').length};
+    }else{
+      const cfg=qs[0]||{}, seeds=cfg.seeds||[], used=new Set(chainWords({questions:qs}).map(x=>x.word));
+      const seed=seeds.find(x=>!used.has(x))||['love','earth','heart','time'][round%4];
+      qs.push({kind:'chain',version:2,round:round+1,starter:true,word:seed,by:other(loser),at:new Date(serverNow()).toISOString()});
+      patch={questions:qs,progress_a:0,progress_b:0};
+    }
+    try{ await Store.updateDuel(du.id,S.space.id,patch); }catch(e){}
+    Object.assign(du,patch); Feedback.cue(left<=0?'lose':'wrong');
+    if(left<=0) S.duelHistory=[du,...(S.duelHistory||[]).filter(x=>x.id!==du.id)];
+    render(); return;
+  }
   const patch={ status:'done', finished_at:new Date().toISOString() };
   patch['score_'+loser]=0; patch['score_'+other(loser)]=1;
   try{ await Store.updateDuel(du.id,S.space.id,patch); }catch(e){}
@@ -2619,9 +2818,9 @@ function chainSyl(du){ const c=du&&du.questions&&du.questions[0]; return (c&&c.s
 function validateChainWord(word,du){ word=(word||'').trim().toLowerCase();
   if(!word) return 'Gõ từ đã nha';
   if(!/^[a-zA-Z]+$/.test(word)) return 'Chỉ gõ chữ cái tiếng Anh thôi (không dấu, không số)';
-  const chain=du.questions||[];
+  const chain=isChainDuel(du)?chainWords(du):(du.questions||[]);
   if(chain.some(c=>c.word===word)) return 'Từ này dùng rồi, đổi từ khác nha';
-  const last=chain[chain.length-1].word, lastChar=last[last.length-1];
+  const last=chainLastWord(du).word, lastChar=last[last.length-1];
   if(word[0]!==lastChar) return `Từ phải bắt đầu bằng chữ "${lastChar.toUpperCase()}" nha`;
   const syl=chainSyl(du);
   if(syl && !sylOk(countSyllables(word),syl)) return `Cần từ ${sylLabel(syl)} nha (từ này ${countSyllables(word)} âm tiết)`;
@@ -2636,12 +2835,12 @@ function validateTopicItem(value,du){
   if((du.questions||[]).some(x=>x.word&&topicItemKey(x.word)===key)) return 'Đáp án này có rồi, kể thứ khác nha';
   return null;
 }
-async function verifyTopicItem(topic,item,du){
-  const used=(du.questions||[]).filter(x=>x.word).map(x=>x.word).slice(-60);
+async function verifyTopicItem(topic,item,du,usedOverride,appeal){
+  const used=(usedOverride||((du.questions||[]).filter(x=>x.word).map(x=>x.word))).slice(-60);
   try{
-    const verdict=await apiPost('/api/topic-verify',{topic,item,used},12000);
+    const verdict=await apiPost('/api/topic-verify',{topic,item,used,appeal:!!appeal},12000);
     if(!verdict||typeof verdict.valid!=='boolean') return null;
-    return {valid:verdict.valid,reason:String(verdict.reason||'').slice(0,160)};
+    return {valid:verdict.valid,reason:String(verdict.reason||'').slice(0,160),rarity:verdict.rarity==='rare'?'rare':'common',canonical:String(verdict.canonical||'').slice(0,60)};
   }catch(e){ return null; }
 }
 /* true=có thật, false=chắc chắn không có, null=không kiểm tra được (mất mạng/API lỗi) — dictionaryapi.dev free, có CORS, không cần key */
@@ -2675,12 +2874,110 @@ async function sendChainWord(){ const du=S.duel, p=S.duelPlay; if(!du||du.status
     toast(`"${val.toUpperCase()}" không phải từ tiếng Anh thật, thử từ khác nha`); return; }
   if(!topicMode&&exists===null) toast('Không tra được từ điển (mất mạng?) — tạm chấp nhận nha');
   const chain=[...(du.questions||[]), { kind:topicMode?'topic-list':'chain', word:topicMode?val:val.toLowerCase(),
-    key:topicMode?topicItemKey(val):undefined, by:S.me, at:new Date(serverNow()).toISOString() }];
-  try{ await Store.updateDuel(du.id,S.space.id,{questions:chain}); }
+    key:topicMode?topicItemKey(val):undefined, version:!topicMode&&chainV2(du)?2:undefined,
+    round:!topicMode&&chainV2(du)?chainRound(du):undefined, by:S.me, at:new Date(serverNow()).toISOString() }];
+  const patch={questions:chain}; if(chainV2(du)) patch['progress_'+S.me]=0;
+  try{ await Store.updateDuel(du.id,S.space.id,patch); }
   catch(e){ toast('Gửi đáp án lỗi rồi, thử lại nha'); resetSend(); return; }
   if(p) p.chainSending=false;
-  du.questions=chain;
+  Object.assign(du,patch);
   Feedback.cue(topicMode?'correct':'send'); render(); }
+async function useChainPower(power){ const du=S.duel; if(!chainV2(du)||du.status!=='active'||chainTurn(du)!==S.me) return;
+  if(chainPowerUsed(du,S.me,power)){ toast('Bạn đã dùng quyền này rồi'); return; }
+  const now=new Date(serverNow()).toISOString(), round=chainRound(du);
+  const event={kind:'chain-power',id:uid(),power,by:S.me,round,at:now};
+  const qs=[...(du.questions||[]),event];
+  if(power==='skip'){
+    const cfg=qs[0]||{}, used=new Set(chainWords({questions:qs}).map(x=>x.word));
+    const seed=(cfg.seeds||[]).find(x=>!used.has(x));
+    if(!seed){ toast('Hết từ để đổi rồi'); return; }
+    qs.push({kind:'chain',version:2,round,starter:true,reset:true,word:seed,by:other(S.me),at:now});
+  }
+  const patch={questions:qs}; patch['progress_'+S.me]=0;
+  await Store.updateDuel(du.id,S.space.id,patch); Object.assign(du,patch);
+  Feedback.cue(power==='time'?'bell':'flip'); render();
+}
+async function sendDuelReaction(text){ const du=S.duel; if(!du||du.status!=='active') return;
+  const ev={kind:'duel-react',id:uid(),text:String(text||'').slice(0,20),by:S.me,at:new Date(serverNow()).toISOString()};
+  const list=await Store.listDuels(S.space.id),fresh=list.find(x=>x.id===du.id)||du,qs=mergeTopicEvents(fresh.questions,[ev]);
+  await Store.updateDuel(du.id,S.space.id,{questions:qs}); du.questions=qs; Feedback.cue('pop'); toast('Đã trêu người ấy: '+ev.text);
+}
+let duelTypingT=null, duelTypingSent=false;
+function duelTyping(on){ const du=S.duel; if(!du||du.status!=='active'||(!chainV2(du)&&!isTopicSpeedDuel(du))) return;
+  clearTimeout(duelTypingT);
+  if(on&&!duelTypingSent){ duelTypingSent=true; const patch={}; patch['progress_'+S.me]=1000+topicPendingCount(du,S.me);
+    Store.updateDuel(du.id,S.space.id,patch).catch(()=>{}); }
+  duelTypingT=setTimeout(()=>{ duelTypingSent=false; const cur=S.duel; if(!cur||cur.id!==du.id)return; const patch={};
+    patch['progress_'+S.me]=topicPendingCount(cur,S.me); Store.updateDuel(cur.id,S.space.id,patch).catch(()=>{}); },1100);
+}
+let topicSpeedTimerT=null, topicSyncing=false, topicBeepSec=null;
+function startTopicSpeedTimer(){ if(topicSpeedTimerT)return; topicSpeedTimerT=setInterval(()=>{
+  const du=S.duel; if(!du||du.status!=='active'||!isTopicSpeedDuel(du)||S.view!=='arena'){stopTopicSpeedTimer();return;}
+  const intro=topicIntroRemain(du), raw=topicRemainSec(du), p=S.duelPlay;
+  if(p&&intro>0&&p.topicLastTick!==intro){p.topicLastTick=intro;Feedback.cue('select');}
+  if(p&&!p.topicStarted&&intro<=0){p.topicStarted=true;Feedback.cue('start');render();setTimeout(()=>$('#topic_speed_input')?.focus(),30);return;}
+  const shown=Math.max(0,Math.ceil(raw)),el=$('#speed-clock'); if(el){el.textContent=intro?String(intro):shown+'s';el.classList.toggle('warn',!intro&&raw<=5);}
+  if(!intro&&shown>0&&shown<=5&&topicBeepSec!==shown){topicBeepSec=shown;Feedback.cue(shown===1?'final-tick':'tick');}
+  if(raw<=0) finishTopicSpeedLocal();
+  if(raw<=-TOPIC_VERIFY_GRACE_SEC&&(!du.done_a||!du.done_b)) forceFinishTopicSpeed();
+},250); }
+function stopTopicSpeedTimer(){ if(topicSpeedTimerT){clearInterval(topicSpeedTimerT);topicSpeedTimerT=null;} topicBeepSec=null; }
+function mergeTopicEvents(base,adds){ const out=(base||[]).slice(), ids=new Set(out.map(x=>x.id).filter(Boolean));
+  (adds||[]).forEach(x=>{if(x.id&&!ids.has(x.id)){ids.add(x.id);out.push(x);}}); return out; }
+async function syncTopicLocalEntries(du){ const p=S.duelPlay; if(!p||p.id!==du.id)return;
+  for(let attempt=0;attempt<3;attempt++){
+    const list=await Store.listDuels(S.space.id), fresh=list.find(x=>x.id===du.id)||du;
+    const merged=mergeTopicEvents(fresh.questions,p.topicLocal||[]);
+    du.questions=merged;if(merged.length===(fresh.questions||[]).length)return;
+    await Store.updateDuel(du.id,S.space.id,{questions:merged});
+    if(attempt<2)await new Promise(resolve=>setTimeout(resolve,90));
+  }
+}
+function reconcileTopicLocal(du){ const p=S.duelPlay;if(topicSyncing||!p||p.id!==du.id||!isTopicSpeedDuel(du))return;
+  const remote=new Set(topicEntries(du).map(x=>x.id)); if(!(p.topicLocal||[]).some(x=>!remote.has(x.id)))return;
+  topicSyncing=true;syncTopicLocalEntries(du).catch(()=>{}).finally(()=>{topicSyncing=false;});
+}
+async function topicSetProgress(du){ const patch={};patch['progress_'+S.me]=(duelTypingSent?1000:0)+topicPendingCount(du,S.me);
+  du['progress_'+S.me]=patch['progress_'+S.me];await Store.updateDuel(du.id,S.space.id,patch); }
+async function topicSpeedSubmit(wordOverride,appeal){ const du=S.duel,p=S.duelPlay;if(!du||!p||p.id!==du.id||!isTopicSpeedDuel(du)||du.status!=='active')return;
+  if(topicIntroRemain(du)>0)return; if(topicRemainSec(du)<=0){await finishTopicSpeedLocal();return;}
+  const inp=$('#topic_speed_input'),word=String(wordOverride||inp?.value||'').trim().replace(/\s+/g,' ');
+  const key=topicItemKey(word),own=[...topicEntries(du).filter(x=>x.by===S.me),...(p.topicLocal||[]),...(p.topicPending||[])];
+  let err=!word?'Nhập một đáp án đã nha':word.length>60?'Đáp án ngắn hơn 60 ký tự nha':!key?'Đáp án cần có chữ hoặc số nha':own.some(x=>x.key===key)?'Bạn đã kể đáp án này rồi':null;
+  if(err){toast(err);Feedback.cue('wrong');return;}
+  const item={id:uid(),word,key,by:S.me,at:new Date(serverNow()).toISOString()};p.topicPending.push(item);p.topicRejected=[];
+  if(!wordOverride)p.topicDraft='';if(inp&&!wordOverride)inp.value='';Feedback.cue('send');topicSetProgress(du).catch(()=>{});render();setTimeout(()=>$('#topic_speed_input')?.focus(),30);
+  const verdict=await verifyTopicItem(String(topicConfig(du).topic||''),word,du,own.map(x=>x.word),appeal);
+  if(!S.duelPlay||S.duelPlay.id!==du.id)return; const cur=S.duelPlay;cur.topicPending=cur.topicPending.filter(x=>x.id!==item.id);
+  if(!verdict||!verdict.valid){cur.topicRejected.push({...item,reason:verdict?verdict.reason:'Hệ thống chưa kiểm tra được'});Feedback.cue('wrong');}
+  else{const accepted={kind:'topic-entry',...item,key:topicItemKey(verdict.canonical||word),canonical:verdict.canonical||word,rarity:verdict.rarity==='rare'?'rare':'common'};cur.topicLocal.push(accepted);
+    try{await syncTopicLocalEntries(du);Feedback.cue('correct');}catch(e){cur.topicRejected.push({...item,reason:'Chưa lưu được, hãy gửi lại'});cur.topicLocal=cur.topicLocal.filter(x=>x.id!==item.id);Feedback.cue('wrong');}}
+  await topicSetProgress(du).catch(()=>{});render();if(topicRemainSec(du)<=0)finishTopicSpeedLocal();else setTimeout(()=>$('#topic_speed_input')?.focus(),30);
+}
+async function topicAppeal(id){const p=S.duelPlay,du=S.duel;if(!p||!du||topicRemainSec(du)<=0)return;const item=(p.topicRejected||[]).find(x=>x.id===id);if(!item)return;
+  p.topicRejected=p.topicRejected.filter(x=>x.id!==id);await topicSpeedSubmit(item.word,true);}
+async function finishTopicSpeedLocal(){ const du=S.duel,p=S.duelPlay;if(!du||!p||!isTopicSpeedDuel(du)||du.status!=='active'||p.topicFinishing)return;
+  if((p.topicPending||[]).length){render();return;} if(du['done_'+S.me]){if(du.done_a&&du.done_b){p.topicFinishing=true;try{await finalizeTopicSpeed(du);}finally{p.topicFinishing=false;}}return;}
+  p.topicFinishing=true;try{await syncTopicLocalEntries(du);const patch={};patch['done_'+S.me]=true;patch['progress_'+S.me]=0;
+    await Store.updateDuel(du.id,S.space.id,patch);Object.assign(du,patch);if(du.done_a&&du.done_b)await finalizeTopicSpeed(du);else render();}
+  catch(e){toast('Chưa nộp được danh sách, hệ thống sẽ thử lại');}finally{p.topicFinishing=false;}
+}
+async function finalizeTopicSpeed(du){ if(!du||du.status!=='active')return;
+  const list=await Store.listDuels(S.space.id),fresh=list.find(x=>x.id===du.id);if(fresh)du.questions=fresh.questions;
+  const score=topicScoreData(du),patch={status:'done',score_a:score.a,score_b:score.b,finished_at:new Date().toISOString()};
+  await Store.updateDuel(du.id,S.space.id,patch);Object.assign(du,patch);S.duelHistory=[du,...(S.duelHistory||[]).filter(x=>x.id!==du.id)];render(); }
+async function forceFinishTopicSpeed(){const du=S.duel;if(!du||du.status!=='active'||!isTopicSpeedDuel(du))return;
+  if(S.tmp.topicForcing===du.id)return;S.tmp.topicForcing=du.id;
+  try{const list=await Store.listDuels(S.space.id),fresh=list.find(x=>x.id===du.id);if(fresh)du.questions=fresh.questions;const sc=topicScoreData(du),patch={done_a:true,done_b:true,status:'done',score_a:sc.a,score_b:sc.b,finished_at:new Date().toISOString()};
+    await Store.updateDuel(du.id,S.space.id,patch);Object.assign(du,patch);S.duelHistory=[du,...(S.duelHistory||[]).filter(x=>x.id!==du.id)];render();}
+  finally{S.tmp.topicForcing=null;}}
+async function duelRematch(du){ if(!du)return;markDuelSeen(du.id);const now=new Date().toISOString(),cfg=du.questions[0]||{};let questions,title;
+  if(isTopicSpeedDuel(du)){title='Kể theo chủ đề · '+String(cfg.topic||'');questions=[{kind:'topic-speed',version:2,topic:cfg.topic,duration:TOPIC_SPEED_SEC,by:S.me,at:now}];}
+  else{const seeds=cfg.seeds||chainWords(du).map(x=>x.word),starter=shuffle(seeds)[0]||'love';title=du.title;
+    questions=[{kind:'chain',version:2,round:1,starter:true,word:starter,by:S.me,seeds,lives:2,syl:cfg.syl||undefined,at:now}];}
+  const stake=S.me===du.challenger?(du.stake||''):(du.stake_acceptor||'');const next={id:uid(),space_id:S.space.id,challenger:S.me,status:'waiting',stake,title,questions,
+    score_a:0,score_b:0,progress_a:0,progress_b:0,done_a:false,done_b:false,created_at:now,joined_at:null,finished_at:null};
+  await Store.saveDuel(next);S.duel=next;S.duelPlay=null;render();toast('Đã gửi lời tái đấu');scrollTo(0,0); }
 function dAnswerMc(i){ const p=S.duelPlay, du=S.duel; if(!p||p.phase!=='ask') return;
   const q=du.questions[p.idx]; p.chosen=i; p.lastCorrect=(q.options[i]===q.vi); if(p.lastCorrect)p.score++;
   Feedback.answer(p.lastCorrect); p.phase='feedback'; persistDuelProgress(); render(); }
@@ -3745,6 +4042,7 @@ document.addEventListener('input',(e)=>{
     const sc=$('#emoji_scroll'); if(sc){ sc.innerHTML=emojiSearchHTML(e.target.value, cur); sc.scrollTop=0; }
     return; }
   if(e.target.id==='cw_input'){ crosswordOnInput(e.target.value); return; }
+  if(e.target.id==='dchain_input'||e.target.id==='topic_speed_input'){ if(e.target.id==='topic_speed_input'&&S.duelPlay)S.duelPlay.topicDraft=e.target.value;duelTyping(true); return; }
   const f=e.target.dataset.filter; if(!f) return;
   if(f==='lib'){ S.tmp.libQuery=e.target.value; applyLibFilter(); return; }
   const q=(e.target.value||'').trim().toLowerCase();
@@ -3773,6 +4071,7 @@ document.addEventListener('keydown',(e)=>{ if(e.key!=='Enter') return;
   else if(e.target.id==='dsc_input'){ e.preventDefault(); handle('d-check-scramble'); }
   else if(e.target.id==='cw_input'){ e.preventDefault(); crosswordCheckWord(); }
   else if(e.target.id==='dchain_input'){ e.preventDefault(); handle('d-chain-send'); }
+  else if(e.target.id==='topic_speed_input'){ e.preventDefault(); handle('topic-speed-send'); }
   else if(e.target.id==='d_reply_input'){ e.preventDefault(); handle('d-reply-send',S.tmp.dReplyOpen); }
   else if(e.target.id==='qa_front'){ e.preventDefault(); $('#qa_back')?.focus(); }
   else if(e.target.id==='qa_back'){ e.preventDefault(); handle('quick-add',null,e.target.dataset.deck); }
@@ -3833,6 +4132,7 @@ async function handle(act,v,id,t,e){
     case 'chain-mode':
       if((S.tmp.chainMode||'word')==='topic') S.tmp.chainTopic=$('#du_topic')?.value||S.tmp.chainTopic||'';
       S.tmp.chainMode=v; render(); break;
+    case 'topic-suggest': S.tmp.chainTopic=v; if($('#du_topic'))$('#du_topic').value=v; break;
     case 'duel-create': await createDuel(); break;
     case 'duel-join': await joinDuel(id); break;
     case 'duel-decline': if(confirm('Từ chối lời rủ đấu này?')){ await Store.updateDuel(id,S.space.id,{status:'cancelled'}); S.duel=null; render(); } break;
@@ -3845,7 +4145,12 @@ async function handle(act,v,id,t,e){
     case 'cw-check-word': crosswordCheckWord(); break;
     case 'd-crossword-finish': await finishCrosswordLocal(); break;
     case 'd-chain-send': await sendChainWord(); break;
+    case 'chain-power': await useChainPower(v); break;
+    case 'topic-speed-send': await topicSpeedSubmit(); break;
+    case 'topic-appeal': await topicAppeal(id); break;
+    case 'duel-react': await sendDuelReaction(v==='hay'?'Hay đó!':v==='cang'?'Căng rồi!':'Tới luôn!'); break;
     case 'd-next': await dNext(); break;
+    case 'duel-rematch': await duelRematch((S.duel&&S.duel.id===id)?S.duel:(S.duelHistory||[]).find(x=>x.id===id)); break;
     case 'duel-seen': markDuelSeen(id); S.duel=null; S.duelPlay=null; render(); break;
     case 'study-lesson': { const q=S.quizzes.find(x=>x.id===id); if(q){
         if(q.status==='pending' && q.to_person===S.me){ q.status='picked'; q.picked_at=new Date().toISOString(); await Store.saveQuiz(q); }
